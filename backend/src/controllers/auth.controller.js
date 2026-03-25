@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../libs/utils.js';
 import { sendWelcomeEmail } from '../emails/emailHandlers.js';
+import cloudinary from '../libs/cloudinary.js';
 
 export const signup = async (req, res) => {
     const {fullname, email, password} = req.body;
@@ -72,9 +73,27 @@ export const login = async (req, res) => {
         console.error("Login error:", error);
         res.status(500).json({message: "Server error"});
     }
-}
+};
 
 export const logout = (_, res) => {
     res.cookie("jwt", "", { maxAge: 0 });
     res.status(200).json({message: "Logged out successfully"});
-}
+};
+
+export const updateProfile = async (req, res) => {
+    try {
+        const { profilePicture } = req.body;
+        if (!profilePicture) {
+            return res.status(400).json({ message: "Profile picture URL is required" });
+        }
+
+        const userID = req.user._id;
+        const uploadRespone = await cloudinary.uploader.upload(profilePicture);
+        const updatedUser = await User.findByIdAndUpdate(userID, { profilePicture: uploadRespone.secure_url }, { new: true });
+
+        res.status(200).json(updatedUser);
+    } catch (error) {
+        console.error("Update profile error:", error);
+        res.status(500).json({message: "Server error"});
+    }
+};
