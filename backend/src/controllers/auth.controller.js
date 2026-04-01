@@ -31,30 +31,24 @@ export const signup = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      fullname,
+      fullname: fullName,
       email,
       password: hashedPassword,
     });
 
     if (newUser) {
-      // before CR:
-      // generateToken(newUser._id, res);
-      // await newUser.save();
-
-      // after CR:
-      // Persist user first, then issue auth cookie
       const savedUser = await newUser.save();
       generateToken(savedUser._id, res);
 
       res.status(201).json({
         _id: savedUser._id,
-        fullname: savedUser.fullname,
+        fullName: savedUser.fullname,
         email: savedUser.email,
         profilePicture: savedUser.profilePicture,
       });
 
       try {
-        await sendWelcomeEmail(savedUser.email, savedUser.fullName, ENV.CLIENT_URL);
+        await sendWelcomeEmail(savedUser.email, savedUser.fullname, ENV.CLIENT_URL);
       } catch (error) {
         console.error("Failed to send welcome email:", error);
       }
@@ -86,7 +80,7 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       _id: user._id,
-      fullname: user.fullname,
+      fullName: user.fullName,
       email: user.email,
       profilePicture: user.profilePicture,
     });
