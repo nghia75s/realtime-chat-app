@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { PrimarySidebar } from "../cchat/PrimarySidebar"
+import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar"
 import { ChatListSidebar } from "../cchat/chat/ChatListSidebar"
 import { MainChatArea } from "../cchat/chat/MainChatArea"
 import { RightInfoPanel } from "../cchat/chat/RightInfoPanel"

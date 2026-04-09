@@ -1,5 +1,5 @@
 import { axiosInstance } from "@/lib/axios";
-import {create} from "zustand";
+import { create } from "zustand";
 import { toast } from "react-hot-toast";
 
 interface AuthStore {

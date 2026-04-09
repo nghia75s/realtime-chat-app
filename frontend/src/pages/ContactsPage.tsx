@@ -1,6 +1,6 @@
 // Contacts Page
 import { useState } from "react"
-import { PrimarySidebar } from "../cchat/PrimarySidebar"
+import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar"
 import { ContactMenu } from "../cchat/contact/ContactMenu"
 import type { ActiveMenu } from "../cchat/contact/ContactMenu"
 import { ContactListArea } from "../cchat/contact/ContactListArea"
