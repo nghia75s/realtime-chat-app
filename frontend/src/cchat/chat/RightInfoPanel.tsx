@@ -31,7 +31,7 @@ export function RightInfoPanel({ chat }: { chat?: ChatItem }) {
           <div className="flex flex-col items-center pt-5 pb-4 px-4 border-b border-zinc-200/60">
             <Avatar className="h-[64px] w-[64px] mb-3 border border-zinc-200 shadow-sm">
               <AvatarImage src={chat?.avatar || "/avatars/01.png"} className="object-cover" />
-              <AvatarFallback className="bg-blue-100 text-blue-700 text-xl font-semibold">
+              <AvatarFallback className="bg-purple-100 text-purple-700 text-xl font-semibold">
                 {chat?.fallback || "TD"}
               </AvatarFallback>
             </Avatar>
@@ -83,11 +83,11 @@ export function RightInfoPanel({ chat }: { chat?: ChatItem }) {
               <button onClick={() => openArchive('media')} className="flex items-center justify-between w-full px-4 py-3 hover:bg-zinc-50 transition-colors cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <ImageIcon className="h-5 w-5 text-zinc-500" strokeWidth={1.5} />
-                  <span className="text-[15px] font-medium text-zinc-900 group-hover:text-[#005AE0] transition-colors">Ảnh / Video</span>
+                  <span className="text-[15px] font-medium text-zinc-900 group-hover:text-[#7c3aed] transition-colors">Ảnh / Video</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-[12px] text-zinc-400 mr-2 group-hover:text-[#005AE0] transition-colors">Xem tất cả</span>
-                  <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-[#005AE0]" />
+                  <span className="text-[12px] text-zinc-400 mr-2 group-hover:text-[#7c3aed] transition-colors">Xem tất cả</span>
+                  <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-[#7c3aed]" />
                 </div>
               </button>
 
@@ -103,22 +103,22 @@ export function RightInfoPanel({ chat }: { chat?: ChatItem }) {
               <button onClick={() => openArchive('file')} className="flex items-center justify-between w-full px-4 py-3 hover:bg-zinc-50 transition-colors cursor-pointer group mt-1">
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-zinc-500" strokeWidth={1.5} />
-                  <span className="text-[15px] font-medium text-zinc-900 group-hover:text-[#005AE0] transition-colors">Tài liệu / File</span>
+                  <span className="text-[15px] font-medium text-zinc-900 group-hover:text-[#7c3aed] transition-colors">Tài liệu / File</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-[12px] text-zinc-400 mr-2 group-hover:text-[#005AE0] transition-colors">Xem tất cả</span>
-                  <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-[#005AE0]" />
+                  <span className="text-[12px] text-zinc-400 mr-2 group-hover:text-[#7c3aed] transition-colors">Xem tất cả</span>
+                  <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-[#7c3aed]" />
                 </div>
               </button>
 
               <button onClick={() => openArchive('link')} className="flex items-center justify-between w-full px-4 py-3 hover:bg-zinc-50 transition-colors cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <LinkIcon className="h-5 w-5 text-zinc-500" strokeWidth={1.5} />
-                  <span className="text-[15px] font-medium text-zinc-900 group-hover:text-[#005AE0] transition-colors">Link chia sẻ</span>
+                  <span className="text-[15px] font-medium text-zinc-900 group-hover:text-[#7c3aed] transition-colors">Link chia sẻ</span>
                 </div>
                 <div className="flex items-center">
-                  <span className="text-[12px] text-zinc-400 mr-2 group-hover:text-[#005AE0] transition-colors">Xem tất cả</span>
-                  <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-[#005AE0]" />
+                  <span className="text-[12px] text-zinc-400 mr-2 group-hover:text-[#7c3aed] transition-colors">Xem tất cả</span>
+                  <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-[#7c3aed]" />
                 </div>
               </button>
             </div>
@@ -139,4 +139,5 @@ export function RightInfoPanel({ chat }: { chat?: ChatItem }) {
     </div>
   )
 }
+
 

@@ -20,7 +20,7 @@ export function ChatListSidebar({ activeChatId, onSelectChat }: ChatListSidebarP
             <Search className="absolute left-2.5 top-1/2 h-[16px] w-[16px] -translate-y-1/2 text-zinc-500" />
             <input
               placeholder="Tìm kiếm"
-              className="w-full rounded-md bg-[#eaedf0] py-[6px] pl-[30px] pr-3 text-[14px] text-zinc-900 outline-none placeholder:text-zinc-500 focus:bg-white focus:ring-1 focus:ring-[#005AE0] transition-all"
+              className="w-full rounded-md bg-[#eaedf0] py-[6px] pl-[30px] pr-3 text-[14px] text-zinc-900 outline-none placeholder:text-zinc-500 focus:bg-white focus:ring-1 focus:ring-[#7c3aed] transition-all"
             />
           </div>
           <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 transition-colors">
@@ -37,7 +37,7 @@ export function ChatListSidebar({ activeChatId, onSelectChat }: ChatListSidebarP
             <button 
               onClick={() => setActiveTab("all")}
               className={`text-[14px] pb-[6px] font-medium transition-colors border-b-2 ${
-                activeTab === "all" ? "border-[#005AE0] text-[#005AE0]" : "border-transparent text-zinc-500 hover:text-zinc-800"
+                activeTab === "all" ? "border-[#7c3aed] text-[#7c3aed]" : "border-transparent text-zinc-500 hover:text-zinc-800"
               }`}
             >
               Tất cả
@@ -45,7 +45,7 @@ export function ChatListSidebar({ activeChatId, onSelectChat }: ChatListSidebarP
             <button 
               onClick={() => setActiveTab("unread")}
               className={`text-[14px] pb-[6px] font-medium transition-colors border-b-2 ${
-                activeTab === "unread" ? "border-[#005AE0] text-[#005AE0]" : "border-transparent text-zinc-500 hover:text-zinc-800"
+                activeTab === "unread" ? "border-[#7c3aed] text-[#7c3aed]" : "border-transparent text-zinc-500 hover:text-zinc-800"
               }`}
             >
               Chưa đọc
@@ -68,18 +68,18 @@ export function ChatListSidebar({ activeChatId, onSelectChat }: ChatListSidebarP
                 key={chat.id}
                 onClick={() => onSelectChat(chat.id)}
                 className={`flex items-start gap-3 px-4 py-3 transition-colors cursor-pointer relative group ${
-                  isActive ? "bg-[#e5efff]" : "hover:bg-zinc-100"
+                  isActive ? "bg-[#ede9fe]" : "hover:bg-zinc-100"
                 }`}
               >
                 <div className="relative shrink-0">
                   <Avatar className="h-[48px] w-[48px] rounded-full border border-zinc-200/50">
                     <AvatarImage src={chat.avatar} alt={chat.name} className="object-cover" />
-                    <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold text-lg">
+                    <AvatarFallback className="bg-purple-100 text-purple-700 font-semibold text-lg">
                       {chat.fallback}
                     </AvatarFallback>
                   </Avatar>
                   {chat.isOnline && (
-                     <span className="absolute bottom-0 right-0 h-[12px] w-[12px] rounded-full bg-green-500 border-2 border-white"></span>
+                     <span className="absolute bottom-0 right-0 h-[12px] w-[12px] rounded-full bg-purple-500 border-2 border-white"></span>
                   )}
                 </div>
 
@@ -120,3 +120,4 @@ export function ChatListSidebar({ activeChatId, onSelectChat }: ChatListSidebarP
     </div>
   )
 }
+

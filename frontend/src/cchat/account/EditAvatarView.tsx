@@ -14,13 +14,13 @@ export const EditAvatarView = ({ onBack, onClose }: any) => {
         </div>
 
         <div className="px-5 py-6 flex flex-col gap-6 items-center flex-1 outline-none">
-            <Button variant="outline" className="w-[85%] h-[44px] flex items-center justify-center gap-2 border-[1.5px] border-[#005AE0] text-[#005AE0] font-bold bg-[#e5efff]/70 hover:bg-[#e5efff] text-[15px] transition-colors rounded-lg shadow-sm">
+            <Button variant="outline" className="w-[85%] h-[44px] flex items-center justify-center gap-2 border-[1.5px] border-[#7c3aed] text-[#7c3aed] font-bold bg-[#ede9fe]/70 hover:bg-[#ede9fe] text-[15px] transition-colors rounded-lg shadow-sm">
                 <ImagePlus className="w-[18px] h-[18px]" strokeWidth={2.5}/> Tải lên từ máy tính
             </Button>
             
             <div className="flex flex-col gap-4 mt-2 w-[85%]">
                 <h3 className="text-[16px] font-semibold text-zinc-800">Ảnh đại diện của tôi</h3>
-                <Avatar className="w-[80px] h-[80px] border border-zinc-200 ring-[3px] ring-offset-[3px] ring-[#e5efff] ml-1 shadow-sm">
+                <Avatar className="w-[80px] h-[80px] border border-zinc-200 ring-[3px] ring-offset-[3px] ring-[#ede9fe] ml-1 shadow-sm">
                     <AvatarImage src="/avatars/me.png" />
                     <AvatarFallback>Dat</AvatarFallback>
                 </Avatar>
@@ -29,3 +29,4 @@ export const EditAvatarView = ({ onBack, onClose }: any) => {
     </div>
    )
 }
+

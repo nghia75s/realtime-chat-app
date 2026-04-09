@@ -68,7 +68,7 @@ export function ArchivePanel({ initialTab, onBack }: ArchivePanelProps) {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <span className="flex-1 text-center font-bold">Kho lưu trữ</span>
-        <button className="text-[14px] font-semibold text-[#005AE0] px-2 py-1 hover:bg-blue-50 rounded transition-colors shrink-0">
+        <button className="text-[14px] font-semibold text-[#7c3aed] px-2 py-1 hover:bg-purple-50 rounded transition-colors shrink-0">
           Chọn
         </button>
       </div>
@@ -81,7 +81,7 @@ export function ArchivePanel({ initialTab, onBack }: ArchivePanelProps) {
             onClick={() => setActiveTab(tab.id as any)}
             className={`flex-1 py-3 text-[14px] font-medium transition-colors border-b-[2px] ${
               activeTab === tab.id 
-                ? "border-[#005AE0] text-[#005AE0]" 
+                ? "border-[#7c3aed] text-[#7c3aed]" 
                 : "border-transparent text-zinc-500 hover:text-zinc-800"
             }`}
           >
@@ -96,7 +96,7 @@ export function ArchivePanel({ initialTab, onBack }: ArchivePanelProps) {
            <Search className="absolute left-2.5 top-1/2 h-[16px] w-[16px] -translate-y-1/2 text-zinc-500" />
            <input
              placeholder={getSearchPlaceholder()}
-             className="w-full rounded-md bg-[#eaedf0] py-[6px] pl-[30px] pr-3 text-[14px] text-zinc-900 outline-none placeholder:text-zinc-500 focus:bg-white focus:ring-1 focus:ring-[#005AE0] transition-all"
+             className="w-full rounded-md bg-[#eaedf0] py-[6px] pl-[30px] pr-3 text-[14px] text-zinc-900 outline-none placeholder:text-zinc-500 focus:bg-white focus:ring-1 focus:ring-[#7c3aed] transition-all"
            />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -130,7 +130,7 @@ export function ArchivePanel({ initialTab, onBack }: ArchivePanelProps) {
                   {group.items.map(item => (
                     <div key={item.id} className="group flex items-center justify-between px-4 py-3 border-b border-zinc-100 hover:bg-zinc-50 cursor-pointer">
                       <div className="flex items-start gap-3 min-w-0 pr-3">
-                        <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-lg font-bold text-[12px] uppercase ${item.ext === 'PDF' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
+                        <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-lg font-bold text-[12px] uppercase ${item.ext === 'PDF' ? 'bg-red-100 text-red-600' : 'bg-purple-100 text-purple-600'}`}>
                           {item.ext}
                         </div>
                         <div className="flex flex-col min-w-0">
@@ -140,7 +140,7 @@ export function ArchivePanel({ initialTab, onBack }: ArchivePanelProps) {
                       </div>
                       <div className="shrink-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
                         <button className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-200 rounded-md transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
-                        <button className="p-1.5 text-zinc-400 hover:text-[#005AE0] hover:bg-blue-50 rounded-md transition-colors"><Download className="h-4 w-4" /></button>
+                        <button className="p-1.5 text-zinc-400 hover:text-[#7c3aed] hover:bg-purple-50 rounded-md transition-colors"><Download className="h-4 w-4" /></button>
                       </div>
                     </div>
                   ))}
@@ -194,7 +194,7 @@ export function ArchivePanel({ initialTab, onBack }: ArchivePanelProps) {
                         {item.icon}
                       </div>
                       <div className="flex flex-col min-w-0 ml-3 pr-2">
-                        <span className="truncate text-[14px] font-semibold text-zinc-800 leading-tight mb-[3px] group-hover:text-[#005AE0]">{item.title}</span>
+                        <span className="truncate text-[14px] font-semibold text-zinc-800 leading-tight mb-[3px] group-hover:text-[#7c3aed]">{item.title}</span>
                         <div className="flex items-center gap-1.5">
                           <LinkIcon className="h-3 w-3 text-zinc-400" />
                           <span className="text-[12px] text-zinc-500 truncate">{item.domain}</span>
@@ -211,3 +211,4 @@ export function ArchivePanel({ initialTab, onBack }: ArchivePanelProps) {
     </div>
   )
 }
+

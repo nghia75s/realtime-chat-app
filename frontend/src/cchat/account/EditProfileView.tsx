@@ -22,7 +22,7 @@ export const EditProfileView = ({ onBack, onClose, days, months, years }: any) =
                 {/* Tên hiển thị */}
                 <div className="flex flex-col gap-2">
                     <Label className="text-[14px] font-semibold text-zinc-800">Tên hiển thị</Label>
-                    <Input defaultValue="Nguyễn Tiến Đạt" className="h-[42px] text-[15px] font-medium border-zinc-300 px-3 focus-visible:ring-[#005AE0] shadow-sm" />
+                    <Input defaultValue="Nguyễn Tiến Đạt" className="h-[42px] text-[15px] font-medium border-zinc-300 px-3 focus-visible:ring-[#7c3aed] shadow-sm" />
                 </div>
 
                 {/* Thông tin cá nhân header */}
@@ -32,11 +32,11 @@ export const EditProfileView = ({ onBack, onClose, days, months, years }: any) =
                     {/* Giới tính */}
                     <RadioGroup defaultValue="nam" className="flex items-center gap-12 mb-6 ml-1">
                          <div className="flex items-center space-x-2 cursor-pointer group">
-                            <RadioGroupItem value="nam" id="g-nam" className="w-[18px] h-[18px] border-zinc-400 text-[#005AE0] group-hover:border-[#005AE0] transition-colors" />
+                            <RadioGroupItem value="nam" id="g-nam" className="w-[18px] h-[18px] border-zinc-400 text-[#7c3aed] group-hover:border-[#7c3aed] transition-colors" />
                             <Label htmlFor="g-nam" className="cursor-pointer font-medium text-[15px]">Nam</Label>
                          </div>
                          <div className="flex items-center space-x-2 cursor-pointer group">
-                            <RadioGroupItem value="nu" id="g-nu" className="w-[18px] h-[18px] border-zinc-400 text-[#005AE0] group-hover:border-[#005AE0] transition-colors" />
+                            <RadioGroupItem value="nu" id="g-nu" className="w-[18px] h-[18px] border-zinc-400 text-[#7c3aed] group-hover:border-[#7c3aed] transition-colors" />
                             <Label htmlFor="g-nu" className="cursor-pointer font-medium text-[15px]">Nữ</Label>
                          </div>
                     </RadioGroup>
@@ -111,8 +111,9 @@ export const EditProfileView = ({ onBack, onClose, days, months, years }: any) =
         {/* Footer Actions */}
         <div className="px-5 py-3.5 border-t border-zinc-200 bg-white flex items-center justify-end gap-3 mt-auto shrink-0 z-10 box-shadow-[0_-5px_10px_-5px_rgba(0,0,0,0.05)]">
             <Button variant="outline" className="font-bold text-zinc-800 px-6 h-[40px] bg-zinc-100 hover:bg-zinc-200 border-transparent transition-colors" onClick={onBack}>Hủy</Button>
-            <Button className="font-bold px-6 h-[40px] bg-[#005AE0] text-white hover:bg-[#005AE0]/90 transition-colors shadow-none" onClick={onBack}>Cập nhật</Button>
+            <Button className="font-bold px-6 h-[40px] bg-[#7c3aed] text-white hover:bg-[#7c3aed]/90 transition-colors shadow-none" onClick={onBack}>Cập nhật</Button>
         </div>
     </div>
   )
 }
+

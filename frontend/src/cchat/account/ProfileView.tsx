@@ -32,7 +32,7 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
           </div>
           <div className="flex items-center gap-2 mb-2 group/name cursor-pointer" onClick={() => onViewChange("edit-profile")}>
             <h3 className="text-[18px] font-semibold text-zinc-900 pb-0.5">Nguyễn Tiến Đạt</h3>
-            <Pencil className="w-[14px] h-[14px] text-zinc-400 group-hover/name:text-[#005AE0] transition-colors" strokeWidth={2.5} />
+            <Pencil className="w-[14px] h-[14px] text-zinc-400 group-hover/name:text-[#7c3aed] transition-colors" strokeWidth={2.5} />
           </div>
         </div>
       </div>
@@ -56,7 +56,7 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
             </div>
             <div className="border-t border-zinc-100 my-0 pt-3 grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Phòng ban</span>
-              <span className="text-[#005AE0] font-semibold bg-[#e5efff] w-max px-2 py-0.5 rounded text-[13px]">Phòng ban IT</span>
+              <span className="text-[#7c3aed] font-semibold bg-[#ede9fe] w-max px-2 py-0.5 rounded text-[13px]">Phòng ban IT</span>
             </div>
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Chức vụ</span>
@@ -68,7 +68,7 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
 
       {/* Footer Update Button */}
       <div className="px-4 py-3 border-t border-zinc-200 bg-white shrink-0">
-        <Button variant="outline" className="w-full h-10 flex items-center justify-center gap-2 border-zinc-300 font-bold hover:bg-zinc-50 text-[14px] hover:text-[#005AE0]" onClick={() => onViewChange("edit-profile")}>
+        <Button variant="outline" className="w-full h-10 flex items-center justify-center gap-2 border-zinc-300 font-bold hover:bg-zinc-50 text-[14px] hover:text-[#7c3aed]" onClick={() => onViewChange("edit-profile")}>
           <Pencil className="w-[14px] h-[14px]" /> Cập nhật
         </Button>
       </div>
@@ -76,3 +76,4 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
     </div>
   )
 }
+

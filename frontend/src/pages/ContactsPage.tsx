@@ -8,7 +8,7 @@ import { ContactGroupsArea } from "../cchat/contact/ContactGroupsArea"
 import { ContactInvitationsArea } from "../cchat/contact/ContactInvitationsArea"
 
 export default function ContactsPage() {
-  const [activeMenu, setActiveMenu] = useState<ActiveMenu>("groups")
+  const [activeMenu, setActiveMenu] = useState<ActiveMenu>("contacts")
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-white text-zinc-900 font-sans">

@@ -4,10 +4,13 @@ import { ChatListSidebar } from "../cchat/chat/ChatListSidebar"
 import { MainChatArea } from "../cchat/chat/MainChatArea"
 import { RightInfoPanel } from "../cchat/chat/RightInfoPanel"
 import { mockConversations } from "../cchat/data/mockData"
+import { useChatStore } from "../store/useChatStore"
 
 export default function ChatPage() {
-  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true)
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(false)
   const [activeChatId, setActiveChatId] = useState<number>(1)
+
+  const {  } = useChatStore()
   
   const activeChat = mockConversations.find(c => c.id === activeChatId) || mockConversations[0]
 

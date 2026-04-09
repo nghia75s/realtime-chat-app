@@ -48,7 +48,7 @@ export function ContactInvitationsArea() {
                  <button className="flex-1 py-1.5 rounded-md bg-[#eaedf0] text-zinc-700 text-[14px] font-medium hover:bg-zinc-200 transition-colors border border-zinc-200/80">
                    Từ chối
                  </button>
-                 <button className="flex-1 py-1.5 rounded-md bg-[#e5efff] text-[#005AE0] text-[14px] font-bold hover:bg-blue-100 transition-colors">
+                 <button className="flex-1 py-1.5 rounded-md bg-[#ede9fe] text-[#7c3aed] text-[14px] font-bold hover:bg-purple-100 transition-colors">
                    Đồng ý
                  </button>
                </div>
@@ -150,3 +150,4 @@ export function ContactInvitationsArea() {
     </div>
   )
 }
+

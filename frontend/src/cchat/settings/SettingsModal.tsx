@@ -56,7 +56,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 px-4 py-2.5 mx-2 rounded-md transition-colors text-[14px] ${activeTab === tab.id
-                  ? "bg-[#e5efff] text-[#005AE0] font-semibold"
+                  ? "bg-[#ede9fe] text-[#7c3aed] font-semibold"
                   : "text-zinc-700 hover:bg-zinc-100 font-medium"
                   }`}
               >
@@ -79,11 +79,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <p className="text-[13px] text-zinc-500 mb-2">Danh sách đồng nghiệp được hiển thị trong danh bạ</p>
                   <RadioGroup defaultValue="zalo-only" className="gap-2 mt-1">
                     <Label htmlFor="r-all" className="flex items-center space-x-3 w-full p-2.5 rounded-md hover:bg-zinc-100 cursor-pointer transition-colors">
-                      <RadioGroupItem value="all" id="r-all" className="border-zinc-400 text-[#005AE0]" />
+                      <RadioGroupItem value="all" id="r-all" className="border-zinc-400 text-[#7c3aed]" />
                       <span className="cursor-pointer font-normal text-[14px]">Hiển thị tất cả đồng nghiệp</span>
                     </Label>
                     <Label htmlFor="r-zalo" className="flex items-center space-x-3 w-full p-2.5 rounded-md hover:bg-zinc-100 cursor-pointer transition-colors">
-                      <RadioGroupItem value="zalo-only" id="r-zalo" className="border-[#005AE0] text-[#005AE0]" />
+                      <RadioGroupItem value="zalo-only" id="r-zalo" className="border-[#7c3aed] text-[#7c3aed]" />
                       <span className="cursor-pointer font-normal text-[14px]">Chỉ hiển thị đồng nghiệp đang sử dụng</span>
                     </Label>
                   </RadioGroup>
@@ -134,14 +134,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     {/* Bật */}
                     <div className="flex flex-col items-center gap-4">
                       <Label htmlFor="notif-on" className="cursor-pointer group">
-                        <div className="w-[120px] h-[80px] bg-white border-2 border-zinc-200 rounded-md relative flex items-center justify-center mb-2 group-hover:border-[#005AE0] transition-colors">
-                          <Laptop className="h-10 w-10 text-zinc-300 group-hover:text-[#005AE0] stroke-[1.5] transition-colors" />
+                        <div className="w-[120px] h-[80px] bg-white border-2 border-zinc-200 rounded-md relative flex items-center justify-center mb-2 group-hover:border-[#7c3aed] transition-colors">
+                          <Laptop className="h-10 w-10 text-zinc-300 group-hover:text-[#7c3aed] stroke-[1.5] transition-colors" />
                           {/* Giả lập bong bóng Notif */}
-                          <div className="absolute top-2 right-2 w-8 h-3 bg-zinc-200 group-hover:bg-blue-200 transition-colors rounded-sm"></div>
+                          <div className="absolute top-2 right-2 w-8 h-3 bg-zinc-200 group-hover:bg-purple-200 transition-colors rounded-sm"></div>
                         </div>
                       </Label>
                       <div className="flex items-center gap-2">
-                        <RadioGroupItem value="on" id="notif-on" className="border-zinc-400 group-hover:border-[#005AE0] transition-colors" />
+                        <RadioGroupItem value="on" id="notif-on" className="border-zinc-400 group-hover:border-[#7c3aed] transition-colors" />
                         <span className="text-[14px]">Bật</span>
                       </div>
                     </div>
@@ -149,12 +149,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     {/* Tắt */}
                     <div className="flex flex-col items-center gap-4">
                       <Label htmlFor="notif-off" className="cursor-pointer group">
-                        <div className="w-[120px] h-[80px] bg-white border-2 border-zinc-200 rounded-md relative flex items-center justify-center mb-2 group-hover:border-[#005AE0] transition-colors">
-                          <Monitor className="h-10 w-10 text-zinc-300 group-hover:text-[#005AE0] stroke-[1.5] transition-colors" />
+                        <div className="w-[120px] h-[80px] bg-white border-2 border-zinc-200 rounded-md relative flex items-center justify-center mb-2 group-hover:border-[#7c3aed] transition-colors">
+                          <Monitor className="h-10 w-10 text-zinc-300 group-hover:text-[#7c3aed] stroke-[1.5] transition-colors" />
                         </div>
                       </Label>
                       <div className="flex items-center gap-2">
-                        <RadioGroupItem value="off" id="notif-off" className="border-zinc-400 group-hover:border-[#005AE0] transition-colors" />
+                        <RadioGroupItem value="off" id="notif-off" className="border-zinc-400 group-hover:border-[#7c3aed] transition-colors" />
                         <span className="text-[14px]">Tắt</span>
                       </div>
                     </div>
@@ -165,7 +165,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <h3 className="font-semibold text-[15px] mb-1">Âm thanh thông báo</h3>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="sound-toggle" className="text-[14px] font-normal cursor-pointer">Phát âm thanh khi có tin nhắn & thông báo mới</Label>
-                    <Switch id="sound-toggle" className="data-[state=checked]:bg-[#005AE0]" />
+                    <Switch id="sound-toggle" className="data-[state=checked]:bg-[#7c3aed]" />
                   </div>
                 </div>
               </div>
@@ -181,8 +181,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     {/* Sáng */}
                     <div className="flex flex-col items-center gap-4 cursor-pointer group">
                       <Label htmlFor="theme-light" className="cursor-pointer group">
-                        <div className="w-[100px] h-[70px] bg-white border-2 border-zinc-200 group-hover:border-[#005AE0] transition-colors rounded-lg shadow-sm relative flex items-center justify-center mb-2">
-                          <div className="w-[80%] h-[60%] bg-[#e5efff] rounded border border-blue-200"></div>
+                        <div className="w-[100px] h-[70px] bg-white border-2 border-zinc-200 group-hover:border-[#7c3aed] transition-colors rounded-lg shadow-sm relative flex items-center justify-center mb-2">
+                          <div className="w-[80%] h-[60%] bg-[#ede9fe] rounded border border-purple-200"></div>
                         </div>
                       </Label>
                       <div className="flex items-center gap-2">
@@ -194,9 +194,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     {/* Tối */}
                     <div className="flex flex-col items-center gap-4 cursor-pointer group">
                       <Label htmlFor="theme-dark" className="cursor-pointer group">
-                        <div className="w-[100px] h-[70px] bg-[#1a1c22] border-2 border-transparent group-hover:border-[#005AE0] transition-colors rounded-lg shadow-sm relative flex items-center justify-center mb-2">
+                        <div className="w-[100px] h-[70px] bg-[#1a1c22] border-2 border-transparent group-hover:border-[#7c3aed] transition-colors rounded-lg shadow-sm relative flex items-center justify-center mb-2">
                           <div className="w-[80%] h-[60%] bg-zinc-800 rounded border border-zinc-700"></div>
-                          <div className="absolute top-3 right-3 w-4 h-3 bg-[#005AE0] rounded-sm"></div>
+                          <div className="absolute top-3 right-3 w-4 h-3 bg-[#7c3aed] rounded-sm"></div>
                         </div>
                       </Label>
                       <div className="flex items-center gap-2">
@@ -215,3 +215,4 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     </Dialog>
   )
 }
+

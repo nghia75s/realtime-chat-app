@@ -38,7 +38,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
   ]
 
   return (
-    <div className="flex h-full w-[64px] shrink-0 flex-col items-center justify-between bg-[#005AE0] py-4 text-white/80 select-none z-50 relative">
+    <div className="flex h-full w-[64px] shrink-0 flex-col items-center justify-between bg-[#7c3aed] py-4 text-white/80 select-none z-50 relative">
       <div className="flex flex-col items-center gap-6 w-full">
         {/* Avatar User */}
         <Avatar 
@@ -46,7 +46,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
           onClick={() => setIsAccountModalOpen(true)}
         >
           <AvatarImage src="/avatars/me.png" />
-          <AvatarFallback className="bg-blue-300 text-blue-900 font-bold">Dat</AvatarFallback>
+          <AvatarFallback className="bg-purple-300 text-purple-900 font-bold">Dat</AvatarFallback>
         </Avatar>
 
         {/* Top Navigation */}
@@ -70,7 +70,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
                     strokeWidth={isActive ? 2 : 1.5}
                   />
                   {item.id === "chat" && (
-                    <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff4a4a] px-1 text-[11px] font-bold text-white shadow-sm ring-2 ring-[#005AE0]">
+                    <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff4a4a] px-1 text-[11px] font-bold text-white shadow-sm ring-2 ring-[#7c3aed]">
                       5+
                     </span>
                   )}
@@ -97,10 +97,10 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
             side="right"
             align="end"
             sideOffset={15}
-            className="w-56 shadow-lg rounded-lg border-zinc-200 py-2"
+            className="w-56 shadow-lg rounded-lg border-purple-200 py-2"
           >
             <DropdownMenuItem 
-              className="py-2.5 px-3 cursor-pointer text-zinc-700 hover:text-zinc-900 focus:bg-zinc-100"
+              className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700"
               onClick={() => setIsAccountModalOpen(true)}
             >
               <User className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -108,7 +108,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              className="py-2.5 px-3 cursor-pointer text-zinc-700 hover:text-zinc-900 focus:bg-zinc-100"
+              className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700"
               onClick={() => setIsSettingsModalOpen(true)}
             >
               <Settings className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -118,7 +118,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
             <DropdownMenuSeparator className="my-1 border-zinc-100" />
 
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-zinc-700 hover:text-zinc-900 focus:bg-zinc-100 data-[state=open]:bg-zinc-100">
+              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700 data-[state=open]:bg-purple-700">
                 <Database className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
                 <span className="text-[14px]">Dữ liệu</span>
               </DropdownMenuSubTrigger>
@@ -130,7 +130,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
             </DropdownMenuSub>
 
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-zinc-700 hover:text-zinc-900 focus:bg-zinc-100 data-[state=open]:bg-zinc-100">
+              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700 data-[state=open]:bg-purple-700">
                 <Globe className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
                 <span className="text-[14px]">Ngôn ngữ</span>
               </DropdownMenuSubTrigger>
@@ -143,7 +143,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
             </DropdownMenuSub>
 
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-zinc-700 hover:text-zinc-900 focus:bg-zinc-100 data-[state=open]:bg-zinc-100">
+              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700 data-[state=open]:bg-purple-700">
                 <HelpCircle className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
                 <span className="text-[14px]">Hỗ trợ</span>
               </DropdownMenuSubTrigger>
@@ -158,7 +158,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
 
             <DropdownMenuItem
               onClick={logout}
-              className="py-2.5 px-3 cursor-pointer text-[#ff4a4a] focus:bg-[#ff4a4a]/10 focus:text-[#ff4a4a] hover:bg-[#ff4a4a]/10 hover:text-[#ff4a4a]"
+              className="py-2.5 px-3 cursor-pointer text-[#ff4a4a] focus:bg-[#ff4a4a] focus:text-[#ff4a4a] hover:bg-[#ff4a4a]/10 hover:text-[#ff4a4a]"
             >
               <span className="text-[14px] font-medium ml-8">Đăng xuất</span>
             </DropdownMenuItem>
@@ -171,3 +171,4 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
     </div>
   )
 }
+

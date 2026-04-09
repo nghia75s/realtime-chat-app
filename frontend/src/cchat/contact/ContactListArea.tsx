@@ -41,7 +41,7 @@ export function ContactListArea() {
              <Search className="absolute left-2.5 top-1/2 h-[16px] w-[16px] -translate-y-1/2 text-zinc-500" />
              <input
                placeholder="Tìm bạn"
-               className="w-full rounded-md border border-zinc-200 bg-white py-1.5 pl-8 pr-3 text-[14px] text-zinc-900 outline-none placeholder:text-zinc-500 focus:border-[#005AE0] transition-colors"
+               className="w-full rounded-md border border-zinc-200 bg-white py-1.5 pl-8 pr-3 text-[14px] text-zinc-900 outline-none placeholder:text-zinc-500 focus:border-[#7c3aed] transition-colors"
              />
           </div>
           <button className="flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-[14px] text-zinc-700 hover:bg-zinc-50 transition-colors">
@@ -76,7 +76,7 @@ export function ContactListArea() {
                        <div className="flex items-center gap-4">
                          <Avatar className="h-[48px] w-[48px] border border-zinc-200/50">
                             <AvatarImage src={contact.avatar} />
-                            <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">{contact.fallback}</AvatarFallback>
+                            <AvatarFallback className="bg-purple-100 text-purple-700 font-semibold">{contact.fallback}</AvatarFallback>
                          </Avatar>
                          <span className="text-[15px] font-medium text-zinc-800">
                            {contact.name}
@@ -100,3 +100,4 @@ export function ContactListArea() {
     </div>
   )
 }
+
