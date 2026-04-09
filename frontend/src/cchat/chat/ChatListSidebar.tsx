@@ -2,6 +2,9 @@ import * as React from "react"
 import { Search, UserPlus, Filter, MoreHorizontal, CheckCheck } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { mockConversations } from "../data/mockData"
+import { useChatStore } from "@/store/useChatStore";
+import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton";
+import NoChatsFound from "@/components/ui/NoChatsFound";
 
 interface ChatListSidebarProps {
   activeChatId: number;
@@ -10,6 +13,19 @@ interface ChatListSidebarProps {
 
 export function ChatListSidebar({ activeChatId, onSelectChat }: ChatListSidebarProps) {
   const [activeTab, setActiveTab] = React.useState("all")
+
+  const { getMyChatPartners, chats, isUsersLoading, setSelectedUser } = useChatStore()
+
+  React.useEffect(() => {
+    getMyChatPartners()
+  }, [getMyChatPartners])
+
+  if (isUsersLoading) {
+    return <UsersLoadingSkeleton />;
+  }
+  if (chats.length === 0) {
+    return <NoChatsFound />;
+  }
 
   return (
     <div className="flex w-[340px] shrink-0 flex-col border-r border-zinc-200 bg-white h-full z-10">
