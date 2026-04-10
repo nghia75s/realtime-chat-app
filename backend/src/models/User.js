@@ -16,6 +16,9 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
+    fallback:{
+      type: String
+    },
     profilePicture: {
       type: String,
       default: "",

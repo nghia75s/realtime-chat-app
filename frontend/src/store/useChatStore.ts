@@ -12,6 +12,8 @@ interface ChatStore {
     isMessagesLoading: boolean;
     setActiveTab: (tab: string) => void;
     setSelectedUser: (user: any | null) => void;
+    getAllcontacts: () => Promise<void>;
+    getMyChatPartners: () => Promise<void>;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -25,8 +27,9 @@ export const useChatStore = create<ChatStore>((set) => ({
     setActiveTab: (tab) => set({ activeTab: tab }),
     setSelectedUser: (user) => set({ selectedUser: user }),
     getAllcontacts: async () => {
+        set({isUsersLoading: true});
         try {
-            const res = await axiosInstance.post("messages/contacts");
+            const res = await axiosInstance.get("messages/contacts");
             set({allContacts: res.data})
         } catch (error: any) {
             const message = error?.response?.data?.message || "Failed to fetch contacts. Please try again.";
@@ -36,8 +39,9 @@ export const useChatStore = create<ChatStore>((set) => ({
         }
     },
     getMyChatPartners: async () => {
+        set({isUsersLoading: true});
         try {
-            const res = await axiosInstance.post("messages/chats");
+            const res = await axiosInstance.get("messages/chats");
             set({chats: res.data})
         } catch (error: any) {
             const message = error?.response?.data?.message || "Failed to fetch chat partners. Please try again.";

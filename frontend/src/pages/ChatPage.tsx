@@ -20,10 +20,7 @@ export default function ChatPage() {
       <PrimarySidebar activeTab="chat" />
 
       {/* Cột 2: Danh sách hội thoại */}
-      <ChatListSidebar 
-        activeChatId={activeChatId}
-        onSelectChat={setActiveChatId}
-      />
+      <ChatListSidebar />
 
       {/* Cột 3: Khu vực nhắn tin chính */}
       <MainChatArea 

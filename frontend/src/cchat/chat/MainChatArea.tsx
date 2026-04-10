@@ -1,12 +1,32 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Phone, Video, PanelRight, Search, Paperclip, Image as ImageIcon, Smile, Mic, FileText, UserPlus, MoreHorizontal, Download, Scissors, Type, AtSign } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { chatActions } from "../actions/chatActions"
 import type { ChatItem } from "../data/mockData"
+import { useAuthStore } from "@/store/useAuthStore"
 
 export function MainChatArea({ chat, isRightPanelOpen = false, onToggleRightPanel }: { chat?: ChatItem, isRightPanelOpen?: boolean, onToggleRightPanel?: () => void }) {
   const [message, setMessage] = useState("")
+  
+  //update avatar
+  const { authUser, updateProfile } = useAuthStore()
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onloadend = async () => {
+        const base64Image = reader.result as string
+        setSelectedImage(base64Image)
+        await updateProfile({ profilePicture: base64Image })
+      }
+    }
+
+  }
   return (
     <div className="flex flex-1 flex-col bg-[#F3F4F6] min-h-0 min-w-0">
       {/* Chat Header */}

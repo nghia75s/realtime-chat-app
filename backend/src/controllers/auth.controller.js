@@ -30,10 +30,13 @@ export const signup = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const fallback = fullName?.slice(0, 2).toUpperCase() || "";
+
     const newUser = new User({
       fullname: fullName,
       email,
       password: hashedPassword,
+      fallback,
     });
 
     if (newUser) {
@@ -47,11 +50,11 @@ export const signup = async (req, res) => {
         profilePicture: savedUser.profilePicture,
       });
 
-      try {
-        await sendWelcomeEmail(savedUser.email, savedUser.fullname, ENV.CLIENT_URL);
-      } catch (error) {
-        console.error("Failed to send welcome email:", error);
-      }
+      // try {
+      //   await sendWelcomeEmail(savedUser.email, savedUser.fullname, ENV.CLIENT_URL);
+      // } catch (error) {
+      //   console.error("Failed to send welcome email:", error);
+      // }
     } else {
       res.status(400).json({ message: "Invalid user data" });
     }
