@@ -14,6 +14,7 @@ interface ChatStore {
     setSelectedUser: (user: any | null) => void;
     getAllcontacts: () => Promise<void>;
     getMyChatPartners: () => Promise<void>;
+    getMessagesByUserId: (userId: number) => Promise<void>;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -50,4 +51,16 @@ export const useChatStore = create<ChatStore>((set) => ({
             set({isUsersLoading: false})
         }
     },
+    getMessagesByUserId: async (userId: number) => {
+        set({isMessagesLoading: true});
+        try {
+            const res = await axiosInstance.get(`messages/${userId}`);
+            set({messages: res.data})
+        } catch (error: any) {
+            const message = error?.response?.data?.message || "Failed to fetch messages. Please try again.";
+            toast.error(message);
+        } finally {
+            set({isMessagesLoading: false})
+        }
+    }
 }))
