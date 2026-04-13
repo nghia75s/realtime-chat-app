@@ -15,9 +15,10 @@ interface ChatStore {
     getAllcontacts: () => Promise<void>;
     getMyChatPartners: () => Promise<void>;
     getMessagesByUserId: (userId: number) => Promise<void>;
+    sendMessage: (messageData: any) => Promise<void>;
 }
 
-export const useChatStore = create<ChatStore>((set) => ({
+export const useChatStore = create<ChatStore>((set, get) => ({
     allContacts: [],
     chats: [],
     messages: [],
@@ -61,6 +62,15 @@ export const useChatStore = create<ChatStore>((set) => ({
             toast.error(message);
         } finally {
             set({isMessagesLoading: false})
+        }
+    },
+    sendMessage: async(messageData) => {
+        const { selectedUser, messages } = get()
+        try {
+            const res = await axiosInstance.post(`messages/send/${selectedUser._id}`, messageData);
+            set({messages: messages.concat(res.data)})
+        } catch (error) {
+            toast.error("Failed to send message. Please try again.");
         }
     }
 }))

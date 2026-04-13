@@ -3,7 +3,7 @@ import { useState } from "react"
 import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar"
 import { ContactMenu } from "../cchat/contact/ContactMenu"
 import type { ActiveMenu } from "../cchat/contact/ContactMenu"
-import { ContactListArea } from "../cchat/contact/ContactListArea"
+import ContactList from "../cchat/contact/ContactListArea"
 import { ContactGroupsArea } from "../cchat/contact/ContactGroupsArea"
 import { ContactInvitationsArea } from "../cchat/contact/ContactInvitationsArea"
 
@@ -19,7 +19,7 @@ export default function ContactsPage() {
       <ContactMenu activeMenu={activeMenu} onSelectMenu={setActiveMenu} />
       
       {/* Cột 3: Main Contact Area (Tương ứng với Menu được chọn) */}
-      {activeMenu === "contacts" && <ContactListArea />}
+      {activeMenu === "contacts" && <ContactList />}
       {activeMenu === "groups" && <ContactGroupsArea />}
       {activeMenu === "invitations" && <ContactInvitationsArea />}
     </div>
