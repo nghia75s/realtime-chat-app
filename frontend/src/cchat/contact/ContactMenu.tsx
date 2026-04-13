@@ -24,7 +24,7 @@ export function ContactMenu({ activeMenu, onSelectMenu }: ContactMenuProps) {
             <Search className="absolute left-2.5 top-1/2 h-[16px] w-[16px] -translate-y-1/2 text-zinc-500" />
             <input
               placeholder="Tìm kiếm"
-              className="w-full rounded-md bg-[#eaedf0] py-[6px] pl-[30px] pr-3 text-[14px] text-zinc-900 outline-none placeholder:text-zinc-500 focus:bg-white focus:ring-1 focus:ring-[#005AE0] transition-all"
+              className="w-full rounded-md bg-[#eaedf0] py-[6px] pl-[30px] pr-3 text-[14px] text-zinc-900 outline-none placeholder:text-zinc-500 focus:bg-white focus:ring-1 focus:ring-[#7c3aed] transition-all"
             />
           </div>
           <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-zinc-600 hover:bg-zinc-100 transition-colors">
@@ -43,7 +43,7 @@ export function ContactMenu({ activeMenu, onSelectMenu }: ContactMenuProps) {
               key={item.id}
               className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-md transition-colors ${
                 isActive 
-                  ? "bg-[#e5efff] text-[#005AE0] font-medium" 
+                  ? "bg-[#ede9fe] text-[#7c3aed] font-medium" 
                   : "text-zinc-800 hover:bg-zinc-100 font-normal"
               }`}
             >
@@ -56,3 +56,4 @@ export function ContactMenu({ activeMenu, onSelectMenu }: ContactMenuProps) {
     </div>
   )
 }
+

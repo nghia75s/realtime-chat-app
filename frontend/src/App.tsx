@@ -5,6 +5,7 @@ import ChatPage from "./pages/ChatPage"
 import { useAuthStore } from "./store/useAuthStore"
 import { useEffect } from "react"
 import PageLoader from "./components/ui/PageLoader"
+import ContactsPage from "./pages/ContactsPage"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
@@ -26,7 +27,7 @@ function App() {
         <Route path="/login" element={authUser ? <Navigate to="/chat" /> : <LoginPage />} />
         <Route path="/signup" element={authUser ? <Navigate to="/chat" /> : <SignupPage />} />
         <Route path="/chat" element={authUser ? <ChatPage /> : <Navigate to="/login" />} />
-        {/* <Route path="/contacts" element={<ContactsPage />} /> */}
+        <Route path="/contacts" element={authUser ? <ContactsPage /> : <Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   )

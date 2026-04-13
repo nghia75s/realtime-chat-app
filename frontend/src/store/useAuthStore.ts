@@ -1,5 +1,5 @@
 import { axiosInstance } from "@/lib/axios";
-import {create} from "zustand";
+import { create } from "zustand";
 import { toast } from "react-hot-toast";
 
 interface AuthStore {
@@ -11,6 +11,7 @@ interface AuthStore {
   signup: (data: any) => Promise<void>;
   login: (data: any) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: any) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -68,6 +69,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
         console.log("Error during logout:", error);
         toast.error("Logout failed. Please try again.");
     }
-  }
+  },
+
+  updateProfile: async (data) => {
+    try {
+        const res = await axiosInstance.put("/auth/update-profile", data);
+        set({authUser: res.data});
+        toast.success("Profile updated successfully.");
+    } catch (error: any) {
+        const message = error?.response?.data?.message || "Profile update failed. Please try again.";
+        toast.error(message);
+    }
+ }
   
 }));
