@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "daisyui";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
@@ -121,9 +120,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }
@@ -134,13 +135,16 @@
     width: 6px;
     height: 6px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: #e4e4e7;
     border-radius: 20px;
   }
+
   .custom-scrollbar:hover::-webkit-scrollbar-thumb {
     background-color: #a1a1aa;
   }
