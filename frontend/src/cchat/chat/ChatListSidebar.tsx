@@ -41,36 +41,24 @@ export function ChatListSidebar() {
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
-        <div className="flex flex-col py-1">
-          <>
-            {chats.map((chat) => (
-              <div
-                key={chat._id}
-                className="flex items-start gap-3 px-4 py-3 transition-colors cursor-pointer relative group bg-[#ede9fe]"
-                onClick={() => setSelectedUser(chat)}
-              >
-                <div className="relative shrink-0">
-                  <Avatar className="h-[48px] w-[48px] rounded-full border border-zinc-200/50">
-                    <AvatarImage src={chat.profilePicture} alt={chat.fullname} className="object-cover" />
-                    <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold text-lg">
-                      {chat.fallback}
-                    </AvatarFallback>
-                  </Avatar>
-                  {/* todo: span online status*/}
-                  <div className="flex flex-1 flex-col overflow-hidden pt-[2px] min-w-0">
-                    <div className="flex items-center justify-between mb-[2px]">
-                      <span className="truncate text-[15px] font-medium text-zinc-900">
-                        {chat.fullname}
-                      </span>
-                    </div>
-                  </div>
+      <>
+        {chats.map((chat) => (
+          <div
+            key={chat._id}
+            className="bg-cyan-500/10 p-4 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors"
+            onClick={() => setSelectedUser(chat)}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`avatar online`}>
+                <div className="size-12 rounded-full">
+                  <img src={chat.profilePic || "/avatar.png"} alt={chat.fullname} />
                 </div>
               </div>
-            ))}
-          </>
-        </div>
-      </div>
+              <h4 className="text-slate-200 font-medium truncate">{chat.fullname}</h4>
+            </div>
+          </div>
+        ))}
+      </>
     </div>
   )
 }

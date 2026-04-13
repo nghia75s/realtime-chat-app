@@ -7,20 +7,17 @@ function ChatHeader() {
   const { selectedUser, setSelectedUser } = useChatStore();
 
   useEffect(() => {
-    const handleEscKey = (event) => {
+    const handleEscKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setSelectedUser(null);
     };
 
     window.addEventListener("keydown", handleEscKey);
 
-    // cleanup function
     return () => window.removeEventListener("keydown", handleEscKey);
   }, [setSelectedUser]);
 
   return (
-    <div
-      className="flex justify-between items-center w-full bg-purple-800/50 border-b border-purple-700/50 max-h-[84px] px-6"
-    >
+    <div className="flex justify-between items-center w-full bg-purple-800/50 border-b border-purple-700/50 max-h-[84px] px-6">
       <div className="flex items-center space-x-3">
         <div className={`avatar online`}>
           <div className="w-12 rounded-full">
@@ -30,7 +27,7 @@ function ChatHeader() {
 
         <div>
           <h3 className="text-purple-200 font-medium">{selectedUser.fullname}</h3>
-          <p className="text-purple-400 text-sm">Online</p>
+          <p className="text-purple-900 text-sm">Online</p>
         </div>
       </div>
 
