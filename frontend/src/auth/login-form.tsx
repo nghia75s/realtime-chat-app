@@ -128,16 +128,6 @@ export function LoginForm({
                   <Field>
                     <div className="flex items-center">
                       <FieldLabel>Mật khẩu</FieldLabel>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setView("forgot-password");
-                          setError("");
-                        }}
-                        className="ml-auto text-sm underline-offset-4 hover:underline text-primary"
-                      >
-                        Quên mật khẩu?
-                      </button>
                     </div>
                     <div className="relative">
                       <Input
@@ -153,6 +143,16 @@ export function LoginForm({
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView("forgot-password");
+                          setError("");
+                        }}
+                        className="ml-auto text-sm underline-offset-4 hover:underline text-primary"
+                      >
+                        Quên mật khẩu?
                       </button>
                     </div>
                   </Field>
