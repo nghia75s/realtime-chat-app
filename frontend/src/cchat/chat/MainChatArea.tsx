@@ -4,6 +4,7 @@ import { useChatStore } from "@/store/useChatStore"
 import NoChatHistoryPlaceholder from "@/components/ui/NoChatHistoryPlaceholder"
 import MessageLoadingSkeleton from "@/components/ui/MessageLoadingSkeleton"
 import { MessageBubble } from "./MessageBubble"
+import { useAuthStore } from "@/store/useAuthStore"
 
 interface MainChatAreaProps {
   isRightSidebarOpen: boolean;
@@ -11,7 +12,8 @@ interface MainChatAreaProps {
 }
 
 export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainChatAreaProps) {
-  const { selectedUser, getMessagesByUserId, messages, isMessagesLoading, sendMessage } = useChatStore()
+  const { selectedUser, getMessagesByUserId, messages, isMessagesLoading, sendMessage, subscribeToMessage, unSubscribeToMessage } = useChatStore()
+  const { onlineUsers } = useAuthStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState("")
@@ -23,8 +25,12 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     if (selectedUser) {
       setIsScrolled(false);
       getMessagesByUserId(selectedUser._id)
+      subscribeToMessage()
+      return () => unSubscribeToMessage()
     }
-  }, [selectedUser, getMessagesByUserId])
+  }, [selectedUser, getMessagesByUserId, subscribeToMessage, unSubscribeToMessage])
+
+  useEffect(() => {})
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -79,7 +85,10 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#1e1f22] border-b border-[#2b2d31] shrink-0">
         <div className="flex items-center gap-3">
-          <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.fullname} className="w-10 h-10 rounded-full object-cover" />
+          <div className="relative">
+            <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.fullname} className="w-10 h-10 rounded-full object-cover" />
+            <div className={`absolute bottom-0 right-0 w-3 h-3 ${onlineUsers.includes(selectedUser._id) ? "bg-green-500" : "bg-gray-500"} rounded-full border-2 border-[#1e1f22]`}></div>
+          </div>
           <div>
             <h3 className="font-semibold text-white text-[16px] leading-tight flex items-center justify-start gap-2">
               {selectedUser.fullname}

@@ -3,10 +3,12 @@ import { Search, UserPlus, Users as GroupIcon, ChevronDown } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton"
 import NoChatsFound from "@/components/ui/NoChatsFound"
+import { useAuthStore } from "@/store/useAuthStore"
 
 export function ChatListSidebar() {
   const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, selectedUser } = useChatStore()
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all")
+  const { onlineUsers } = useAuthStore()
 
   useEffect(() => {
     getMyChatPartners()
@@ -75,7 +77,7 @@ export function ChatListSidebar() {
                 <div className="relative">
                   <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
                   {/* Trạng thái online: Chấm xanh */}
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1e1f22]"></div>
+                  <div className={`absolute bottom-0 right-0 w-3 h-3 ${onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-gray-500"} rounded-full border-2 border-[#1e1f22]`}></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-0.5">
