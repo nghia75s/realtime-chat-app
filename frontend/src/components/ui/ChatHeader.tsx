@@ -21,7 +21,7 @@ function ChatHeader() {
       <div className="flex items-center space-x-3">
         <div className={`avatar online`}>
           <div className="w-12 rounded-full">
-            <img src={selectedUser.profilePic || "@/assets/avatar.png"} alt={selectedUser.fullname} />
+            <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.fullname} />
           </div>
         </div>
 
