@@ -1,8 +1,8 @@
 import { MessageCircleIcon } from "lucide-react";
-import { useChatStore } from "@/store/useChatStore";
+import { useNavigate } from "react-router-dom";
 
 function NoChatsFound() {
-  const { setActiveTab } = useChatStore();
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
@@ -10,16 +10,16 @@ function NoChatsFound() {
         <MessageCircleIcon className="w-8 h-8 text-purple-400" />
       </div>
       <div>
-        <h4 className="text-purple-400 font-medium mb-1">No conversations yet</h4>
+        <h4 className="text-purple-400 font-medium mb-1">Không có cuộc trò chuyện nào</h4>
         <p className="text-purple-400 text-sm px-6">
-          Start a new chat by selecting a contact from the contacts tab
+          Bắt đầu một cuộc trò chuyện mới bằng cách chọn một liên hệ từ tab liên hệ
         </p>
       </div>
       <button
-        onClick={() => setActiveTab("contacts")}
+        onClick={() => navigate('/contacts')}
         className="px-4 py-2 text-sm text-purple-400 bg-purple-500/10 rounded-lg hover:bg-purple-500/20 transition-colors"
       >
-        Find contacts
+        Tìm liên hệ
       </button>
     </div>
   );
