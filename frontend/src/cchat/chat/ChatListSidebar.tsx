@@ -73,7 +73,7 @@ export function ChatListSidebar() {
                 onClick={() => setSelectedUser(chat)}
               >
                 <div className="relative">
-                  <img src={chat.profilePic || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
+                  <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
                   {/* Trạng thái online: Chấm xanh */}
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1e1f22]"></div>
                 </div>
