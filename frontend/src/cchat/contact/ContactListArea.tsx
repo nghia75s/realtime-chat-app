@@ -96,7 +96,7 @@ function ContactList() {
                       onClick={() => { setSelectedUser(contact); navigate('/chat'); }}
                     >
                       <div className="flex items-center gap-3">
-                        <img src={contact.profilePic || contact.profilePicture || "/avatar.png"} alt={contact.fullname} className="w-12 h-12 rounded-full object-cover" />
+                        <img src={contact.profilePicture || contact.profilePicture || "/avatar.png"} alt={contact.fullname} className="w-12 h-12 rounded-full object-cover" />
                         <h4 className="font-medium text-[15px] text-[#e1e1e1] group-hover:text-white transition-colors">{contact.fullname}</h4>
                       </div>
                       <button 

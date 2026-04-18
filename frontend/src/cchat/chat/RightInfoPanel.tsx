@@ -29,7 +29,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
           {/* Profile Section */}
           <div className="flex flex-col items-center pt-5 pb-4 px-4 border-b border-[#2b2d31]">
-            <img src={chat.profilePic || "/avatar.png"} className="h-[64px] w-[64px] mb-3 rounded-full object-cover border border-[#2b2d31]" alt="Avatar" />
+            <img src={chat.profilePicture || "/avatar.png"} className="h-[64px] w-[64px] mb-3 rounded-full object-cover border border-[#2b2d31]" alt="Avatar" />
             <h2 className="text-[18px] font-semibold text-white mb-4 text-center">{chat.fullname}</h2>
 
             {/* Quick Actions */}

@@ -6,9 +6,9 @@ const NoConversationPlaceholder = () => {
       <div className="size-20 bg-purple-500/20 rounded-full flex items-center justify-center mb-6">
         <MessageCircleIcon className="size-10 text-purple-400" />
       </div>
-      <h3 className="text-xl font-semibold text-purple-200 mb-2">Select a conversation</h3>
+      <h3 className="text-xl font-semibold text-purple-200 mb-2">Chọn một cuộc trò chuyện</h3>
       <p className="text-purple-400 max-w-md">
-        Choose a contact from the sidebar to start chatting or continue a previous conversation.
+        Chọn một liên hệ từ thanh bên để bắt đầu trò chuyện hoặc tiếp tục một cuộc trò chuyện trước đó.
       </p>
     </div>
   );
