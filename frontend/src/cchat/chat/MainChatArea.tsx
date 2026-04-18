@@ -44,13 +44,21 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
+    
+    // Copy state and clear input optimistically for snappy UI
+    const msgText = text.trim();
+    const msgImg = imagePreview;
+    setText("");
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     try {
-      await sendMessage({ text: text.trim(), image: imagePreview });
-      setText("");
-      setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      await sendMessage({ text: msgText, image: msgImg });
     } catch (error) {
       console.error("Failed to send message:", error);
+      // Revert states if failed
+      setText(msgText);
+      setImagePreview(msgImg);
     }
   }
 
@@ -176,10 +184,22 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
               rows={1}
             />
             <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
-              <button type="button" className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors">
+              <button 
+                type="button" 
+                onClick={() => sendMessage({ text: "👍" })}
+                className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors"
+              >
                 <ThumbsUp className="w-5 h-5" />
               </button>
-              <button type="submit" disabled={!text.trim() && !imagePreview} className="p-1.5 text-[#0052cc] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent">
+              <button 
+                type="submit" 
+                disabled={!text.trim() && !imagePreview} 
+                className={`p-1.5 rounded-md transition-colors ${
+                  text.trim() || imagePreview 
+                    ? "text-[#0052cc] hover:bg-[#2b2d31]" 
+                    : "text-[#4a4b50] hover:bg-transparent"
+                }`}
+              >
                 <Send className="w-5 h-5" />
               </button>
             </div>
