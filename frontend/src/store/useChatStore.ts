@@ -89,6 +89,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
     unSubscribeToMessage: () => {
         const socket = useAuthStore.getState().socket
-        socket.off("newMessage")
+        if (socket) {
+            socket.off("newMessage")
+        }
     }
 }))
