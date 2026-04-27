@@ -52,12 +52,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         const res = await axiosInstance.post("/auth/signup", data);
         set({authUser: res.data})
         get().connectSocket();
-        toast.success("Signup successful! You are now logged in.");
-    } catch (error: any) {
-        const message = error?.response?.data?.message || "Signup failed. Please try again.";
-        toast.error(message);
-    } finally {
+        toast.success("Đăng ký thành công! Bạn đã được đăng nhập.");
         set({isSigningUp: false})
+    } catch (error: any) {
+        set({isSigningUp: false})
+        throw error;
     }
   },
 
@@ -67,12 +66,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         const res = await axiosInstance.post("/auth/login", data);
         set({authUser: res.data})
         get().connectSocket();
-        toast.success("Login successful!");
-    } catch (error: any) {
-        const message = error?.response?.data?.message || "Login failed. Please try again.";
-        toast.error(message);
-    } finally {
+        toast.success("Đăng nhập thành công!");
         set({isLoggingIn: false})
+    } catch (error: any) {
+        set({isLoggingIn: false})
+        throw error;
     }
   },
 
@@ -81,10 +79,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         await axiosInstance.post("/auth/logout");
         set({authUser: null});
         get().disconnectSocket();
-        toast.success("Logged out successfully.");
+        toast.success("Đăng xuất thành công.");
     } catch (error) {
         console.log("Error during logout:", error);
-        toast.error("Logout failed. Please try again.");
+        toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
     }
   },
 

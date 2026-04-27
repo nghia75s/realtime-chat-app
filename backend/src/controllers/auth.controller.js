@@ -10,21 +10,21 @@ export const signup = async (req, res) => {
 
   try {
     if (!fullName || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+      return res.status(400).json({ message: "Tất cả các trường đều là bắt buộc" });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters" });
+      return res.status(400).json({ message: "Mật khẩu phải có ít nhất 6 ký tự" });
     }
 
     // check if emailis valid: regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format" });
+      return res.status(400).json({ message: "Định dạng email không hợp lệ" });
     }
 
     const user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: "Email already exists" });
+    if (user) return res.status(400).json({ message: "Email đã tồn tại" });
 
     // 123456 => $dnjasdkasj_?dmsakmk
     const salt = await bcrypt.genSalt(10);
@@ -68,16 +68,16 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ message: "Email and password are required" });
+    return res.status(400).json({ message: "Email và mật khẩu là bắt buộc" });
   }
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user) return res.status(400).json({ message: "Thông tin đăng nhập không hợp lệ" });
     // never tell the client which one is incorrect: password or email
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
-    if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isPasswordCorrect) return res.status(400).json({ message: "Thông tin đăng nhập không hợp lệ" });
 
     generateToken(user._id, res);
 
@@ -95,13 +95,13 @@ export const login = async (req, res) => {
 
 export const logout = (_, res) => {
   res.cookie("jwt", "", { maxAge: 0 });
-  res.status(200).json({ message: "Logged out successfully" });
+  res.status(200).json({ message: "Đăng xuất thành công" });
 };
 
 export const updateProfile = async (req, res) => {
   try {
     const { profilePicture } = req.body;
-    if (!profilePicture) return res.status(400).json({ message: "Profile picture is required" });
+    if (!profilePicture) return res.status(400).json({ message: "Hình ảnh hồ sơ là bắt buộc" });
 
     const userId = req.user._id;
 
