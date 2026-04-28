@@ -16,6 +16,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const { onlineUsers } = useAuthStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
@@ -56,12 +57,20 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      setIsSending(false);  
+      inputRef.current?.focus();
     } catch (error) {
       console.error("Failed to send message:", error);
-    } finally {
       setIsSending(false);
     }
   }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey && !isSending) {
+      e.preventDefault();
+      handleSendMessage(e as any);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,18 +177,13 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           )}
 
           <form onSubmit={handleSendMessage} className="flex flex-row items-end pb-3">
-            <textarea
+            <input
+              ref={inputRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !isSending) {
-                  e.preventDefault();
-                  handleSendMessage(e);
-                }
-              }}
+              onKeyDown={(e) => {handleKeyDown(e)}}
               placeholder={`Nhập @, tin nhắn tới ${selectedUser.fullname}`}
               className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1]"
-              rows={1}
               disabled={isSending}
             />
             <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
