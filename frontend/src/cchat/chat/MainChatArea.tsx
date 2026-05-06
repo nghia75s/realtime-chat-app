@@ -11,7 +11,15 @@ interface MainChatAreaProps {
 }
 
 export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainChatAreaProps) {
-  const { selectedUser, getMessagesByUserId, messages, isMessagesLoading, sendMessage } = useChatStore()
+  const { 
+    selectedUser, 
+    getMessagesByUserId, 
+    messages, 
+    isMessagesLoading, 
+    sendMessage,
+    subscribeToMessages,
+    unsubscribeFromMessages
+  } = useChatStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState("")
@@ -22,9 +30,14 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   useEffect(() => {
     if (selectedUser) {
       setIsScrolled(false);
-      getMessagesByUserId(selectedUser._id)
+      getMessagesByUserId(selectedUser._id);
+      subscribeToMessages();
     }
-  }, [selectedUser, getMessagesByUserId])
+
+    return () => {
+      unsubscribeFromMessages();
+    };
+  }, [selectedUser, getMessagesByUserId, subscribeToMessages, unsubscribeFromMessages])
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -42,13 +55,21 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
-    if (isSending) return; // Prevent multiple sends
+    const msgText = text.trim();
+    const msgImg = imagePreview;
 
     setIsSending(true);
+    setText("");
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     try {
       await sendMessage({ text: msgText, image: msgImg });
     } catch (error) {
       console.error("Failed to send message:", error);
+      // Trả lại text nếu lỗi
+      setText(msgText);
+      setImagePreview(msgImg);
     } finally {
       setIsSending(false);
     }
@@ -160,7 +181,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !isSending) {
+                if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   handleSendMessage(e);
                 }
@@ -168,7 +189,6 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
               placeholder={`Nhập @, tin nhắn tới ${selectedUser.fullname}`}
               className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1]"
               rows={1}
-              disabled={isSending}
             />
             <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
               <button type="button" disabled={isSending} className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50">

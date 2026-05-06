@@ -41,7 +41,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
     <div className="flex h-full w-[64px] shrink-0 flex-col items-center justify-between bg-[#7c3aed] py-4 text-white/80 select-none z-50 relative">
       <div className="flex flex-col items-center gap-6 w-full">
         {/* Avatar User */}
-        <Avatar 
+        <Avatar
           className="h-[48px] w-[48px] border border-white/20 shadow-md cursor-pointer hover:border-white/50 transition-colors"
           onClick={() => setIsAccountModalOpen(true)}
         >
@@ -99,7 +99,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
             sideOffset={15}
             className="w-56 shadow-lg rounded-lg border-purple-200 py-2"
           >
-            <DropdownMenuItem 
+            <DropdownMenuItem
               className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700"
               onClick={() => setIsAccountModalOpen(true)}
             >
