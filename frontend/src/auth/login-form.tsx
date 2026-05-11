@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -26,7 +26,7 @@ export function LoginForm({
   // Login States
   const [formData, setFromData] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
-  const { login, isLoggingIn } = useAuthStore();
+  const { login, isLoggingIn, authUser } = useAuthStore();
 
   // 2FA States
   const [otp, setOtp] = useState("")
@@ -35,9 +35,14 @@ export function LoginForm({
   const [forgotEmail, setForgotEmail] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
 
+  useEffect(() => {
+    if (authUser && view === "login") {
+      setView("2fa")
+    }
+  }, [authUser, view])
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    login(formData)
     setError("")
 
     if (!formData.email || !formData.password) {
@@ -45,13 +50,12 @@ export function LoginForm({
       return
     }
 
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // Chuyển sang 2FA
-      setView("2fa")
-    }, 1000)
+    try {
+      await login(formData)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra tài khoản và mật khẩu."
+      setError(message)
+    }
   }
 
   const handle2FASubmit = async (e: React.FormEvent) => {
@@ -128,16 +132,6 @@ export function LoginForm({
                   <Field>
                     <div className="flex items-center">
                       <FieldLabel>Mật khẩu</FieldLabel>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setView("forgot-password");
-                          setError("");
-                        }}
-                        className="ml-auto text-sm underline-offset-4 hover:underline text-primary"
-                      >
-                        Quên mật khẩu?
-                      </button>
                     </div>
                     <div className="relative">
                       <Input
@@ -153,6 +147,16 @@ export function LoginForm({
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView("forgot-password");
+                          setError("");
+                        }}
+                        className="ml-auto text-sm underline-offset-4 hover:underline text-primary"
+                      >
+                        Quên mật khẩu?
                       </button>
                     </div>
                   </Field>

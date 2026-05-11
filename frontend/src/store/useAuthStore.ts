@@ -50,10 +50,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         get().connectSocket();
         toast.success("Signup successful! You are now logged in.");
     } catch (error: any) {
-        const message = error?.response?.data?.message || "Signup failed. Please try again.";
-        toast.error(message);
-    } finally {
         set({isSigningUp: false})
+        throw error;
     }
   },
 
@@ -65,10 +63,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         get().connectSocket();
         toast.success("Login successful!");
     } catch (error: any) {
-        const message = error?.response?.data?.message || "Login failed. Please try again.";
-        toast.error(message);
-    } finally {
         set({isLoggingIn: false})
+        throw error;
     }
   },
 
@@ -80,7 +76,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         toast.success("Logged out successfully.");
     } catch (error) {
         console.log("Error during logout:", error);
-        toast.error("Logout failed. Please try again.");
+        toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
     }
   },
 

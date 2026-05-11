@@ -28,6 +28,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const isOnline = selectedUser ? onlineUsers.includes(selectedUser._id) : false
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)

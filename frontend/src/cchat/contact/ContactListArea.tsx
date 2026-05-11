@@ -2,10 +2,13 @@ import { useChatStore } from "@/store/useChatStore"
 import { useEffect, useMemo } from "react"
 import { useNavigate } from 'react-router-dom'
 import { User, Search, Filter, ArrowDownUp, MoreHorizontal, ChevronDown } from "lucide-react"
+import { useAuthStore } from "@/store/useAuthStore"
 
 function ContactList() {
   const { getAllcontacts, allContacts, setSelectedUser, isUsersLoading } = useChatStore()
   const navigate = useNavigate()
+  const { onlineUsers } = useAuthStore()
+  
 
   useEffect(() => {
     getAllcontacts()
@@ -96,7 +99,10 @@ function ContactList() {
                       onClick={() => { setSelectedUser(contact); navigate('/chat'); }}
                     >
                       <div className="flex items-center gap-3">
-                        <img src={contact.profilePicture || contact.profilePicture || "/avatar.png"} alt={contact.fullname} className="w-12 h-12 rounded-full object-cover" />
+                        <div className="relative">
+                          <img src={contact.profilePicture || contact.profilePicture || "/avatar.png"} alt={contact.fullname} className="w-12 h-12 rounded-full object-cover" />
+                          <div className={`absolute bottom-0 right-0 w-3 h-3 ${onlineUsers.includes(contact._id) ? "bg-green-500" : "bg-gray-500"} rounded-full border-2 border-[#1e1f22]`}></div>
+                        </div>
                         <h4 className="font-medium text-[15px] text-[#e1e1e1] group-hover:text-white transition-colors">{contact.fullname}</h4>
                       </div>
                       <button 
