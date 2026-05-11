@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Search, UserPlus, Users as GroupIcon, ChevronDown, Users } from "lucide-react"
+import { Search, UserPlus, Users as GroupIcon, ChevronDown } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton"

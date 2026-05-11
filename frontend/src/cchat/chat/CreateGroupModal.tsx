@@ -10,11 +10,12 @@ interface CreateGroupModalProps {
 }
 
 export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
-  const { allContacts, getAllcontacts } = useChatStore()
+  const { allContacts, getAllcontacts, createGroup, getMyGroups } = useChatStore()
   const [groupName, setGroupName] = useState("")
   const [groupAvatar, setGroupAvatar] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
+  const [isCreating, setIsCreating] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -40,24 +41,35 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
     )
   }
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!groupName.trim()) {
       toast.error("Vui lòng nhập tên nhóm")
       return
     }
     if (selectedUserIds.length < 2) {
-      toast.error("Nhóm phải có ít nhất 2 thành viên")
+      toast.error("Nhóm phải có ít nhất 3 thành viên")
       return
     }
-    
-    toast.success(`Đã tạo nhóm "${groupName}" thành công!`)
-    onClose()
-    
-    // Reset state
-    setGroupName("")
-    setGroupAvatar(null)
-    setSelectedUserIds([])
-    setSearchQuery("")
+
+    setIsCreating(true)
+    try {
+      await createGroup({
+        name: groupName,
+        members: selectedUserIds,
+        groupPicture: groupAvatar,
+      })
+      toast.success(`Đã tạo nhóm "${groupName}" thành công!`)
+      await getMyGroups()
+      onClose()
+      setGroupName("")
+      setGroupAvatar(null)
+      setSelectedUserIds([])
+      setSearchQuery("")
+    } catch (error) {
+      console.error("Failed to create group:", error)
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   const filteredContacts = allContacts.filter(contact => 
@@ -184,10 +196,10 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
           </button>
           <button 
             onClick={handleCreateGroup}
-            disabled={!groupName.trim() || selectedUserIds.length < 2}
+            disabled={!groupName.trim() || selectedUserIds.length < 2 || isCreating}
             className="px-6 py-2 text-[14px] font-semibold bg-[#0052cc] text-white rounded-md hover:bg-[#0047b3] transition-colors disabled:opacity-50 disabled:bg-[#0052cc]/50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            Tạo nhóm
+            {isCreating ? "Đang tạo..." : "Tạo nhóm"}
           </button>
         </div>
       </DialogContent>

@@ -23,6 +23,7 @@ interface ChatStore {
     getGroupMessageByUserId: (groupId: string) => Promise<void>;
     sendMessage: (messageData: any) => Promise<void>;
     sendGroupMessage: (messageData: any) => Promise<void>;
+    createGroup: (groupData: { name: string; members: string[]; groupPicture?: string | null; description?: string }) => Promise<any>;
     joinGroup: (groupId: string) => void;
     leaveGroup: (groupId: string) => void;
     subscribeToMessages: () => void;
@@ -124,6 +125,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         } catch (error) {
             toast.error("Failed to send group message. Please try again.");
             throw error;
+        }
+    },
+    createGroup: async (groupData) => {
+        set({isGroupsLoading: true});
+        try {
+            const res = await axiosInstance.post("groups/groups", groupData);
+            set({groups: [...get().groups, {...res.data, isGroup: true}]});
+            return res.data;
+        } catch (error: any) {
+            const message = error?.response?.data?.message || "Failed to create group. Please try again.";
+            toast.error(message);
+            throw error;
+        } finally {
+            set({isGroupsLoading: false});
         }
     },
     joinGroup: (groupId) => {
