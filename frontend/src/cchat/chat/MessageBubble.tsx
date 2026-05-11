@@ -1,8 +1,9 @@
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { Reply, Forward, Copy, Star, Info, Trash2, RotateCcw, MoreHorizontal } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import type { MessageBubbleProps } from "@/store/useMessageBubbleStore.ts"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,33 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export interface MessageSender {
-  _id: string;
-  fullname?: string;
-  profilePicture?: string;
-}
-
-export interface Message {
-  _id: string;
-  senderId: string | MessageSender;
-  text?: string;
-  image?: string;
-  createdAt: string;
-}
-
-interface MessageBubbleProps {
-  msg: Message;
-  onImageLoad?: () => void;
-  senderAvatar?: string;
-  senderName?: string;
-  isGroupChat?: boolean;
-  onReply?: (msg: Message) => void;
-  onForward?: (msg: Message) => void;
-}
-
-export function MessageBubble({ msg, onImageLoad, senderAvatar, senderName, isGroupChat, onReply, onForward }: MessageBubbleProps) {
+export function MessageBubble(props: MessageBubbleProps) {
+  const { msg, onImageLoad, senderAvatar, senderName, isGroupChat, onReply, onForward } = props
   const { authUser } = useAuthStore()
-  const sender = typeof msg.senderId === "string" ? null : msg.senderId
   const senderId = typeof msg.senderId === "string" ? msg.senderId : msg.senderId?._id
   const isMe = senderId?.toString() === authUser?._id?.toString()
   const [showQuickActions, setShowQuickActions] = useState(false)
