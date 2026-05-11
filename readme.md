@@ -19,3 +19,4 @@ Tạo terminal mới
 4. npm run dev
 
 Lưu ý: chạy npm run dev ở cả frontend và backend để hoạt động
+hello
