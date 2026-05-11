@@ -4,42 +4,42 @@ import { toast } from 'react-hot-toast'
 import { ImageIcon, SendIcon, XIcon } from 'lucide-react'
 
 function MessageInput() {
-    const [text, setText] = useState("")
-    const [imagePreview, setImagePreview] = useState(null)
-   
-    const fileInputRef = useRef(null)
+  const [text, setText] = useState("")
+  const [imagePreview, setImagePreview] = useState<string | ArrayBuffer | null>(null)
 
-    const { sendMessage } = useChatStore()
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-    const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        if (!text.trim() && !imagePreview) return
-        sendMessage({ text: text.trim(), image: imagePreview })
-        setText("")
-        setImagePreview(null)
-        if (fileInputRef.current) {
-            fileInputRef.current.value = ""
-        }
+  const { sendMessage } = useChatStore()
+
+  const handleSendMessage = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!text.trim() && !imagePreview) return
+    sendMessage({ text: text.trim(), image: imagePreview })
+    setText("")
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
+  }
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-        if (!file.type.startsWith("image/")) {
-            toast.error("Please upload a valid image file.");
-            return;
-        }
-        const reader = new FileReader()
-        reader.onloadend = () => setImagePreview(reader.result)
-        reader.readAsDataURL(file)
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload a valid image file.");
+      return;
     }
+    const reader = new FileReader()
+    reader.onloadend = () => setImagePreview(reader.result)
+    reader.readAsDataURL(file)
+  }
 
-    const removeImage = () => {
-        setImagePreview(null)
-        if (fileInputRef.current) {
-            fileInputRef.current.value = ""
-        }
+  const removeImage = () => {
+    setImagePreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
     }
+  }
 
   return (
     <div className="p-4 border-t border-purple-500/50">
@@ -47,7 +47,7 @@ function MessageInput() {
         <div className="max-w-3xl mx-auto mb-3 flex items-center">
           <div className="relative">
             <img
-              src={imagePreview}
+              src={imagePreview as string}
               alt="Preview"
               className="w-20 h-20 object-cover rounded-lg border border-purple-700"
             />
@@ -84,9 +84,8 @@ function MessageInput() {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className={`bg-purple-300 text-white hover:text-purple-200 rounded-lg px-4 transition-colors ${
-            imagePreview ? "text-purple-500" : ""
-          }`}
+          className={`bg-purple-300 text-white hover:text-purple-200 rounded-lg px-4 transition-colors ${imagePreview ? "text-purple-500" : ""
+            }`}
         >
           <ImageIcon className="w-5 h-5" />
         </button>

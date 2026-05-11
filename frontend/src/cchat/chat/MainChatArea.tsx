@@ -1,19 +1,31 @@
 import { useEffect, useRef, useState } from "react"
-import { Phone, Video, PanelRightClose, PanelRightOpen, Smile, Send, Paperclip, Image as ImageIcon, FileText, Type, Maximize, Clock, ThumbsUp, X } from "lucide-react"
+import { Phone, Video, PanelRightClose, PanelRightOpen, Smile, Send, Paperclip, Image as ImageIcon, FileText, Type, Maximize, Clock, ThumbsUp, X, Reply } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
+import { useAuthStore } from "@/store/useAuthStore"
 import NoChatHistoryPlaceholder from "@/components/ui/NoChatHistoryPlaceholder"
 import MessageLoadingSkeleton from "@/components/ui/MessageLoadingSkeleton"
 import { MessageBubble } from "./MessageBubble"
-import { useAuthStore } from "@/store/useAuthStore"
-
+import { toast } from "react-hot-toast"
 interface MainChatAreaProps {
   isRightSidebarOpen: boolean;
   onToggleRightSidebar: () => void;
 }
 
 export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainChatAreaProps) {
-  const { selectedUser, getMessagesByUserId, messages, isMessagesLoading, sendMessage, subscribeToMessage, unSubscribeToMessage } = useChatStore()
+  const {
+    selectedUser,
+    getMessagesByUserId,
+    messages,
+    isMessagesLoading,
+    sendMessage,
+    subscribeToMessages,
+    unsubscribeFromMessages
+  } = useChatStore()
   const { onlineUsers } = useAuthStore()
+  
+  // Dữ liệu Mock: Nếu đối tượng có thuộc tính isGroup thì coi như là Nhóm
+  const isGroup = selectedUser?.isGroup || false
+  const isOnline = selectedUser ? onlineUsers.includes(selectedUser._id) : false
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -21,17 +33,20 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [replyingTo, setReplyingTo] = useState<any | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (selectedUser) {
       setIsScrolled(false);
-      getMessagesByUserId(selectedUser._id)
-      subscribeToMessage()
-      return () => unSubscribeToMessage()
+      getMessagesByUserId(selectedUser._id);
+      subscribeToMessages();
     }
-  }, [selectedUser, getMessagesByUserId, subscribeToMessage, unSubscribeToMessage])
 
-  useEffect(() => {})
+    return () => {
+      unsubscribeFromMessages();
+    };
+  }, [selectedUser, getMessagesByUserId, subscribeToMessages, unsubscribeFromMessages])
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -49,28 +64,36 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
-    if (isSending) return; // Prevent multiple sends
+    const msgText = text.trim();
+    const msgImg = imagePreview;
 
     setIsSending(true);
+    setText("");
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
     try {
-      await sendMessage({ text: text.trim(), image: imagePreview });
-      setText("");
-      setImagePreview(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setIsSending(false);  
-      inputRef.current?.focus();
+      await sendMessage({ text: msgText, image: msgImg });
     } catch (error) {
       console.error("Failed to send message:", error);
+      setText(msgText);
+      setImagePreview(msgImg);
+    } finally {
       setIsSending(false);
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey && !isSending) {
-      e.preventDefault();
-      handleSendMessage(e as any);
+  const handleReply = (msg: any) => {
+    setReplyingTo(msg);
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  }
+
+  const handleForward = (msg: any) => {
+    if (msg.text) {
+      navigator.clipboard.writeText(msg.text);
     }
-  };
+    toast.success("Đã sao chép để chuyển tiếp!");
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,13 +119,25 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
         <div className="flex items-center gap-3">
           <div className="relative">
             <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.fullname} className="w-10 h-10 rounded-full object-cover" />
-            <div className={`absolute bottom-0 right-0 w-3 h-3 ${onlineUsers.includes(selectedUser._id) ? "bg-green-500" : "bg-gray-500"} rounded-full border-2 border-[#1e1f22]`}></div>
+            {!isGroup && (
+              <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#1e1f22] transition-colors ${
+                isOnline ? "bg-green-500" : "bg-[#4e4f52]"
+              }`} />
+            )}
           </div>
           <div>
-            <h3 className="font-semibold text-white text-[16px] leading-tight flex items-center justify-start gap-2">
+            <h3 className="font-semibold text-white text-[16px] leading-tight">
               {selectedUser.fullname}
-              <span className="bg-amber-600/20 text-amber-500 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">BẠN BÈ</span>
             </h3>
+            {isGroup ? (
+              <p className="text-[12px] font-medium text-[#a1a1a1]">
+                {selectedUser.memberCount || "12"} thành viên
+              </p>
+            ) : (
+              <p className={`text-[12px] font-medium ${isOnline ? "text-green-500" : "text-[#a1a1a1]"}`}>
+                {isOnline ? "Đang hoạt động" : "Ngoại tuyến"}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -128,9 +163,18 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
         )}
 
         <div className={`flex flex-col transition-opacity duration-200 ${isScrolled ? "opacity-100" : "opacity-0"}`}>
-            {messages && messages.length > 0 ? (
+          {messages && messages.length > 0 ? (
             messages.map((msg: any) => (
-              <MessageBubble key={msg._id} msg={msg} onImageLoad={scrollToBottom} />
+              <MessageBubble
+                key={msg._id}
+                msg={msg}
+                onImageLoad={scrollToBottom}
+                senderAvatar={selectedUser?.profilePicture || "/avatar.png"}
+                senderName={selectedUser?.fullname}
+                isGroupChat={isGroup}
+                onReply={handleReply}
+                onForward={handleForward}
+              />
             ))
           ) : (
             < NoChatHistoryPlaceholder name={selectedUser.fullname} />
@@ -157,6 +201,25 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           <button disabled={isSending} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" /></button>
         </div>
 
+        {/* Reply Preview Bar */}
+        {replyingTo && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-[#1a1c1e] border-t border-[#2b2d31] border-l-2 border-l-[#0052cc]">
+            <Reply className="w-4 h-4 text-[#0052cc] shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-[#0052cc] font-semibold mb-0.5">Trả lời tin nhắn</p>
+              <p className="text-[12px] text-[#a1a1a1] truncate">
+                {replyingTo.text || "[Hình ảnh]"}
+              </p>
+            </div>
+            <button
+              onClick={() => setReplyingTo(null)}
+              className="p-1 rounded-full hover:bg-[#2b2d31] text-[#717171] hover:text-white shrink-0 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Input Area */}
         <div className="flex flex-col border-t border-[#2b2d31] relative">
 
@@ -177,14 +240,19 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           )}
 
           <form onSubmit={handleSendMessage} className="flex flex-row items-end pb-3">
-            <input
-              ref={inputRef}
+            <textarea
+              ref={textareaRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {handleKeyDown(e)}}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage(e);
+                }
+              }}
               placeholder={`Nhập @, tin nhắn tới ${selectedUser.fullname}`}
               className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1]"
-              disabled={isSending}
+              rows={1}
             />
             <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
               <button type="button" disabled={isSending} className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50">

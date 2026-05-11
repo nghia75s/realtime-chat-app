@@ -1,6 +1,5 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { X, Pencil, Camera } from "lucide-react"
+import { X, Camera } from "lucide-react"
 
 export const ProfileView = ({ onViewChange, onClose }: any) => {
   return (
@@ -30,9 +29,8 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
               <Camera className="w-[15px] h-[15px] text-zinc-600" />
             </div>
           </div>
-          <div className="flex items-center gap-2 mb-2 group/name cursor-pointer" onClick={() => onViewChange("edit-profile")}>
+          <div className="flex items-center gap-2 mb-2 group/name">
             <h3 className="text-[18px] font-semibold text-zinc-900 pb-0.5">Nguyễn Tiến Đạt</h3>
-            <Pencil className="w-[14px] h-[14px] text-zinc-400 group-hover/name:text-[#7c3aed] transition-colors" strokeWidth={2.5} />
           </div>
         </div>
       </div>
@@ -66,12 +64,7 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
         </div>
       </div>
 
-      {/* Footer Update Button */}
-      <div className="px-4 py-3 border-t border-zinc-200 bg-white shrink-0">
-        <Button variant="outline" className="w-full h-10 flex items-center justify-center gap-2 border-zinc-300 font-bold hover:bg-zinc-50 text-[14px] hover:text-[#7c3aed]" onClick={() => onViewChange("edit-profile")}>
-          <Pencil className="w-[14px] h-[14px]" /> Cập nhật
-        </Button>
-      </div>
+
 
     </div>
   )

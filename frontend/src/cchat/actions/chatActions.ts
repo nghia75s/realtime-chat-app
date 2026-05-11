@@ -2,12 +2,17 @@
 import type { NavigateFunction } from "react-router-dom";
 
 export const chatActions = {
-  // Navigation between main tabs
   switchTab: (navigate: NavigateFunction, tabId: string) => {
     if (tabId === "chat") {
       navigate("/chat");
     } else if (tabId === "contacts") {
       navigate("/contacts");
+    } else if (tabId === "todo") {
+      navigate("/todo");
+    } else if (tabId === "tools") {
+      navigate("/tools");
+    } else if (tabId === "cloud") {
+      navigate("/cloud");
     } else {
       console.log("Tính năng này đang được phát triển:", tabId);
     }
