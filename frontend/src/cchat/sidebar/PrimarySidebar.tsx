@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { MessageCircle, BookUser, CheckSquare, Cloud, Briefcase, Settings, User, Database, Globe, HelpCircle } from "lucide-react"
+import { MessageCircle, BookUser, CheckSquare, Cloud, Briefcase, Settings, User, Database, Globe, HelpCircle, ShieldCheck } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { chatActions } from "../actions/chatActions"
 import { settingActions } from "../actions/settingActions"
@@ -20,12 +20,12 @@ import {
 import { useAuthStore } from "@/store/useAuthStore"
 
 interface PrimarySidebarProps {
-  activeTab: "chat" | "contacts" | "todo" | "cloud" | "tools";
+  activeTab: "chat" | "contacts" | "todo" | "cloud" | "tools" | "admin" | "";
 }
 
 export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
   const navigate = useNavigate()
-  const { logout } = useAuthStore()
+  const { logout, authUser } = useAuthStore()
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
 
@@ -36,6 +36,10 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
     { id: "cloud", icon: Cloud, label: "Cloud của tôi" },
     { id: "tools", icon: Briefcase, label: "Công cụ" },
   ]
+
+  if (authUser?.email === "admin@gmail.com") {
+    topNav.push({ id: "admin", icon: ShieldCheck, label: "Quản trị Admin" })
+  }
 
   return (
     <div className="flex h-full w-[64px] shrink-0 flex-col items-center justify-between bg-[#7c3aed] py-4 text-white/80 select-none z-50 relative">
@@ -57,7 +61,10 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
               <button
                 key={item.id}
                 title={item.label}
-                onClick={() => chatActions.switchTab(navigate, item.id)}
+                onClick={() => {
+                  if (item.id === "admin") navigate("/admin");
+                  else chatActions.switchTab(navigate, item.id);
+                }}
                 className={`group relative flex w-full flex-col items-center justify-center py-4 transition-colors hover:bg-white/10 ${isActive ? "bg-white/15 text-white" : ""
                   }`}
               >

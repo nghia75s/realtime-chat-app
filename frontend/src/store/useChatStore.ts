@@ -10,6 +10,7 @@ interface ChatStore {
     activeTab: string;
     selectedUser: any | null;
     isUsersLoading: boolean;
+    isContactsLoading: boolean;
     isMessagesLoading: boolean;
     setActiveTab: (tab: string) => void;
     setSelectedUser: (user: any | null) => void;
@@ -28,11 +29,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     activeTab: "chats",
     selectedUser: null,
     isUsersLoading: false,
+    isContactsLoading: false,
     isMessagesLoading: false,
     setActiveTab: (tab) => set({ activeTab: tab }),
     setSelectedUser: (user) => set({ selectedUser: user }),
     getAllcontacts: async () => {
-        set({isUsersLoading: true});
+        set({isContactsLoading: true});
         try {
             const res = await axiosInstance.get("messages/contacts");
             set({allContacts: res.data})
@@ -40,7 +42,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const message = error?.response?.data?.message || "Failed to fetch contacts. Please try again.";
             toast.error(message);
         } finally {
-            set({isUsersLoading: false})
+            set({isContactsLoading: false})
         }
     },
     getMyChatPartners: async () => {

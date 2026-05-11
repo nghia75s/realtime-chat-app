@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react"
-import { Search, UserPlus, Users as GroupIcon, ChevronDown } from "lucide-react"
+import { Search, UserPlus, Users as GroupIcon, ChevronDown, Users } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
+import { useAuthStore } from "@/store/useAuthStore"
 import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton"
 import NoChatsFound from "@/components/ui/NoChatsFound"
+import { CreateGroupModal } from "./CreateGroupModal"
 
 export function ChatListSidebar() {
   const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, selectedUser } = useChatStore()
+  const { onlineUsers } = useAuthStore()
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all")
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
 
   useEffect(() => {
     getMyChatPartners()
@@ -31,7 +35,10 @@ export function ChatListSidebar() {
           <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Thêm bạn bè">
             <UserPlus className="h-[18px] w-[18px]" />
           </button>
-          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Tạo nhóm">
+          <button 
+            onClick={() => setIsCreateGroupOpen(true)}
+            className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Tạo nhóm"
+          >
             <GroupIcon className="h-[18px] w-[18px]" />
           </button>
         </div>
@@ -74,8 +81,10 @@ export function ChatListSidebar() {
               >
                 <div className="relative">
                   <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
-                  {/* Trạng thái online: Chấm xanh */}
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1e1f22]"></div>
+                  {/* Trạng thái online: xanh nếu online, xám nếu offline */}
+                  <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1e1f22] transition-colors ${
+                    onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-[#4e4f52]"
+                  }`}></div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-center mb-0.5">
@@ -87,6 +96,8 @@ export function ChatListSidebar() {
           })
         )}
       </div>
+
+      <CreateGroupModal isOpen={isCreateGroupOpen} onClose={() => setIsCreateGroupOpen(false)} />
     </div>
   )
 }

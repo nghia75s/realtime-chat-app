@@ -8,6 +8,8 @@ import PageLoader from "./components/ui/PageLoader"
 import ContactsPage from "./pages/ContactsPage"
 import TasksPage from "./task/TasksPage"
 import DocumentFillerPage from "./tools/DocumentFillerPage"
+import AdminPage from "./admin/AdminPage"
+import DocumentPage from "./cloud/DocumentPage"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
@@ -32,6 +34,8 @@ function App() {
         <Route path="/contacts" element={authUser ? <ContactsPage /> : <Navigate to="/login" />} />
         <Route path="/todo" element={authUser ? <TasksPage /> : <Navigate to="/login" />} />
         <Route path="/tools" element={authUser ? <DocumentFillerPage /> : <Navigate to="/login" />} />
+        <Route path="/cloud" element={authUser ? <DocumentPage /> : <Navigate to="/login" />} />
+        <Route path="/admin" element={authUser && authUser.email === "admin@gmail.com" ? <AdminPage /> : <Navigate to="/chat" />} />
       </Routes>
     </BrowserRouter>
   )

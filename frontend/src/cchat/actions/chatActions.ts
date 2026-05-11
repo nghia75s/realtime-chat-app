@@ -11,6 +11,8 @@ export const chatActions = {
       navigate("/todo");
     } else if (tabId === "tools") {
       navigate("/tools");
+    } else if (tabId === "cloud") {
+      navigate("/cloud");
     } else {
       console.log("Tính năng này đang được phát triển:", tabId);
     }
