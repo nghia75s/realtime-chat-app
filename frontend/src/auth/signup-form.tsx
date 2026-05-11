@@ -51,7 +51,7 @@ export function SignupForm({
     }
 
     const payload = {
-      fullName: formData.name,
+      fullname: formData.name,
       email: formData.email,
       password: formData.password,
     };

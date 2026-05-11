@@ -6,10 +6,10 @@ import { ENV } from "../lib/env.js";
 import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
-  const { fullName, email, password } = req.body;
+  const { fullname, email, password } = req.body;
 
   try {
-    if (!fullName || !email || !password) {
+    if (!fullname || !email || !password) {
       return res.status(400).json({ message: "Tất cả các trường đều là bắt buộc" });
     }
 
@@ -30,10 +30,10 @@ export const signup = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const fallback = fullName?.slice(0, 2).toUpperCase() || "";
+    const fallback = fullname?.slice(0, 2).toUpperCase() || "";
 
     const newUser = new User({
-      fullname: fullName,
+      fullname: fullname,
       email,
       password: hashedPassword,
       fallback,
@@ -45,7 +45,7 @@ export const signup = async (req, res) => {
 
       res.status(201).json({
         _id: savedUser._id,
-        fullName: savedUser.fullname,
+        fullname: savedUser.fullname,
         email: savedUser.email,
         profilePicture: savedUser.profilePicture,
       });
@@ -83,7 +83,7 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       _id: user._id,
-      fullName: user.fullName,
+      fullname: user.fullname,
       email: user.email,
       profilePicture: user.profilePicture,
     });
