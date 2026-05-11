@@ -11,9 +11,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+export interface MessageSender {
+  _id: string;
+  fullname?: string;
+  profilePicture?: string;
+}
+
 export interface Message {
   _id: string;
-  senderId: string;
+  senderId: string | MessageSender;
   text?: string;
   image?: string;
   createdAt: string;
@@ -31,7 +37,9 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ msg, onImageLoad, senderAvatar, senderName, isGroupChat, onReply, onForward }: MessageBubbleProps) {
   const { authUser } = useAuthStore()
-  const isMe = msg.senderId === authUser?._id
+  const sender = typeof msg.senderId === "string" ? null : msg.senderId
+  const senderId = typeof msg.senderId === "string" ? msg.senderId : msg.senderId?._id
+  const isMe = senderId?.toString() === authUser?._id?.toString()
   const [showQuickActions, setShowQuickActions] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 

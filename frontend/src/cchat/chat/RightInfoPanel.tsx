@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Bell, Clock, ShieldAlert, ChevronRight, Image as ImageIcon, FileText, Link as LinkIcon, Pin, Users, UserPlus, LogOut, MoreHorizontal, Shield, Crown } from "lucide-react"
 import { ArchivePanel } from "./ArchivePanel"
-import { useAuthStore } from "@/store/useAuthStore"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +19,6 @@ export function RightInfoPanel({ chat }: { chat: any }) {
   const [view, setView] = useState<"info" | "archive">("info")
   const [archiveTab, setArchiveTab] = useState<"media" | "file" | "link">("media")
   const [isMembersOpen, setIsMembersOpen] = useState(true)
-  const { authUser } = useAuthStore()
 
   const openArchive = (tab: "media" | "file" | "link") => {
     setArchiveTab(tab)
@@ -31,7 +29,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
   // Giả lập logic Nhóm
   const isGroup = chat.isGroup || false
-  const myRole = "admin" // fake: 'creator', 'admin', 'member'
+  const myRole = "creator" // fake: 'creator', 'admin', 'member'
 
   // Dữ liệu giả lập thành viên
   const mockMembers = [

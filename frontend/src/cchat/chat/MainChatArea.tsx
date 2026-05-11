@@ -15,11 +15,15 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const {
     selectedUser,
     getMessagesByUserId,
+    getGroupMessageByUserId,
+    sendMessage,
+    sendGroupMessage,
+    joinGroup,
+    leaveGroup,
+    subscribeToMessages,
+    unsubscribeFromMessages,
     messages,
     isMessagesLoading,
-    sendMessage,
-    subscribeToMessages,
-    unsubscribeFromMessages
   } = useChatStore()
   const { onlineUsers } = useAuthStore()
   
@@ -36,17 +40,29 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const [replyingTo, setReplyingTo] = useState<any | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  const joinedGroupIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (selectedUser) {
       setIsScrolled(false);
-      getMessagesByUserId(selectedUser._id);
+      if (isGroup) {
+        getGroupMessageByUserId(selectedUser._id);
+        joinGroup(selectedUser._id);
+        joinedGroupIdRef.current = selectedUser._id;
+      } else {
+        getMessagesByUserId(selectedUser._id);
+      }
       subscribeToMessages();
     }
 
     return () => {
+      if (joinedGroupIdRef.current) {
+        leaveGroup(joinedGroupIdRef.current);
+        joinedGroupIdRef.current = null;
+      }
       unsubscribeFromMessages();
     };
-  }, [selectedUser, getMessagesByUserId, subscribeToMessages, unsubscribeFromMessages])
+  }, [selectedUser, isGroup, getMessagesByUserId, getGroupMessageByUserId, joinGroup, leaveGroup, subscribeToMessages, unsubscribeFromMessages])
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -73,7 +89,11 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     try {
-      await sendMessage({ text: msgText, image: msgImg });
+      if (isGroup) {
+        await sendGroupMessage({ text: msgText, image: msgImg });
+      } else {
+        await sendMessage({ text: msgText, image: msgImg });
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
       setText(msgText);
@@ -118,7 +138,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       <div className="flex items-center justify-between px-4 py-3 bg-[#1e1f22] border-b border-[#2b2d31] shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.fullname} className="w-10 h-10 rounded-full object-cover" />
+            <img src={isGroup ? (selectedUser.groupPicture || "/group.png") : (selectedUser.profilePicture || "/avatar.png")} alt={selectedUser.fullname} className="w-10 h-10 rounded-full object-cover" />
             {!isGroup && (
               <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#1e1f22] transition-colors ${
                 isOnline ? "bg-green-500" : "bg-[#4e4f52]"
@@ -127,11 +147,11 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           </div>
           <div>
             <h3 className="font-semibold text-white text-[16px] leading-tight">
-              {selectedUser.fullname}
+              {isGroup ? selectedUser?.name : selectedUser?.fullname}
             </h3>
             {isGroup ? (
               <p className="text-[12px] font-medium text-[#a1a1a1]">
-                {selectedUser.memberCount || "12"} thành viên
+                {selectedUser.memberCount} thành viên
               </p>
             ) : (
               <p className={`text-[12px] font-medium ${isOnline ? "text-green-500" : "text-[#a1a1a1]"}`}>
@@ -169,8 +189,8 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                 key={msg._id}
                 msg={msg}
                 onImageLoad={scrollToBottom}
-                senderAvatar={selectedUser?.profilePicture || "/avatar.png"}
-                senderName={selectedUser?.fullname}
+                senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
+                senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
                 isGroupChat={isGroup}
                 onReply={handleReply}
                 onForward={handleForward}

@@ -26,8 +26,16 @@ const groupSchema = new mongoose.Schema(
             default: "",
         },
     },
-    { timestamps: true }
+    {
+        timestamps: true,
+        toJSON: { virtuals: true },
+        toObject: { virtuals: true },
+    }
 );
+
+groupSchema.virtual("memberCount").get(function () {
+    return this.members?.length || 0;
+});
 
 const Group = mongoose.model("Group", groupSchema);
 
