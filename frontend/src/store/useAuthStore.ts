@@ -15,6 +15,8 @@ interface AuthStore {
   checkAuth: () => Promise<void>;
   signup: (data: any) => Promise<void>;
   login: (data: any) => Promise<void>;
+  sendOtp: (email: string) => Promise<void>;
+  verifyOtp: (data: any) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
   connectSocket: () => void;
@@ -46,12 +48,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({isSigningUp: true})
     try {
         const res = await axiosInstance.post("/auth/signup", data);
-        set({authUser: res.data});
-        get().connectSocket();
-        toast.success("Signup successful! You are now logged in.");
+        toast.success(res.data.message || "Đăng ký thành công! Vui lòng kiểm tra email để nhận mã OTP.");
     } catch (error: any) {
         set({isSigningUp: false})
         throw error;
+    } finally {
+        set({isSigningUp: false});
     }
   },
 
@@ -65,6 +67,26 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } catch (error: any) {
         set({isLoggingIn: false})
         throw error;
+    } finally {
+        set({isLoggingIn: false});
+    }
+  },
+
+  sendOtp: async (email) => {
+    try {
+      const res = await axiosInstance.post("/auth/send-otp", { email });
+      toast.success(res.data.message || "Mã OTP đã được gửi.");
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  verifyOtp: async (data) => {
+    try {
+      const res = await axiosInstance.post("/auth/verify-otp", data);
+      toast.success(res.data.message || "Xác thực OTP thành công.");
+    } catch (error: any) {
+      throw error;
     }
   },
 
