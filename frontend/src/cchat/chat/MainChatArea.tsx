@@ -6,6 +6,31 @@ import NoChatHistoryPlaceholder from "@/components/ui/NoChatHistoryPlaceholder"
 import MessageLoadingSkeleton from "@/components/ui/MessageLoadingSkeleton"
 import { MessageBubble } from "./MessageBubble"
 import { toast } from "react-hot-toast"
+import { EmojiPickerPanel } from "@/components/ui/EmojiPickerPanel"
+
+// Emoticon shortcode → Emoji
+const EMOTICON_MAP: Record<string, string> = {
+  ":)":  "😊", ":-)":  "😊",
+  ":D":  "😄", ":-D":  "😄",
+  "xD":  "😆", "XD":   "😆",
+  ":P":  "😛", ":-P":  "😛",
+  ";)":  "😉", ";-)":  "😉",
+  ":(": "😢", ":-(":  "😢",
+  ":'(": "😭",
+  ">:(": "😠", ">:-(": "😠",
+  ":o":  "😮", ":O":   "😮",
+  "B)":  "😎",
+  "<3":  "❤️", "</3":  "💔",
+  "(y)": "👍", "(n)": "👎",
+  ":*":  "😘", ":-*":  "😘",
+  "O:)": "😇", ":3":   "😺",
+}
+const EMOTICON_RE = new RegExp(
+  Object.keys(EMOTICON_MAP).sort((a,b)=>b.length-a.length)
+    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'), 'g'
+)
+const convertEmoticons = (t: string) => t.replace(EMOTICON_RE, m => EMOTICON_MAP[m] ?? m)
+
 interface MainChatAreaProps {
   isRightSidebarOpen: boolean;
   onToggleRightSidebar: () => void;
@@ -32,15 +57,49 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const isOnline = selectedUser ? onlineUsers.includes(selectedUser._id) : false
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [text, setText] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [text, setText] = useState("")
   const [isSending, setIsSending] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [replyingTo, setReplyingTo] = useState<any | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
 
   const joinedGroupIdRef = useRef<string | null>(null);
 
+  // Đóng picker khi click ngoài
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node))
+        setShowEmojiPicker(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Ctrl+E toggle picker
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault()
+        setShowEmojiPicker(p => !p)
+        textareaRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [])
+
+  // Global message subscription - Luôn lắng nghe tin nhắn mới
+  useEffect(() => {
+    subscribeToMessages();
+    return () => {
+      unsubscribeFromMessages();
+    };
+  }, []);
+
+  // Chat specific logic
   useEffect(() => {
     if (selectedUser) {
       setIsScrolled(false);
@@ -51,7 +110,6 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       } else {
         getMessagesByUserId(selectedUser._id);
       }
-      subscribeToMessages();
     }
 
     return () => {
@@ -59,9 +117,8 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
         leaveGroup(joinedGroupIdRef.current);
         joinedGroupIdRef.current = null;
       }
-      unsubscribeFromMessages();
     };
-  }, [selectedUser, isGroup, getMessagesByUserId, getGroupMessageByUserId, joinGroup, leaveGroup, subscribeToMessages, unsubscribeFromMessages])
+  }, [selectedUser, isGroup, getMessagesByUserId, getGroupMessageByUserId, joinGroup, leaveGroup])
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -183,7 +240,10 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
 
         <div className={`flex flex-col transition-opacity duration-200 ${isScrolled ? "opacity-100" : "opacity-0"}`}>
           {messages && messages.length > 0 ? (
-            messages.map((msg: any) => (
+            messages.map((msg: any, index: number) => {
+              const prevMsg = messages[index - 1];
+              const hideHeader = prevMsg && (prevMsg.senderId?._id || prevMsg.senderId) === (msg.senderId?._id || msg.senderId);
+              return (
               <MessageBubble
                 key={msg._id}
                 msg={msg}
@@ -191,10 +251,11 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                 senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
                 senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
                 isGroupChat={isGroup}
+                hideHeader={hideHeader}
                 onReply={handleReply}
                 onForward={handleForward}
               />
-            ))
+            )})
           ) : (
             < NoChatHistoryPlaceholder name={selectedUser.fullname} />
           )}
@@ -262,18 +323,50 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
             <textarea
               ref={textareaRef}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value
+                if (val.endsWith(' ')) {
+                  const converted = convertEmoticons(val)
+                  if (converted !== val) { setText(converted); return }
+                }
+                setText(val)
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage(e);
+                  e.preventDefault()
+                  const converted = convertEmoticons(text)
+                  setText(converted)
+                  // dùng converted trực tiếp để không bị stale closure
+                  setTimeout(() => handleSendMessage(e), 0)
                 }
               }}
-              placeholder={`Nhập @, tin nhắn tới ${selectedUser.fullname}`}
+              placeholder={`Nhập @, tin nhắn tới ${isGroup ? selectedUser.name : selectedUser.fullname}`}
               className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1]"
               rows={1}
             />
             <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
+              {/* Emoji Button + Picker */}
+              <div ref={emojiPickerRef} className="relative">
+                <button
+                  type="button"
+                  title="Emoji (Ctrl+E)"
+                  onClick={() => setShowEmojiPicker(p => !p)}
+                  className={`p-1.5 rounded-md transition-colors hover:bg-[#2b2d31] ${showEmojiPicker ? 'text-[#ebaa16]' : 'text-[#a1a1a1]'}`}
+                >
+                  <Smile className="w-5 h-5" />
+                </button>
+                {showEmojiPicker && (
+                  <div className="absolute bottom-10 right-0 z-50">
+                    <EmojiPickerPanel
+                      onEmojiSelect={(emoji) => {
+                        setText(prev => prev + emoji)
+                        setShowEmojiPicker(false)
+                        textareaRef.current?.focus()
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
               <button type="button" disabled={isSending} className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50">
                 <ThumbsUp className="w-5 h-5" />
               </button>

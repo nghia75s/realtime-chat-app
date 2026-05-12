@@ -12,8 +12,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function MessageBubble(props: MessageBubbleProps) {
-  const { msg, onImageLoad, senderAvatar, senderName, isGroupChat, onReply, onForward } = props
+export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean }) {
+  const { msg, onImageLoad, senderAvatar, senderName, isGroupChat, onReply, onForward, hideHeader } = props
   const { authUser } = useAuthStore()
   const senderId = typeof msg.senderId === "string" ? msg.senderId : msg.senderId?._id
   const isMe = senderId?.toString() === authUser?._id?.toString()
@@ -43,12 +43,14 @@ export function MessageBubble(props: MessageBubbleProps) {
     >
       {/* Avatar của người gửi */}
       {!isMe && (
-        <div className="flex items-end mr-2 shrink-0">
-          <img
-            src={senderAvatar || "/avatar.png"}
-            alt={senderName || "User"}
-            className="w-8 h-8 rounded-full object-cover border border-[#3a3b3e]"
-          />
+        <div className="flex items-start mr-2 shrink-0 w-8">
+          {!hideHeader && (
+            <img
+              src={senderAvatar || "/avatar.png"}
+              alt={senderName || "User"}
+              className="w-8 h-8 rounded-full object-cover border border-[#3a3b3e]"
+            />
+          )}
         </div>
       )}
 
@@ -71,7 +73,7 @@ export function MessageBubble(props: MessageBubbleProps) {
       {/* Bubble Chính */}
       <div className={`flex flex-col max-w-[70%] gap-1 ${isMe ? "items-end" : "items-start"}`}>
         {/* Tên người gửi (Chỉ hiển thị nếu là Group và là người khác nhắn) */}
-        {!isMe && isGroupChat && senderName && (
+        {!isMe && isGroupChat && senderName && !hideHeader && (
           <span className="text-[12px] font-semibold text-[#a1a1a1] ml-1 mb-0.5">{senderName}</span>
         )}
 

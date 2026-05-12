@@ -29,6 +29,17 @@ export const createGroup = async (req, res) => {
             .populate("members", "-password")
             .populate("createdBy", "-password");
 
+        // Emit newGroupCreated event to all members EXCEPT the creator
+        populatedGroup.members.forEach(member => {
+            const memberIdStr = member._id.toString();
+            if (memberIdStr !== creatorId.toString()) {
+                const receiverSocketId = getReceiverSocketId(memberIdStr);
+                if (receiverSocketId) {
+                    io.to(receiverSocketId).emit("newGroupCreated", populatedGroup);
+                }
+            }
+        });
+
         res.status(201).json(populatedGroup);
     } catch (error) {
         console.log("Error in createGroup controller: ", error.message);
@@ -78,7 +89,15 @@ export const sendGroupMessage = async (req, res) => {
         const populatedMessage = await GroupMessage.findById(groupMessage._id).populate("senderId", "fullname profilePicture");
 
         // Emit the new group message to all group members except the sender
-        io.to(`group_${groupId}`).emit("newGroupMessage", populatedMessage);
+        group.members.forEach(memberId => {
+            const memberIdStr = memberId.toString();
+            if (memberIdStr !== senderId.toString()) {
+                const receiverSocketId = getReceiverSocketId(memberIdStr);
+                if (receiverSocketId) {
+                    io.to(receiverSocketId).emit("newGroupMessage", populatedMessage);
+                }
+            }
+        });
 
         res.status(201).json(populatedMessage);
     } catch (error) {

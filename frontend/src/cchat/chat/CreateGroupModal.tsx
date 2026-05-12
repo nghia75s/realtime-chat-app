@@ -59,7 +59,6 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
         groupPicture: groupAvatar,
       })
       toast.success(`Đã tạo nhóm "${groupName}" thành công!`)
-      await getMyGroups()
       onClose()
       setGroupName("")
       setGroupAvatar(null)

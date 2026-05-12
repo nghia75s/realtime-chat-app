@@ -6,20 +6,15 @@ import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton"
 import NoChatsFound from "@/components/ui/NoChatsFound"
 import { CreateGroupModal } from "./CreateGroupModal"
 
-   export function ChatListSidebar() {
-  const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, selectedUser, getMyGroups, groups, isGroupsLoading } = useChatStore()
+  export function ChatListSidebar() {
+  const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, selectedUser, getMyGroups, groups, isGroupsLoading, activeTab, setActiveTab, unreadChats, unreadGroups } = useChatStore()
   const { onlineUsers } = useAuthStore()
-  const [activeTab, setActiveTab] = useState<"all" | "unread">("all")
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
 
   useEffect(() => {
     getMyChatPartners()
     getMyGroups()
   }, [getMyChatPartners, getMyGroups])
-
-  if (isUsersLoading) {
-    return <UsersLoadingSkeleton />
-  }
 
   return (
     <div className="flex w-[320px] shrink-0 flex-col border-r border-[#2b2d31] bg-[#1e1f22] h-full z-10 text-[#e1e1e1]">
@@ -48,16 +43,18 @@ import { CreateGroupModal } from "./CreateGroupModal"
         <div className="flex items-center justify-between mt-1 border-b border-[#2b2d31]">
           <div className="flex gap-4">
             <button
-              onClick={() => setActiveTab("all")}
-              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors ${activeTab === "all" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
+              onClick={() => setActiveTab("personal")}
+              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors relative ${activeTab === "personal" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
             >
-              Tất cả
+              Cá nhân
+              {unreadChats.length > 0 && <span className="absolute top-0 -right-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_4px_rgba(239,68,68,0.8)]"></span>}
             </button>
             <button
-              onClick={() => setActiveTab("unread")}
-              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors ${activeTab === "unread" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
+              onClick={() => setActiveTab("group")}
+              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors relative ${activeTab === "group" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
             >
-              Chưa đọc
+              Nhóm
+              {unreadGroups.length > 0 && <span className="absolute top-0 -right-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_4px_rgba(239,68,68,0.8)]"></span>}
             </button>
           </div>
           <div className="flex items-center gap-1 text-[#a1a1a1] cursor-pointer hover:text-white pb-2 transition-colors">
@@ -67,67 +64,83 @@ import { CreateGroupModal } from "./CreateGroupModal"
         </div>
       </div>
 
-      {/* Group List and Chat List */}
-      <div className="flex-1 flex flex-col">
-        {/* Group List */}
-        <div className="overflow-y-auto custom-scrollbar max-h-48 border-b border-[#2b2d31]">
-          {isGroupsLoading ? (
-            <UsersLoadingSkeleton />
-          ) : groups.length === 0 ? (
-            <div className="px-4 py-2 text-[#a1a1a1]">Không có nhóm</div>
-          ) : (
-            groups.map((group) => {
-              const isActive = selectedUser?._id === group._id
-              return (
-                <div
-                  key={group._id}
-                  className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
-                  onClick={() => setSelectedUser(group)}
-                >
-                  <div className="relative">
-                    <img src={group.groupPicture || "/group.png"} alt={group.name} className="w-[44px] h-[44px] rounded-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <h4 className="font-semibold text-[15px] truncate text-[#e1e1e1]">{group.name}</h4>
+      {/* Content List */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        
+        {/* Tab Cá Nhân */}
+        {activeTab === "personal" && (
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {isUsersLoading ? (
+              <UsersLoadingSkeleton />
+            ) : chats.length === 0 ? (
+              <NoChatsFound />
+            ) : (
+              chats.map((chat) => {
+                const isActive = selectedUser?._id === chat._id
+                return (
+                  <div
+                    key={chat._id}
+                    className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
+                    onClick={() => setSelectedUser(chat)}
+                  >
+                    <div className="relative flex shrink-0">
+                      <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
+                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1e1f22] transition-colors ${
+                        onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-[#4e4f52]"
+                      }`}></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <h4 className={`font-semibold text-[15px] truncate ${unreadChats.includes(chat._id) ? "text-white" : "text-[#e1e1e1]"}`}>{chat.fullname}</h4>
+                        {unreadChats.includes(chat._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            })
-          )}
-        </div>
+                )
+              })
+            )}
+          </div>
+        )}
 
-        {/* Chat List (ScrollArea) */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          {chats.length === 0 ? (
-            <NoChatsFound />
-          ) : (
-            chats.map((chat) => {
-              const isActive = selectedUser?._id === chat._id
-              return (
-                <div
-                  key={chat._id}
-                  className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
-                  onClick={() => setSelectedUser(chat)}
-                >
-                  <div className="relative">
-                    <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
-                    {/* Trạng thái online: xanh nếu online, xám nếu offline */}
-                    <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1e1f22] transition-colors ${
-                      onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-[#4e4f52]"
-                    }`}></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-0.5">
-                      <h4 className="font-semibold text-[15px] truncate text-[#e1e1e1]">{chat.fullname}</h4>
+        {/* Tab Nhóm */}
+        {activeTab === "group" && (
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {isGroupsLoading ? (
+              <UsersLoadingSkeleton />
+            ) : groups.length === 0 ? (
+              <div className="px-4 py-6 text-[#717171] text-[13px] italic text-center">Bạn chưa tham gia nhóm nào</div>
+            ) : (
+              groups.map((group) => {
+                const isActive = selectedUser?._id === group._id
+                return (
+                  <div
+                    key={group._id}
+                    className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
+                    onClick={() => setSelectedUser(group)}
+                  >
+                    <div className="relative flex shrink-0">
+                      <div className="w-[44px] h-[44px] rounded-full bg-[#2b2d31] flex items-center justify-center border border-[#4e4f52] overflow-hidden">
+                        {group.groupPicture ? (
+                          <img src={group.groupPicture} alt={group.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <GroupIcon className="w-5 h-5 text-[#a1a1a1]" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-0.5">
+                        <h4 className={`font-semibold text-[15px] truncate ${unreadGroups.includes(group._id) ? "text-white" : "text-[#e1e1e1]"}`}>{group.name}</h4>
+                        {unreadGroups.includes(group._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
+                      </div>
+                      <p className="text-[12px] text-[#a1a1a1] truncate">{group.memberCount || 0} thành viên</p>
                     </div>
                   </div>
-                </div>
-              )
-            })
-          )}
-        </div>
+                )
+              })
+            )}
+          </div>
+        )}
+
       </div>
 
       <CreateGroupModal isOpen={isCreateGroupOpen} onClose={() => setIsCreateGroupOpen(false)} />

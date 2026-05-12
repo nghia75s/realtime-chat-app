@@ -27,17 +27,10 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
   if (!chat) return null;
 
-  // Giả lập logic Nhóm
+  // Lấy dữ liệu thành viên thật từ props
   const isGroup = chat.isGroup || false
-  const myRole = "creator" // fake: 'creator', 'admin', 'member'
-
-  // Dữ liệu giả lập thành viên
-  const mockMembers = [
-    { _id: "1", fullname: "Hồng Hạnh (Bạn)", role: "creator", profilePicture: "/avatar.png" },
-    { _id: "2", fullname: "Thanh Thảo", role: "admin", profilePicture: "/avatar.png" },
-    { _id: "3", fullname: "Tân Cương", role: "member", profilePicture: "/avatar.png" },
-    { _id: "4", fullname: "Anh Ship", role: "member", profilePicture: "/avatar.png" },
-  ]
+  const members = chat.members || []
+  const creatorId = typeof chat.createdBy === "string" ? chat.createdBy : chat.createdBy?._id
 
   if (view === "archive") {
     return <ArchivePanel initialTab={archiveTab} onBack={() => setView("info")} />
@@ -55,8 +48,8 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
           {/* Profile Section */}
           <div className="flex flex-col items-center pt-5 pb-4 px-4 border-b border-[#2b2d31]">
-            <img src={chat.profilePicture || "/avatar.png"} className="h-[64px] w-[64px] mb-3 rounded-full object-cover border border-[#2b2d31]" alt="Avatar" />
-            <h2 className="text-[18px] font-semibold text-white mb-4 text-center cursor-pointer hover:underline">{chat.fullname}</h2>
+            <img src={isGroup ? (chat.groupPicture || "/group.png") : (chat.profilePicture || "/avatar.png")} className="h-[64px] w-[64px] mb-3 rounded-full object-cover border border-[#2b2d31]" alt="Avatar" />
+            <h2 className="text-[18px] font-semibold text-white mb-4 text-center cursor-pointer hover:underline">{isGroup ? chat.name : chat.fullname}</h2>
 
             {/* Quick Actions */}
             <div className="flex items-start justify-center gap-6 w-full">
@@ -94,48 +87,27 @@ export function RightInfoPanel({ chat }: { chat: any }) {
                 <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-3 hover:bg-[#2b2d31] transition-colors">
                   <div className="flex items-center gap-3">
                     <Users className="h-5 w-5 text-[#a1a1a1]" strokeWidth={1.5} />
-                    <span className="text-[15px] font-medium text-[#e1e1e1]">Thành viên nhóm ({mockMembers.length})</span>
+                    <span className="text-[15px] font-medium text-[#e1e1e1]">Thành viên nhóm ({members.length})</span>
                   </div>
                   <ChevronRight className={`h-4 w-4 text-[#a1a1a1] transition-transform duration-200 ${isMembersOpen ? 'rotate-90' : ''}`} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="px-2 pb-2">
                   <div className="flex flex-col gap-1 mt-1">
-                    {mockMembers.map(member => (
-                      <div key={member._id} className="flex items-center gap-3 p-2 rounded-md hover:bg-[#2b2d31] transition-colors group cursor-pointer">
-                        <img src={member.profilePicture} className="w-8 h-8 rounded-full object-cover" alt="" />
-                        <div className="flex-1 min-w-0 flex flex-col">
-                          <span className="text-[14px] truncate text-[#e1e1e1]">{member.fullname}</span>
-                          {member.role === "creator" && <span className="text-[11px] text-[#ebaa16] flex items-center gap-1"><Crown className="w-3 h-3" /> Trưởng nhóm</span>}
-                          {member.role === "admin" && <span className="text-[11px] text-[#0052cc] flex items-center gap-1"><Shield className="w-3 h-3" /> Phó nhóm</span>}
+                    {members.map((member: any) => {
+                      const memberId = typeof member === "string" ? member : member._id
+                      const isCreator = memberId?.toString() === creatorId?.toString()
+                      const memberPic = member.profilePicture || "/avatar.png"
+                      const memberName = member.fullname || memberId
+                      return (
+                        <div key={memberId} className="flex items-center gap-3 p-2 rounded-md hover:bg-[#2b2d31] transition-colors group cursor-pointer">
+                          <img src={memberPic} className="w-8 h-8 rounded-full object-cover" alt="" />
+                          <div className="flex-1 min-w-0 flex flex-col">
+                            <span className="text-[14px] truncate text-[#e1e1e1]">{memberName}</span>
+                            {isCreator && <span className="text-[11px] text-[#ebaa16] flex items-center gap-1"><Crown className="w-3 h-3" /> Trưởng nhóm</span>}
+                          </div>
                         </div>
-                        
-                        {/* Dropdown quản lý (Dành cho Admin/Creator) */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-[#131416] rounded-md transition-all outline-none">
-                              <MoreHorizontal className="w-4 h-4 text-[#a1a1a1]" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 bg-[#1e1f22] border-[#2b2d31] text-[#e1e1e1]">
-                            <DropdownMenuItem className="hover:bg-[#2b2d31] cursor-pointer">Xem trang cá nhân</DropdownMenuItem>
-                            {(myRole === "creator" || myRole === "admin") && member.role !== "creator" && (
-                              <>
-                                <DropdownMenuSeparator className="bg-[#2b2d31]" />
-                                {myRole === "creator" && member.role !== "admin" && (
-                                  <DropdownMenuItem className="hover:bg-[#2b2d31] cursor-pointer">Thăng cấp Phó nhóm</DropdownMenuItem>
-                                )}
-                                {myRole === "creator" && member.role === "admin" && (
-                                  <DropdownMenuItem className="hover:bg-[#2b2d31] cursor-pointer">Giáng chức</DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem className="hover:bg-red-500 hover:text-white text-red-400 cursor-pointer focus:bg-red-500 focus:text-white">
-                                  Xóa khỏi nhóm
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </CollapsibleContent>
               </Collapsible>
@@ -208,12 +180,6 @@ export function RightInfoPanel({ chat }: { chat: any }) {
                     <LogOut className="h-5 w-5" strokeWidth={1.5} />
                     <span className="text-[15px] font-medium">Rời nhóm</span>
                   </button>
-                  {myRole === "creator" && (
-                    <button className="flex items-center gap-3 w-full px-4 py-3 hover:bg-red-500 text-red-500 hover:text-white transition-colors">
-                      <ShieldAlert className="h-5 w-5" strokeWidth={1.5} />
-                      <span className="text-[15px] font-medium">Giải tán nhóm</span>
-                    </button>
-                  )}
                 </>
               )}
             </div>
