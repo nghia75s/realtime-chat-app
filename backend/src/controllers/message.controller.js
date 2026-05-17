@@ -1,6 +1,7 @@
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 import Message from "../models/Message.js";
+import GroupMessage from "../models/GroupMessage.js";
 import User from "../models/User.js";
 
 export const getAllContacts = async (req, res) => {
@@ -26,6 +27,12 @@ export const getMessagesByUserId = async (req, res) => {
         { senderId: userToChatId, receiverId: myId },
       ],
     });
+
+    // Đánh dấu đã đọc: các tin nhắn người kia gửi cho mình mà chưa đọc
+    await Message.updateMany(
+      { senderId: userToChatId, receiverId: myId, read: false },
+      { $set: { read: true } }
+    );
 
     res.status(200).json(messages);
   } catch (error) {
@@ -120,6 +127,45 @@ export const getChatPartners = async (req, res) => {
     res.status(200).json(sortedChatPartners);
   } catch (error) {
     console.error("Error in getChatPartners: ", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Trả về danh sách conversation có tin chưa đọc — gọi khi user mới vào app
+export const getUnreadSummary = async (req, res) => {
+  try {
+    const myId = req.user._id;
+    const user = await User.findById(myId).select("unreadSince");
+
+    // Lần đầu tiên dùng tính năng này: set mốc thời gian, trả về rỗng
+    // (message cũ trước đây coi như đã đọc hết)
+    if (!user.unreadSince) {
+      await User.findByIdAndUpdate(myId, { unreadSince: new Date() });
+      return res.status(200).json({ unreadChats: [], unreadGroups: [] });
+    }
+
+    const since = user.unreadSince;
+
+    // Chat 1-1: senderId có tin chưa đọc gửi cho mình SAU mốc unreadSince
+    const unreadMessages = await Message.distinct("senderId", {
+      receiverId: myId,
+      read: false,
+      createdAt: { $gt: since },
+    });
+
+    // Group chat: groupId có tin chưa đọc SAU mốc unreadSince
+    const unreadGroupMessages = await GroupMessage.distinct("groupId", {
+      senderId: { $ne: myId },
+      readBy: { $nin: [myId] },
+      createdAt: { $gt: since },
+    });
+
+    res.status(200).json({
+      unreadChats: unreadMessages.map(id => id.toString()),
+      unreadGroups: unreadGroupMessages.map(id => id.toString()),
+    });
+  } catch (error) {
+    console.error("Error in getUnreadSummary: ", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };

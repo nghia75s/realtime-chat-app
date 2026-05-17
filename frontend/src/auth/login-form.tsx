@@ -130,8 +130,18 @@ export function LoginForm({
                   </Field>
 
                   <Field>
-                    <div className="flex items-center">
+                    <div className="flex items-center justify-between">
                       <FieldLabel>Mật khẩu</FieldLabel>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView("forgot-password");
+                          setError("");
+                        }}
+                        className="text-sm underline-offset-4 hover:underline text-primary"
+                      >
+                        Quên mật khẩu?
+                      </button>
                     </div>
                     <div className="relative">
                       <Input
@@ -139,7 +149,7 @@ export function LoginForm({
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) => setFromData({...formData, password: e.target.value})}
-                        className="input"
+                        className="input pr-10"
                       />
                       <button
                         type="button"
@@ -147,16 +157,6 @@ export function LoginForm({
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setView("forgot-password");
-                          setError("");
-                        }}
-                        className="ml-auto text-sm underline-offset-4 hover:underline text-primary"
-                      >
-                        Quên mật khẩu?
                       </button>
                     </div>
                   </Field>

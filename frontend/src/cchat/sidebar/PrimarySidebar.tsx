@@ -32,16 +32,24 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
 
-  const topNav = [
-    { id: "chat", icon: MessageCircle, label: "Tin nhắn" },
-    { id: "contacts", icon: BookUser, label: "Danh bạ" },
-    { id: "todo", icon: CheckSquare, label: "To-Do" },
-    { id: "cloud", icon: Cloud, label: "Cloud của tôi" },
-    { id: "tools", icon: Briefcase, label: "Công cụ" },
-  ]
+  const allNav = [
+    { id: "chat", icon: MessageCircle, label: "Tin nhắn", perm: "viewChat" },
+    { id: "contacts", icon: BookUser, label: "Danh bạ", perm: "viewContacts" },
+    { id: "todo", icon: CheckSquare, label: "To-Do", perm: "viewTasks" },
+    { id: "cloud", icon: Cloud, label: "Cloud của tôi", perm: "viewCloud" },
+    { id: "tools", icon: Briefcase, label: "Công cụ", perm: "viewTools" },
+  ];
 
-  if (authUser?.email === "admin@gmail.com") {
-    topNav.push({ id: "admin", icon: ShieldCheck, label: "Quản trị Admin" })
+  // Filter based on user permissions
+  const topNav = allNav.filter(item => {
+    // Nếu chưa load authUser hoặc không có permissions, mặc định ẩn (hoặc xử lý theo default role)
+    if (!authUser || !authUser.permissions) return false;
+    // Kiểm tra quyền (ép kiểu để lấy đúng key)
+    return authUser.permissions[item.perm as keyof typeof authUser.permissions];
+  });
+
+  if (authUser?.permissions?.viewAdmin || authUser?.email === "admin@gmail.com") {
+    topNav.push({ id: "admin", icon: ShieldCheck, label: "Quản trị Admin", perm: "viewAdmin" })
   }
 
   return (

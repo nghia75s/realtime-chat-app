@@ -1,33 +1,32 @@
-import { useState } from "react";
-import { mockRoles } from "./data";
-import type { Role } from "./data";
+import { useEffect } from "react";
+import { useAdminStore } from "@/store/useAdminStore";
+import type { Role } from "@/store/useAdminStore";
 import { Button } from "@/components/ui/button";
 
 const PERMISSION_LABELS: Record<keyof Role['permissions'], string> = {
-  viewUsers: "Xem danh sách người dùng",
-  editUsers: "Sửa/Xóa người dùng",
+  viewChat: "Sử dụng tính năng Chat",
+  viewContacts: "Xem danh sách người dùng",
   viewTasks: "Xem Task hệ thống",
   editTasks: "Chỉnh sửa Task",
   approveTasks: "Duyệt/Từ chối Task",
-  viewChat: "Sử dụng tính năng Chat",
+  viewCloud: "Sử dụng Cloud của tôi",
+  viewTools: "Sử dụng Công cụ",
+  viewAdmin: "Truy cập Quản trị Admin",
 };
 
 export default function RoleManagement() {
-  const [roles, setRoles] = useState<Role[]>(mockRoles);
+  const { roles, fetchRoles, updateRolePermissions } = useAdminStore();
 
-  const handleTogglePermission = (roleId: string, permKey: keyof Role['permissions']) => {
-    setRoles(roles.map(role => {
-      if (role.id === roleId) {
-        return {
-          ...role,
-          permissions: {
-            ...role.permissions,
-            [permKey]: !role.permissions[permKey]
-          }
-        };
-      }
-      return role;
-    }));
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
+
+  const handleTogglePermission = async (roleId: string, permKey: keyof Role['permissions']) => {
+    const role = roles.find(r => r.id === roleId);
+    if (role) {
+      const newValue = !role.permissions[permKey];
+      await updateRolePermissions(roleId, { [permKey]: newValue });
+    }
   };
 
   return (

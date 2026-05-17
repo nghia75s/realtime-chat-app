@@ -25,8 +25,24 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin", "moderator"],
+      enum: ["admin", "director", "moderator", "user"],
       default: "user",
+    },
+    unreadSince: {
+      type: Date,
+      default: null,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    department: {
+      type: String,
+      default: "",
+    },
+    lockReason: {
+      type: String,
+      default: "",
     }
   },
   { timestamps: true } // createdAt & updatedAt

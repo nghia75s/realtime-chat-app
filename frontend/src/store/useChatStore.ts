@@ -34,6 +34,7 @@ interface ChatStore {
     leaveGroup: (groupId: string) => void;
     subscribeToMessages: () => void;
     unsubscribeFromMessages: () => void;
+    fetchUnreadSummary: () => Promise<void>;
 }
 
 // Helper: Đẩy item lên đầu mảng dựa theo _id, fallback unshift nếu chưa có
@@ -298,5 +299,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         socket?.off("newMessage");
         socket?.off("newGroupMessage");
         socket?.off("newGroupCreated");
-    }
+    },
+    fetchUnreadSummary: async () => {
+        try {
+            const res = await axiosInstance.get("messages/unread-summary");
+            const { unreadChats, unreadGroups } = res.data;
+            localStorage.setItem("unreadChats", JSON.stringify(unreadChats));
+            localStorage.setItem("unreadGroups", JSON.stringify(unreadGroups));
+            set({ unreadChats, unreadGroups });
+        } catch (error) {
+            console.error("Failed to fetch unread summary:", error);
+        }
+    },
 }))

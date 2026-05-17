@@ -4,6 +4,7 @@ import {
   getChatPartners,
   getMessagesByUserId,
   sendMessage,
+  getUnreadSummary,
 } from "../controllers/message.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 // import { arcjetProtection } from "../middleware/arcjet.middleware.js";
@@ -16,6 +17,7 @@ router.use(protectRoute); //arcjetProtection
 
 router.get("/contacts", getAllContacts);
 router.get("/chats", getChatPartners);
+router.get("/unread-summary", getUnreadSummary);
 router.get("/:id", getMessagesByUserId);
 router.post("/send/:id", sendMessage);
 

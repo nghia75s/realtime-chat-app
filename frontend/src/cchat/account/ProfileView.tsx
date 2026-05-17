@@ -1,7 +1,10 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { X, Camera } from "lucide-react"
+import { useAuthStore } from "@/store/useAuthStore"
 
 export const ProfileView = ({ onViewChange, onClose }: any) => {
+  const { authUser } = useAuthStore()
+
   return (
     <div className="flex flex-col w-full min-h-[500px] h-full relative animate-in zoom-in-95 duration-200">
       {/* Header */}
@@ -21,8 +24,8 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
         <div className="flex items-end gap-3">
           <div className="relative group/avatar cursor-pointer" onClick={() => onViewChange("edit-avatar")}>
             <Avatar className="w-[76px] h-[76px] border-4 border-white shadow-sm ring-1 ring-zinc-200">
-              <AvatarImage src="/avatars/me.png" />
-              <AvatarFallback>Dat</AvatarFallback>
+              <AvatarImage src={authUser?.profilePicture || "/avatar.png"} />
+              <AvatarFallback>{authUser?.fullname?.charAt(0)?.toUpperCase() || "?"}</AvatarFallback>
             </Avatar>
             {/* Camera icon button */}
             <div className="absolute bottom-0 right-0 w-8 h-8 bg-[#f5f6f8] rounded-full border-[1.5px] border-white flex items-center justify-center hover:bg-zinc-200 transition-colors shadow-sm">
@@ -30,7 +33,7 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
             </div>
           </div>
           <div className="flex items-center gap-2 mb-2 group/name">
-            <h3 className="text-[18px] font-semibold text-zinc-900 pb-0.5">Nguyễn Tiến Đạt</h3>
+            <h3 className="text-[18px] font-semibold text-zinc-900 pb-0.5">{authUser?.fullname || "Người dùng"}</h3>
           </div>
         </div>
       </div>

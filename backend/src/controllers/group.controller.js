@@ -118,6 +118,13 @@ export const getGroupMessages = async (req, res) => {
             return res.status(403).json({ message: "You are not a member of this group." });
         }
         const messages = await GroupMessage.find({ groupId }).populate("senderId", "fullname profilePicture").sort({ createdAt: 1 });
+
+        // Đánh dấu đã đọc: thêm userId vào readBy của các tin chưa đọc (không phải do mình gửi)
+        await GroupMessage.updateMany(
+            { groupId, senderId: { $ne: userId }, readBy: { $nin: [userId] } },
+            { $addToSet: { readBy: userId } }
+        );
+
         res.status(200).json(messages);
     } catch (error) {
         console.log("Error in getGroupMessages controller: ", error.message);
