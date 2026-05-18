@@ -269,6 +269,11 @@ export const removeMember = async (req, res) => {
             return res.status(403).json({ message: "You don't have permission to remove this member." });
         }
 
+        // Bug #3: Prevent creator from removing themselves — would lose group ownership
+        if (userId === group.createdBy.toString()) {
+            return res.status(400).json({ message: "Người tạo nhóm không thể rời khỏi nhóm. Hãy chuyển quyền sở hữu trước." });
+        }
+
         if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
             return res.status(400).json({ message: "User is not a member of this group." });
         }

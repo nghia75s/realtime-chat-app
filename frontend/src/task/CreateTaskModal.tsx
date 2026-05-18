@@ -1,39 +1,62 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { X, Search, UserPlus } from "lucide-react"
+import { useTaskStore } from "@/store/useTaskStore"
+import { useChatStore } from "@/store/useChatStore"
+import { useAuthStore } from "@/store/useAuthStore"
+import toast from "react-hot-toast"
 
 interface CreateTaskModalProps {
   onClose: () => void;
-  onSubmit: (formData: any) => void;
 }
 
-const mockContacts = [
-  { id: "Nguyễn Văn A", name: "Nguyễn Văn A", avatar: "/avatar.png" },
-  { id: "Nguyễn Văn B", name: "Nguyễn Văn B", avatar: "/avatar.png" },
-  { id: "Lê Thị C", name: "Lê Thị C", avatar: "/avatar.png" },
-  { id: "Trần Văn D", name: "Trần Văn D", avatar: "/avatar.png" },
-  { id: "Phạm Hùng E", name: "Phạm Hùng E", avatar: "/avatar.png" },
-];
+export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
+  const { createTask, isCreating } = useTaskStore()
+  const { allContacts, getAllcontacts } = useChatStore()
+  const { authUser } = useAuthStore()
 
-export function CreateTaskModal({ onClose, onSubmit }: CreateTaskModalProps) {
+  useEffect(() => {
+    if (allContacts.length === 0) {
+      getAllcontacts()
+    }
+  }, [allContacts, getAllcontacts])
+
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [assignees, setAssignees] = useState<string[]>(["Nguyễn Văn A"])
+  const [assignees, setAssignees] = useState<string[]>([])
   const [deadline, setDeadline] = useState("")
+  const [deadlineError, setDeadlineError] = useState("")
 
   const [isSelectingAssignee, setIsSelectingAssignee] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleDeadlineChange = (val: string) => {
+    setDeadline(val);
+    if (!val) {
+      setDeadlineError("");
+      return;
+    }
+    const taskDeadline = new Date(val);
+    const now = new Date(); // So sánh với thời điểm hiện tại đầy đủ cả giờ:phút
+    if (taskDeadline <= now) {
+      setDeadlineError("Deadline phải là thời điểm trong tương lai");
+    } else {
+      setDeadlineError("");
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !deadline || assignees.length === 0) return;
-    onSubmit({ title, description, assignees, deadline });
+    if (!title || !description || !deadline || assignees.length === 0 || deadlineError) return;
+
+    await createTask({ title, description, assignees, deadline });
+    onClose();
   }
 
   const toggleAssignee = (id: string) => {
     setAssignees(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
-  const filteredContacts = mockContacts.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredContacts = allContacts.filter(c => c.fullname.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <>
@@ -65,19 +88,20 @@ export function CreateTaskModal({ onClose, onSubmit }: CreateTaskModalProps) {
                 <label className="text-[13px] font-medium text-[#e1e1e1]">Người giao</label>
                 <input
                   disabled
-                  value="Manager Tiến Đạt"
+                  value={authUser?.fullname || "Quản lý"}
                   className="w-full bg-[#1e1f22] border border-[#2b2d31] rounded-md px-3 py-2.5 text-[14px] text-[#a1a1a1] cursor-not-allowed"
                 />
               </div>
-              <div className="flex flex-col gap-1.5 flex-1">
+              <div className="flex flex-col gap-1.5 flex-1 relative">
                 <label className="text-[13px] font-medium text-[#e1e1e1]">Deadline <span className="text-red-500">*</span></label>
                 <input
                   required
-                  type="date"
+                  type="datetime-local"
                   value={deadline}
-                  onChange={e => setDeadline(e.target.value)}
-                  className="w-full bg-[#131416] border border-[#2b2d31] rounded-md px-3 py-2.5 text-[14px] text-white outline-none focus:border-[#0052cc] transition-colors"
+                  onChange={e => handleDeadlineChange(e.target.value)}
+                  className={`w-full bg-[#131416] border ${deadlineError ? 'border-red-500 focus:border-red-500' : 'border-[#2b2d31] focus:border-[#0052cc]'} rounded-md px-3 py-2.5 text-[14px] text-white outline-none transition-colors`}
                 />
+                {deadlineError && <span className="text-[12px] text-red-500 absolute -bottom-5">{deadlineError}</span>}
               </div>
             </div>
 
@@ -88,12 +112,12 @@ export function CreateTaskModal({ onClose, onSubmit }: CreateTaskModalProps) {
                 className="w-full min-h-[42px] bg-[#131416] border border-[#2b2d31] hover:border-[#0052cc] rounded-md p-2 cursor-pointer flex flex-wrap gap-2 items-center transition-colors"
               >
                 {assignees.map(id => {
-                  const c = mockContacts.find(x => x.id === id);
+                  const c = allContacts.find(x => x._id === id);
                   if (!c) return null;
                   return (
                     <div key={id} className="flex items-center gap-1.5 bg-[#1e1f22] border border-[#2b2d31] rounded-full px-2 py-1" onClick={e => e.stopPropagation()}>
-                      <img src={c.avatar} className="w-5 h-5 rounded-full" />
-                      <span className="text-[12px] text-[#e1e1e1]">{c.name}</span>
+                      <img src={c.profilePicture || "/avatar.png"} className="w-5 h-5 rounded-full object-cover" />
+                      <span className="text-[12px] text-[#e1e1e1]">{c.fullname}</span>
                       <X className="w-3 h-3 text-[#a1a1a1] hover:text-white cursor-pointer ml-1" onClick={() => toggleAssignee(id)} />
                     </div>
                   )
@@ -118,7 +142,9 @@ export function CreateTaskModal({ onClose, onSubmit }: CreateTaskModalProps) {
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 mt-4 border-t border-[#2b2d31] pt-5">
               <button type="button" onClick={onClose} className="px-4 py-2 text-[14px] font-medium text-[#a1a1a1] hover:text-white hover:bg-[#2b2d31] rounded-md transition-colors">Hủy</button>
-              <button type="submit" disabled={!title || !deadline || assignees.length === 0} className="px-5 py-2 text-[14px] font-medium bg-[#0052cc] hover:bg-[#0052cc]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md transition-colors shadow-sm">Giao việc</button>
+              <button type="submit" disabled={!title || !description || !deadline || assignees.length === 0 || isCreating || !!deadlineError} className="px-5 py-2 text-[14px] font-medium bg-[#0052cc] hover:bg-[#0052cc]/90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md transition-colors shadow-sm">
+                {isCreating ? "Đang giao..." : "Giao việc"}
+              </button>
             </div>
           </form>
         </div>
@@ -148,14 +174,14 @@ export function CreateTaskModal({ onClose, onSubmit }: CreateTaskModalProps) {
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-1">
                   {filteredContacts.map(c => {
-                    const isSelected = assignees.includes(c.id);
+                    const isSelected = assignees.includes(c._id);
                     return (
-                      <div key={c.id} onClick={() => toggleAssignee(c.id)} className="flex items-center gap-3 p-2 hover:bg-[#1e1f22] rounded-md cursor-pointer transition-colors group">
+                      <div key={c._id} onClick={() => toggleAssignee(c._id)} className="flex items-center gap-3 p-2 hover:bg-[#1e1f22] rounded-md cursor-pointer transition-colors group">
                         <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected ? 'bg-[#0052cc] border-[#0052cc]' : 'border-[#a1a1a1] group-hover:border-white'}`}>
                           {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full"></div>}
                         </div>
-                        <img src={c.avatar} className="w-8 h-8 rounded-full bg-[#2b2d31]" />
-                        <span className="text-[14px] text-[#e1e1e1] group-hover:text-white transition-colors">{c.name}</span>
+                        <img src={c.profilePicture || "/avatar.png"} className="w-8 h-8 rounded-full bg-[#2b2d31] object-cover" />
+                        <span className="text-[14px] text-[#e1e1e1] group-hover:text-white transition-colors">{c.fullname}</span>
                       </div>
                     )
                   })}
@@ -172,12 +198,12 @@ export function CreateTaskModal({ onClose, onSubmit }: CreateTaskModalProps) {
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-wrap gap-2 content-start">
                   {assignees.map(id => {
-                    const c = mockContacts.find(x => x.id === id);
+                    const c = allContacts.find(x => x._id === id);
                     if (!c) return null;
                     return (
                       <div key={id} className="flex items-center gap-1.5 bg-[#1e1f22] hover:bg-[#2b2d31] border border-[#2b2d31] rounded-full pl-2 pr-1.5 py-1.5 transition-colors">
-                        <img src={c.avatar} className="w-5 h-5 rounded-full" />
-                        <span className="text-[12px] text-[#e1e1e1] truncate max-w-[90px]">{c.name}</span>
+                        <img src={c.profilePicture || "/avatar.png"} className="w-5 h-5 rounded-full object-cover" />
+                        <span className="text-[12px] text-[#e1e1e1] truncate max-w-[90px]">{c.fullname}</span>
                         <div onClick={() => toggleAssignee(id)} className="p-0.5 hover:bg-black/30 rounded-full cursor-pointer ml-1">
                           <X className="w-3 h-3 text-[#a1a1a1] hover:text-red-400" />
                         </div>
