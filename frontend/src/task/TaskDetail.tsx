@@ -1,5 +1,5 @@
 import { useState, useRef } from "react"
-import { ChevronLeft, Paperclip, CheckCircle2, XCircle, Clock, FileText, Send, X, MessageSquareReply, Edit2 } from "lucide-react"
+import { ChevronLeft, Paperclip, CheckCircle2, XCircle, Clock, FileText, Send, X, MessageSquareReply, Edit2, BarChart2, StickyNote, Eye, EyeOff } from "lucide-react"
 import type { TaskItem, CommitType, CommitItem } from "@/store/useTaskStore"
 import { useTaskStore } from "@/store/useTaskStore"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -12,7 +12,7 @@ interface TaskDetailProps {
 }
 
 export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
-  const { addCommit, editTask } = useTaskStore();
+  const { addCommit, editTask, updateAccess } = useTaskStore();
   const { authUser } = useAuthStore();
   const [reportText, setReportText] = useState("");
   const [reportFile, setReportFile] = useState<File | null>(null);
@@ -27,11 +27,19 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
   const [showAssigneesList, setShowAssigneesList] = useState(false);
   const [evaluatingCommitId, setEvaluatingCommitId] = useState<string | null>(null);
 
+  // Feature 2b: filter commit history by assignee
+  const [selectedAssigneeFilter, setSelectedAssigneeFilter] = useState<string | null>(null);
+  // Feature 2c: access control toggles loading state
+  const [accessLoadingId, setAccessLoadingId] = useState<string | null>(null);
+
+  // Progress panel toggle
+  const [showProgressPanel, setShowProgressPanel] = useState(false);
+
   const getStatusBadge = (status: TaskItem['status']) => {
     switch (status) {
-      case "pending": return <span className="bg-amber-500/20 text-amber-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><Clock className="w-4 h-4" /> Đang chờ</span>;
       case "done": return <span className="bg-green-500/20 text-green-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><CheckCircle2 className="w-4 h-4" /> Hoàn thành</span>;
-      case "rejected": return <span className="bg-red-500/20 text-red-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><XCircle className="w-4 h-4" /> Cần làm lại</span>;
+      case "pending":
+      default: return <span className="bg-amber-500/20 text-amber-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><Clock className="w-4 h-4" /> Đang chờ</span>;
     }
   }
 
@@ -72,9 +80,15 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
   const handleEditSubmit = async () => {
     if (!editDesc || !editDeadline) return;
     const taskDeadline = new Date(editDeadline);
-    const today = new Date();
-    if (taskDeadline < today) {
-      toast.error("Deadline không được trong quá khứ");
+    const now = new Date();
+    const maxDeadline = new Date();
+    maxDeadline.setFullYear(maxDeadline.getFullYear() + 100);
+    if (taskDeadline <= now) {
+      toast.error("Deadline phải là thời điểm trong tương lai");
+      return;
+    }
+    if (taskDeadline > maxDeadline) {
+      toast.error("Deadline không được vượt quá 100 năm kể từ hôm nay");
       return;
     }
     await editTask(task._id, { description: editDesc, deadline: editDeadline });
@@ -84,7 +98,13 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
   const isAssignee = task.assignees.some(a => a.user?._id === authUser?._id);
   const isOverdue = new Date() > new Date(task.deadline);
   const canEmployeeSubmit = isAssignee && task.status !== 'done' && !isOverdue;
-  const primaryCommits = task.commits.filter(c => !c.targetCommitId);
+  const primaryCommits = task.commits.filter(c => {
+    if (c.targetCommitId) return false;
+    if (selectedAssigneeFilter && c.type === "commit") {
+      return c.userId?._id === selectedAssigneeFilter;
+    }
+    return true;
+  });
 
   return (
     <div className="flex-1 flex flex-col bg-[#131416] h-full overflow-hidden text-[#e1e1e1]">
@@ -103,7 +123,20 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
             <h1 className="text-[20px] font-bold text-white leading-tight">{task.title}</h1>
           </div>
 
-          <div>{getStatusBadge(task.status)}</div>
+          <div className="flex items-center gap-3 flex-wrap">
+            {getStatusBadge(task.status)}
+            <button
+              onClick={() => setShowProgressPanel(p => !p)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-semibold border transition-all duration-200 ${
+                showProgressPanel
+                  ? 'bg-[#0052cc] border-[#0052cc] text-white shadow-sm shadow-[#0052cc]/30'
+                  : 'bg-[#1e1f22] border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#0052cc]/50'
+              }`}
+            >
+              <BarChart2 className="w-4 h-4" />
+              Tiến độ công việc
+            </button>
+          </div>
 
           <div className="flex flex-col gap-4 bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31]">
             <div className="flex items-center justify-between border-b border-[#2b2d31] pb-3">
@@ -152,6 +185,78 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
             </div>
           </div>
 
+          {/* PROGRESS PANEL — chỉ hiện khi bấm nút */}
+          {showProgressPanel && task.assignees.length > 0 && (() => {
+            const doneCount = task.assignees.filter(a => a.status === "done").length;
+            const progress = Math.round((doneCount / task.assignees.length) * 100);
+            const getAssigneeStatusLabel = (status: string) => {
+              switch (status) {
+                case "done": return { label: "Hoàn thành", cls: "bg-green-500/20 text-green-400 border-green-500/30" };
+                case "submitted": return { label: "Đã nộp bài", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" };
+                case "rejected": return { label: "Cần làm lại", cls: "bg-red-500/20 text-red-400 border-red-500/30" };
+                default: return { label: "Đang chờ", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" };
+              }
+            };
+            const getSubmitCount = (userId: string) =>
+              task.commits.filter(c => c.type === "commit" && c.userId?._id === userId).length;
+            const getLastCommitTime = (userId: string) => {
+              const commits = task.commits.filter(c => c.type === "commit" && c.userId?._id === userId);
+              if (!commits.length) return null;
+              return new Date(commits[commits.length - 1].createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+            };
+
+            return (
+              <div className="flex flex-col gap-3 bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] font-bold text-[#a1a1a1] tracking-wider uppercase flex items-center gap-1.5">
+                    <BarChart2 className="w-3.5 h-3.5" /> Tiến độ công việc
+                  </span>
+                  <span className="text-[13px] font-semibold text-white">{doneCount}/{task.assignees.length}</span>
+                </div>
+                {/* Progress bar */}
+                <div className="h-1.5 bg-[#2b2d31] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#0052cc] to-green-500 rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <span className="text-[11px] text-[#a1a1a1]">{progress}% hoàn thành</span>
+                {/* Per-assignee rows */}
+                <div className="flex flex-col gap-2 mt-1">
+                  {task.assignees.map(a => {
+                    const { label, cls } = getAssigneeStatusLabel(a.status);
+                    const submitCount = getSubmitCount(a.user?._id);
+                    const lastTime = getLastCommitTime(a.user?._id);
+                    return (
+                      <div key={a._id} className="flex flex-col gap-1.5 bg-[#131416] p-3 rounded-md border border-[#2b2d31]">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <img src={a.user?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                            <span className="text-[13px] text-[#e1e1e1] font-medium truncate">{a.user?.fullname || "Unknown"}</span>
+                          </div>
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border shrink-0 ${cls}`}>{label}</span>
+                        </div>
+                        {a.personalNote && (
+                          <div className="flex items-start gap-1.5 text-[12px] text-[#a1a1a1]">
+                            <StickyNote className="w-3 h-3 shrink-0 mt-0.5 text-[#0052cc]" />
+                            <span className="italic">{a.personalNote}</span>
+                          </div>
+                        )}
+                        <div className="text-[11px] text-[#6b6d70] flex items-center gap-2">
+                          {submitCount > 0 ? (
+                            <span>Đã nộp {submitCount} lần · Lần cuối: {lastTime}</span>
+                          ) : (
+                            <span>Chưa nộp bài</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* MÔ TẢ YÊU CẦU */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -195,9 +300,42 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
 
         {/* Right Column: Timeline & Actions */}
         <div className="flex-1 flex flex-col p-6 overflow-hidden bg-[#0a0a0c]">
-          <h3 className="text-[16px] font-semibold text-white mb-6 shrink-0 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[#0052cc]" /> Lịch sử hoạt động
-          </h3>
+          <div className="shrink-0 mb-4">
+            <h3 className="text-[16px] font-semibold text-white mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#0052cc]" /> Lịch sử hoạt động
+            </h3>
+            {/* Feature 2b: Assignee filter tabs */}
+            {task.assignees.length > 1 && (
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setSelectedAssigneeFilter(null)}
+                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors border ${
+                    selectedAssigneeFilter === null
+                      ? "bg-[#0052cc] border-[#0052cc] text-white"
+                      : "border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#4a4d52]"
+                  }`}
+                >
+                  Tất cả
+                </button>
+                {task.assignees.map(a => (
+                  <button
+                    key={a._id}
+                    onClick={() => setSelectedAssigneeFilter(
+                      selectedAssigneeFilter === a.user?._id ? null : a.user?._id
+                    )}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium transition-colors border ${
+                      selectedAssigneeFilter === a.user?._id
+                        ? "bg-[#0052cc] border-[#0052cc] text-white"
+                        : "border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#4a4d52]"
+                    }`}
+                  >
+                    <img src={a.user?.profilePicture || "/avatar.png"} className="w-4 h-4 rounded-full object-cover" />
+                    {a.user?.fullname?.split(" ").pop()}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 relative">
             {/* Timeline Line */}
@@ -294,7 +432,6 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
                 )
               })}
             </div>
-            
           </div>
 
           {/* Employee Action (Submit File/Report) stays at the bottom to submit new files */}
@@ -347,19 +484,52 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
                  <h3 className="text-white font-semibold text-[15px]">Được giao cho ({task.assignees.length})</h3>
                  <button onClick={() => setShowAssigneesList(false)} className="text-[#a1a1a1] hover:text-white p-1 hover:bg-[#2b2d31] rounded transition-colors"><X className="w-4 h-4"/></button>
               </div>
-              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+               <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto custom-scrollbar">
                  {task.assignees.map(a => (
-                    <div key={a.user?._id || Math.random()} className="flex items-center gap-3 p-2 bg-[#131416] hover:bg-[#202124] transition-colors rounded-md border border-[#2b2d31]">
+                   <div key={a.user?._id || Math.random()} className="flex flex-col gap-2 p-3 bg-[#131416] rounded-md border border-[#2b2d31]">
+                     <div className="flex items-center gap-3">
                        <img src={a.user?.profilePicture || "/avatar.png"} className="w-8 h-8 rounded-full border border-[#2b2d31] object-cover" />
-                       <div className="flex flex-col">
-                         <span className="text-[14px] text-[#e1e1e1] font-medium">{a.user?.fullname || "Unknown"}</span>
-                         <span className="text-[12px] text-[#a1a1a1] capitalize">{a.status === 'done' ? 'Hoàn thành' : a.status === 'submitted' ? 'Đã nộp bài' : a.status === 'rejected' ? 'Bị từ chối' : 'Đang chờ'}</span>
+                       <div className="flex flex-col flex-1 min-w-0">
+                         <span className="text-[14px] text-[#e1e1e1] font-medium truncate">{a.user?.fullname || "Unknown"}</span>
+                         <span className="text-[12px] text-[#a1a1a1]">
+                           {a.status === 'done' ? 'Hoàn thành' : a.status === 'submitted' ? 'Đã nộp bài' : a.status === 'rejected' ? 'Cần làm lại' : 'Đang chờ'}
+                         </span>
                        </div>
-                    </div>
+                     </div>
+                     {a.personalNote && (
+                       <div className="flex items-start gap-1.5 text-[12px] text-[#a1a1a1] bg-[#1e1f22] px-2 py-1.5 rounded border border-[#2b2d31]">
+                         <StickyNote className="w-3 h-3 shrink-0 mt-0.5 text-[#0052cc]" />
+                         <span className="italic">{a.personalNote}</span>
+                       </div>
+                     )}
+                     {/* Feature 2c: canViewOthers toggle — chỉ creator/manager thấy */}
+                     {isCreatorOrAdmin && task.assignees.length > 1 && (
+                       <div className="flex items-center justify-between pt-1 border-t border-[#2b2d31]">
+                         <span className="text-[12px] text-[#a1a1a1] flex items-center gap-1">
+                           {a.canViewOthers ? <Eye className="w-3.5 h-3.5 text-[#0052cc]" /> : <EyeOff className="w-3.5 h-3.5" />}
+                           Xem bài của người khác
+                         </span>
+                         <button
+                           disabled={accessLoadingId === a._id}
+                           onClick={async () => {
+                             setAccessLoadingId(a._id);
+                             await updateAccess(task._id, a.user._id, !a.canViewOthers);
+                             setAccessLoadingId(null);
+                           }}
+                           className={`relative w-10 h-5 rounded-full transition-colors duration-300 shrink-0 ${
+                             a.canViewOthers ? "bg-[#0052cc]" : "bg-[#2b2d31]"
+                           } ${accessLoadingId === a._id ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                         >
+                           <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${a.canViewOthers ? "translate-x-5" : "translate-x-0"}`} />
+                         </button>
+                       </div>
+                     )}
+                   </div>
                  ))}
-              </div>
-           </div>
-        </div>
+               </div>
+            </div>
+         </div>
+
       )}
     </div>
   )

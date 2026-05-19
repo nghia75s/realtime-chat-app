@@ -2,8 +2,9 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
 
-export type TaskStatus = "pending" | "done" | "rejected";
-export type CommitType = "create" | "commit" | "approve" | "reject";
+export type TaskStatus = "pending" | "done";
+export type AssigneeStatus = "pending" | "submitted" | "done" | "rejected";
+export type CommitType = "create" | "commit" | "approve" | "reject" | "edit";
 
 export interface CommitItem {
   _id: string;
@@ -20,13 +21,16 @@ export interface CommitItem {
 }
 
 export interface TaskAssignee {
+  _id: string;
   user: {
     _id: string;
     fullname: string;
     profilePicture: string;
     email: string;
   };
-  status: TaskStatus | "submitted";
+  status: AssigneeStatus;
+  personalNote: string;
+  canViewOthers: boolean;
 }
 
 export interface TaskItem {
@@ -51,9 +55,26 @@ interface TaskStore {
   isLoading: boolean;
   isCreating: boolean;
   fetchTasks: () => Promise<void>;
-  createTask: (data: { title: string; description: string; assignees: string[]; deadline: string }) => Promise<void>;
-  editTask: (taskId: string, data: any) => Promise<void>;
-  addCommit: (taskId: string, data: { type: CommitType; description: string; fileName?: string; targetCommitId?: string }) => Promise<void>;
+  createTask: (data: {
+    title: string;
+    description: string;
+    assignees: string[];
+    groups?: string[];
+    assigneeNotes?: Record<string, string>;
+    deadline: string;
+  }) => Promise<void>;
+  editTask: (taskId: string, data: {
+    description?: string;
+    deadline?: string;
+    assigneeNotes?: Record<string, string>;
+  }) => Promise<void>;
+  addCommit: (taskId: string, data: {
+    type: CommitType;
+    description: string;
+    fileName?: string;
+    targetCommitId?: string;
+  }) => Promise<void>;
+  updateAccess: (taskId: string, assigneeId: string, canViewOthers: boolean) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -112,5 +133,21 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       console.error("Error adding commit:", error);
       toast.error(error.response?.data?.message || "Lỗi cập nhật công việc");
     }
-  }
+  },
+
+  updateAccess: async (taskId, assigneeId, canViewOthers) => {
+    try {
+      const res = await axiosInstance.patch(`/tasks/${taskId}/access`, {
+        assigneeId,
+        canViewOthers,
+      });
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t._id === taskId ? res.data : t)),
+      }));
+      toast.success(canViewOthers ? "Đã cho phép xem bài nhau" : "Đã tắt chia sẻ bài");
+    } catch (error: any) {
+      console.error("Error updating access:", error);
+      toast.error(error.response?.data?.message || "Lỗi cập nhật quyền truy cập");
+    }
+  },
 }));

@@ -32,7 +32,17 @@ const taskAssigneeSchema = new mongoose.Schema({
     type: String, // "pending", "submitted", "done", "rejected"
     enum: ["pending", "submitted", "done", "rejected"],
     default: "pending",
-  }
+  },
+  // Ghi chú riêng cho từng người được giao
+  personalNote: {
+    type: String,
+    default: "",
+  },
+  // Cho phép xem bài nộp của người khác trong cùng task
+  canViewOthers: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const taskSchema = new mongoose.Schema(
@@ -61,7 +71,7 @@ const taskSchema = new mongoose.Schema(
     },
     status: {
       type: String, // overall task status
-      enum: ["pending", "done", "rejected"],
+      enum: ["pending", "done"],
       default: "pending",
     },
     commits: [commitSchema],
