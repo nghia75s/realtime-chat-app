@@ -11,7 +11,7 @@ import TasksPage from "./task/TasksPage"
 import DocumentFillerPage from "./tools/DocumentFillerPage"
 import AdminPage from "./admin/AdminPage"
 import DocumentPage from "./cloud/DocumentPage"
-import GlobalAlerts from "./components/GlobalAlerts"
+import GlobalAlerts from "./components/ui/GlobalAlerts"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
@@ -43,7 +43,7 @@ function App() {
         <Route path="/todo" element={authUser ? (authUser.permissions?.viewTasks ? <TasksPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
         <Route path="/tools" element={authUser ? (authUser.permissions?.viewTools ? <DocumentFillerPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
         <Route path="/cloud" element={authUser ? (authUser.permissions?.viewCloud ? <DocumentPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
-        <Route path="/admin" element={authUser && (authUser.permissions?.viewAdmin || authUser.email === "admin@gmail.com") ? <AdminPage /> : <Navigate to="/chat" />} />
+        <Route path="/admin" element={authUser && authUser.permissions?.viewAdmin ? <AdminPage /> : <Navigate to="/chat" />} />
       </Routes>
       {authUser && <GlobalAlerts />}
     </BrowserRouter>

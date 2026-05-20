@@ -45,23 +45,27 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
           <div className="flex flex-col gap-3.5 text-[14px] pt-1">
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Giới tính</span>
-              <span className="text-zinc-900 font-medium">Nam</span>
+              <span className="text-zinc-900 font-medium">{authUser?.gender || "Chưa cập nhật"}</span>
             </div>
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Ngày sinh</span>
-              <span className="text-zinc-900 font-medium">23 tháng 10, 2005</span>
+              <span className="text-zinc-900 font-medium">{authUser?.dateOfBirth || "Chưa cập nhật"}</span>
             </div>
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Điện thoại</span>
-              <span className="text-zinc-900 font-medium">+84 586 724 620</span>
+              <span className="text-zinc-900 font-medium">{authUser?.phoneNumber || "Chưa cập nhật"}</span>
             </div>
             <div className="border-t border-zinc-100 my-0 pt-3 grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Phòng ban</span>
-              <span className="text-[#7c3aed] font-semibold bg-[#ede9fe] w-max px-2 py-0.5 rounded text-[13px]">Phòng ban IT</span>
+              <span className="text-[#7c3aed] font-semibold bg-[#ede9fe] w-max px-2 py-0.5 rounded text-[13px]">
+                {authUser?.department || "Chưa xếp phòng"}
+              </span>
             </div>
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Chức vụ</span>
-              <span className="text-zinc-900 font-medium">Nhân viên</span>
+              <span className="text-zinc-900 font-medium">
+                {authUser?.role === "admin" ? "Admin" : authUser?.role === "director" ? "Giám đốc" : authUser?.role === "moderator" ? "Quản lý" : "Nhân viên"}
+              </span>
             </div>
           </div>
         </div>

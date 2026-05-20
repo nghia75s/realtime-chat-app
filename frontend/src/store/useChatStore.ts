@@ -1,4 +1,4 @@
-import { axiosInstance } from "@/lib/axios";
+import { chatService } from "@/services/chat.service";
 import { create } from "zustand"
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
@@ -103,8 +103,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     getAllcontacts: async () => {
         set({ isContactsLoading: true });
         try {
-            const res = await axiosInstance.get("messages/contacts");
-            set({ allContacts: res.data })
+            const data = await chatService.getAllcontacts();
+            set({ allContacts: data })
         } catch (error: any) {
             const message = error?.response?.data?.message || "Failed to fetch contacts. Please try again.";
             toast.error(message);
@@ -115,8 +115,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     getMyChatPartners: async () => {
         set({ isUsersLoading: true });
         try {
-            const res = await axiosInstance.get("messages/chats");
-            set({ chats: res.data })
+            const data = await chatService.getMyChatPartners();
+            set({ chats: data })
         } catch (error: any) {
             const message = error?.response?.data?.message || "Failed to fetch chat partners. Please try again.";
             toast.error(message);
@@ -127,8 +127,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     getMyGroups: async () => {
         set({ isGroupsLoading: true });
         try {
-            const res = await axiosInstance.get("groups/groups");
-            const groupsWithFlag = res.data.map((group: any) => ({
+            const data = await chatService.getMyGroups();
+            const groupsWithFlag = data.map((group: any) => ({
                 ...group,
                 isGroup: true
             }));
@@ -143,8 +143,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     getMessagesByUserId: async (userId: string) => {
         set({ isMessagesLoading: true });
         try {
-            const res = await axiosInstance.get(`messages/${userId}`);
-            set({ messages: res.data })
+            const data = await chatService.getMessagesByUserId(userId);
+            set({ messages: data })
         } catch (error: any) {
             const message = error?.response?.data?.message || "Failed to fetch messages. Please try again.";
             toast.error(message);
@@ -155,8 +155,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     getGroupMessageByUserId: async (groupId: string) => {
         set({ isMessagesLoading: true });
         try {
-            const res = await axiosInstance.get(`groups/groups/${groupId}/messages`);
-            set({ messages: res.data })
+            const data = await chatService.getGroupMessageByUserId(groupId);
+            set({ messages: data })
         } catch (error: any) {
             const message = error?.response?.data?.message || "Failed to fetch group messages. Please try again.";
             toast.error(message);
@@ -167,8 +167,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     sendMessage: async (messageData) => {
         const { selectedUser, messages, chats } = get()
         try {
-            const res = await axiosInstance.post(`messages/send/${selectedUser._id}`, messageData);
-            set({ messages: messages.concat(res.data) })
+            const data = await chatService.sendMessage(selectedUser._id, messageData);
+            set({ messages: messages.concat(data) })
             set({ chats: pushToTop(chats, selectedUser._id, selectedUser) });
         } catch (error) {
             toast.error("Failed to send message. Please try again.");
@@ -178,8 +178,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     sendGroupMessage: async (messageData) => {
         const { selectedUser, messages, groups } = get()
         try {
-            const res = await axiosInstance.post(`groups/groups/${selectedUser._id}/messages`, messageData);
-            set({ messages: messages.concat(res.data) })
+            const data = await chatService.sendGroupMessage(selectedUser._id, messageData);
+            set({ messages: messages.concat(data) })
             set({ groups: pushToTop(groups, selectedUser._id, selectedUser) });
         } catch (error) {
             toast.error("Failed to send group message. Please try again.");
@@ -189,9 +189,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     createGroup: async (groupData) => {
         set({ isGroupsLoading: true });
         try {
-            const res = await axiosInstance.post("groups/groups", groupData);
-            set({ groups: [{ ...res.data, isGroup: true }, ...get().groups] });
-            return res.data;
+            const data = await chatService.createGroup(groupData);
+            set({ groups: [{ ...data, isGroup: true }, ...get().groups] });
+            return data;
         } catch (error: any) {
             const message = error?.response?.data?.message || "Failed to create group. Please try again.";
             toast.error(message);
@@ -302,8 +302,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
     fetchUnreadSummary: async () => {
         try {
-            const res = await axiosInstance.get("messages/unread-summary");
-            const { unreadChats, unreadGroups } = res.data;
+            const data = await chatService.fetchUnreadSummary();
+            const { unreadChats, unreadGroups } = data;
             localStorage.setItem("unreadChats", JSON.stringify(unreadChats));
             localStorage.setItem("unreadGroups", JSON.stringify(unreadGroups));
             set({ unreadChats, unreadGroups });
@@ -311,4 +311,4 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             console.error("Failed to fetch unread summary:", error);
         }
     },
-}))
+}));

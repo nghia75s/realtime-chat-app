@@ -1,6 +1,6 @@
 import express from "express";
 import User from "../models/User.js";
-import { getAllUsers, updateUserRole, updateUserStatus, updateUserDepartment, getAllRoles, updateRolePermissions } from "../controllers/admin.controller.js";
+import { getAllUsers, updateUserRole, updateUserStatus, updateUserDepartment, getAllRoles, updateRolePermissions, updateUserProfileAdmin } from "../controllers/admin.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
@@ -10,12 +10,6 @@ const router = express.Router();
 const requireAdmin = async (req, res, next) => {
   if (req.user?.role === "admin") return next();
 
-  // Auto-upgrade: email admin nhưng role chưa được set đúng trong DB
-  if (req.user?.email === "admin@gmail.com") {
-    await User.findByIdAndUpdate(req.user._id, { role: "admin" });
-    return next();
-  }
-
   return res.status(403).json({ message: "Chỉ admin mới có quyền truy cập" });
 };
 
@@ -23,6 +17,7 @@ router.use(protectRoute);
 router.use(requireAdmin);
 
 router.get("/users", getAllUsers);
+router.put("/users/:id", updateUserProfileAdmin);
 router.patch("/users/:id/role", updateUserRole);
 router.patch("/users/:id/status", updateUserStatus);
 router.patch("/users/:id/department", updateUserDepartment);

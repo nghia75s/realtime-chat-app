@@ -1,4 +1,4 @@
-import { axiosInstance } from "@/lib/axios";
+import { authService } from "@/services/auth.service";
 import { create } from "zustand";
 import { toast } from "react-hot-toast";
 import { io, Socket } from "socket.io-client";
@@ -11,6 +11,11 @@ export interface AuthUser {
   email: string;
   profilePicture: string;
   role: string;
+  department?: string;
+  phoneNumber?: string;
+  age?: number;
+  gender?: string;
+  dateOfBirth?: string;
   permissions?: {
     viewChat?: boolean;
     viewContacts?: boolean;
@@ -56,8 +61,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   checkAuth: async () => {
     try {
-        const res = await axiosInstance.get("/auth/check");
-        set({authUser: res.data});
+        const data = await authService.checkAuth();
+        set({authUser: data});
         get().connectSocket();
     } catch (error) {
         console.log("Error checking auth:", error);
@@ -70,8 +75,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signup: async (data) => {
     set({isSigningUp: true})
     try {
-        const res = await axiosInstance.post("/auth/signup", data);
-        set({authUser: res.data});
+        const resData = await authService.signup(data);
+        set({authUser: resData});
         get().connectSocket();
         toast.success("Signup successful! You are now logged in.");
         set({isSigningUp: false});
@@ -84,8 +89,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   login: async (data) => {
     set({isLoggingIn: true})
     try {
-        const res = await axiosInstance.post("/auth/login", data);
-        set({authUser: res.data});
+        const resData = await authService.login(data);
+        set({authUser: resData});
         get().connectSocket();
         toast.success("Login successful!");
         set({isLoggingIn: false});
@@ -97,7 +102,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: async () => {
     try {
-        await axiosInstance.post("/auth/logout");
+        await authService.logout();
         set({authUser: null});
         get().disconnectSocket();
         toast.success("Logged out successfully.");
@@ -109,8 +114,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   updateProfile: async (data) => {
     try {
-        const res = await axiosInstance.put("/auth/update-profile", data);
-        set({authUser: res.data});
+        const resData = await authService.updateProfile(data);
+        set({authUser: resData});
         toast.success("Profile updated successfully.");
     } catch (error: any) {
         const message = error?.response?.data?.message || "Profile update failed. Please try again.";
@@ -149,6 +154,26 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       setTimeout(() => {
         set({ accountLockAlert: { reason: data?.reason || "Vi phạm quy định" } });
       }, 3000);
+    });
+
+    newSocket.on("profileUpdated", (updatedUser) => {
+      const currentAuthUser = get().authUser;
+      if (currentAuthUser && currentAuthUser._id === updatedUser._id) {
+        set({
+          authUser: {
+            ...currentAuthUser,
+            fullname: updatedUser.fullname,
+            email: updatedUser.email,
+            profilePicture: updatedUser.profilePicture,
+            role: updatedUser.role,
+            department: updatedUser.department,
+            phoneNumber: updatedUser.phoneNumber,
+            age: updatedUser.age,
+            gender: updatedUser.gender,
+            dateOfBirth: updatedUser.dateOfBirth,
+          }
+        });
+      }
     });
   },
 

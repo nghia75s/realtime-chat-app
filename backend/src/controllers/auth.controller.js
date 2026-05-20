@@ -49,6 +49,12 @@ export const signup = async (req, res) => {
         fullname: savedUser.fullname,
         email: savedUser.email,
         profilePicture: savedUser.profilePicture,
+        role: savedUser.role,
+        department: savedUser.department,
+        phoneNumber: savedUser.phoneNumber,
+        age: savedUser.age,
+        gender: savedUser.gender,
+        dateOfBirth: savedUser.dateOfBirth,
       });
 
       // try {
@@ -94,6 +100,11 @@ export const login = async (req, res) => {
       email: user.email,
       profilePicture: user.profilePicture,
       role: user.role,
+      department: user.department,
+      phoneNumber: user.phoneNumber,
+      age: user.age,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
       permissions: permissions,
     });
   } catch (error) {

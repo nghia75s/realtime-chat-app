@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Role from "../models/Role.js";
-import { io, getReceiverSocketId } from "../lib/socket.js";
+import { emitToUser } from "../lib/socket.js";
+import cloudinary from "../lib/cloudinary.js";
 
 // GET /api/admin/roles — Lấy danh sách phân quyền
 export const getAllRoles = async (req, res) => {
@@ -67,8 +68,8 @@ export const getAllUsers = async (req, res) => {
       employees: employeesCount,
     };
 
-    res.status(200).json({ 
-      users, 
+    res.status(200).json({
+      users,
       stats,
       pagination: {
         currentPage: page,
@@ -108,10 +109,7 @@ export const updateUserRole = async (req, res) => {
     await user.save();
 
     // Thông báo cho user qua socket để họ tự động đăng xuất
-    const socketId = getReceiverSocketId(id);
-    if (socketId) {
-      io.to(socketId).emit("roleUpdated", { oldRole, newRole: role });
-    }
+    emitToUser(id, "roleUpdated", { oldRole, newRole: role });
 
     res.status(200).json({ message: "Cập nhật vai trò thành công", user });
   } catch (error) {
@@ -149,10 +147,7 @@ export const updateUserStatus = async (req, res) => {
     await user.save();
 
     if (!isActive) {
-      const socketId = getReceiverSocketId(id);
-      if (socketId) {
-        io.to(socketId).emit("accountLocked", { reason: reason || "Vi phạm quy định" });
-      }
+      emitToUser(id, "accountLocked", { reason: reason || "Vi phạm quy định" });
     }
 
     const msg = isActive ? "Tài khoản đã được mở khoá" : "Tài khoản đã bị khoá";
@@ -180,6 +175,51 @@ export const updateUserDepartment = async (req, res) => {
     res.status(200).json({ message: "Cập nhật phòng ban thành công", user });
   } catch (error) {
     console.error("Error in updateUserDepartment:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// PUT /api/admin/users/:id — Cập nhật thông tin cá nhân nhân viên
+export const updateUserProfileAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { fullname, email, age, phoneNumber, gender, dateOfBirth, department, profilePicture } = req.body;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại" });
+    }
+
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email này đã được sử dụng bởi người dùng khác" });
+      }
+      user.email = email;
+    }
+
+    if (fullname) user.fullname = fullname;
+    if (age !== undefined) user.age = age;
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+    if (gender !== undefined) user.gender = gender;
+    if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
+    if (department !== undefined) user.department = department;
+
+    if (profilePicture && profilePicture.startsWith("data:image")) {
+      const uploadResponse = await cloudinary.uploader.upload(profilePicture);
+      user.profilePicture = uploadResponse.secure_url;
+    }
+
+    await user.save();
+
+    const updatedUser = await User.findById(id).select("-password -unreadSince");
+
+    // Gửi sự kiện socket notify người dùng nếu họ đang online
+    emitToUser(id, "profileUpdated", updatedUser);
+
+    res.status(200).json({ message: "Cập nhật thông tin nhân viên thành công", user: updatedUser });
+  } catch (error) {
+    console.error("Error in updateUserProfileAdmin:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };

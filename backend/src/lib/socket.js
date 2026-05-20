@@ -17,20 +17,42 @@ const io = new Server(server, {
 // apply authentication middleware to all socket connections
 io.use(socketAuthMiddleware);
 
-// we will use this function to check if the user is online or not
+// this is for storing online users
+const userSocketMap = {}; // {userId: Set<socketId>}
+const groupSocketMap = {}; // {groupId: [socketIds]}
+
+// Check if a user is online (has at least one active socket connection)
 export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
+  if (userSocketMap[userId] && userSocketMap[userId].size > 0) {
+    // Return any socket id (for backward compatibility if needed)
+    return Array.from(userSocketMap[userId])[0];
+  }
+  return null;
 }
 
-// this is for storig online users
-const userSocketMap = {}; // {userId:socketId}
-const groupSocketMap = {}; // {groupId: [socketIds]}
+// Get all socket ids of a user
+export function getReceiverSocketIds(userId) {
+  return userSocketMap[userId] ? Array.from(userSocketMap[userId]) : [];
+}
+
+// Emit event to all sockets of a specific user
+export function emitToUser(userId, event, data) {
+  const socketIds = userSocketMap[userId];
+  if (socketIds) {
+    socketIds.forEach((socketId) => {
+      io.to(socketId).emit(event, data);
+    });
+  }
+}
 
 io.on("connection", (socket) => {
   console.log("A user connected", socket.user.fullname);
 
   const userId = socket.userId;
-  userSocketMap[userId] = socket.id;
+  if (!userSocketMap[userId]) {
+    userSocketMap[userId] = new Set();
+  }
+  userSocketMap[userId].add(socket.id);
 
   // io.emit() is used to send events to all connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
@@ -76,7 +98,12 @@ io.on("connection", (socket) => {
   // with socket.on we listen for events from clients
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.user.fullname);
-    delete userSocketMap[userId];
+    if (userSocketMap[userId]) {
+      userSocketMap[userId].delete(socket.id);
+      if (userSocketMap[userId].size === 0) {
+        delete userSocketMap[userId];
+      }
+    }
 
     // Remove from all groups
     Object.keys(groupSocketMap).forEach(groupId => {

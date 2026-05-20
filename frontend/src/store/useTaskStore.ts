@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios";
+import { taskService } from "@/services/task.service";
 import toast from "react-hot-toast";
 
 export type TaskStatus = "pending" | "done";
@@ -77,7 +77,7 @@ interface TaskStore {
   updateAccess: (taskId: string, assigneeId: string, canViewOthers: boolean) => Promise<void>;
 }
 
-export const useTaskStore = create<TaskStore>((set, get) => ({
+export const useTaskStore = create<TaskStore>((set) => ({
   tasks: [],
   isLoading: false,
   isCreating: false,
@@ -85,8 +85,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   fetchTasks: async () => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.get("/tasks");
-      set({ tasks: res.data });
+      const data = await taskService.fetchTasks();
+      set({ tasks: data });
     } catch (error) {
       console.error("Error fetching tasks:", error);
       toast.error("Không thể tải danh sách công việc");
@@ -98,8 +98,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   createTask: async (data) => {
     set({ isCreating: true });
     try {
-      const res = await axiosInstance.post("/tasks", data);
-      set((state) => ({ tasks: [res.data, ...state.tasks] }));
+      const dataRes = await taskService.createTask(data);
+      set((state) => ({ tasks: [dataRes, ...state.tasks] }));
       toast.success("Đã tạo công việc thành công!");
     } catch (error: any) {
       console.error("Error creating task:", error);
@@ -111,9 +111,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   editTask: async (taskId, data) => {
     try {
-      const res = await axiosInstance.put(`/tasks/${taskId}`, data);
+      const dataRes = await taskService.editTask(taskId, data);
       set((state) => ({
-        tasks: state.tasks.map((t) => (t._id === taskId ? res.data : t)),
+        tasks: state.tasks.map((t) => (t._id === taskId ? dataRes : t)),
       }));
       toast.success("Đã cập nhật công việc!");
     } catch (error: any) {
@@ -124,9 +124,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   addCommit: async (taskId, data) => {
     try {
-      const res = await axiosInstance.post(`/tasks/${taskId}/commit`, data);
+      const dataRes = await taskService.addCommit(taskId, data);
       set((state) => ({
-        tasks: state.tasks.map((t) => (t._id === taskId ? res.data : t)),
+        tasks: state.tasks.map((t) => (t._id === taskId ? dataRes : t)),
       }));
       toast.success("Đã cập nhật trạng thái công việc!");
     } catch (error: any) {
@@ -137,12 +137,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   updateAccess: async (taskId, assigneeId, canViewOthers) => {
     try {
-      const res = await axiosInstance.patch(`/tasks/${taskId}/access`, {
-        assigneeId,
-        canViewOthers,
-      });
+      const dataRes = await taskService.updateAccess(taskId, assigneeId, canViewOthers);
       set((state) => ({
-        tasks: state.tasks.map((t) => (t._id === taskId ? res.data : t)),
+        tasks: state.tasks.map((t) => (t._id === taskId ? dataRes : t)),
       }));
       toast.success(canViewOthers ? "Đã cho phép xem bài nhau" : "Đã tắt chia sẻ bài");
     } catch (error: any) {

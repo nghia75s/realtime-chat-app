@@ -1,9 +1,12 @@
-import { useState, useRef } from "react"
-import { ChevronLeft, Paperclip, CheckCircle2, XCircle, Clock, FileText, Send, X, MessageSquareReply, Edit2, BarChart2, StickyNote, Eye, EyeOff } from "lucide-react"
-import type { TaskItem, CommitType, CommitItem } from "@/store/useTaskStore"
+import React, { useState, useRef, useEffect } from "react"
+import { ChevronLeft, Paperclip, Clock, X, Send, Edit2, BarChart2 } from "lucide-react"
+import type { TaskItem } from "@/store/useTaskStore"
 import { useTaskStore } from "@/store/useTaskStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import toast from "react-hot-toast"
+import { TaskProgressPanel } from "./TaskProgressPanel"
+import { TaskTimeline } from "./TaskTimeline"
+import { AssigneeListModal } from "./AssigneeListModal"
 
 interface TaskDetailProps {
   role: "manager" | "employee";
@@ -12,34 +15,40 @@ interface TaskDetailProps {
 }
 
 export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
-  const { addCommit, editTask, updateAccess } = useTaskStore();
+  const { addCommit, editTask } = useTaskStore();
   const { authUser } = useAuthStore();
   const [reportText, setReportText] = useState("");
   const [reportFile, setReportFile] = useState<File | null>(null);
   
+  const formatLocalDateForInput = (dateInput: string) => {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return "";
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+  };
+
   const [isEditing, setIsEditing] = useState(false);
   const [editDesc, setEditDesc] = useState(task.description);
-  const [editDeadline, setEditDeadline] = useState(new Date(task.deadline).toISOString().slice(0, 16));
+  const [editDeadline, setEditDeadline] = useState(() => formatLocalDateForInput(task.deadline));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [rejectText, setRejectText] = useState("");
-  const [isRejecting, setIsRejecting] = useState(false);
+  // Sync state if task prop changes or updates
+  useEffect(() => {
+    setEditDesc(task.description);
+    setEditDeadline(formatLocalDateForInput(task.deadline));
+    setIsEditing(false);
+  }, [task]);
+
   const [showAssigneesList, setShowAssigneesList] = useState(false);
-  const [evaluatingCommitId, setEvaluatingCommitId] = useState<string | null>(null);
-
-  // Feature 2b: filter commit history by assignee
-  const [selectedAssigneeFilter, setSelectedAssigneeFilter] = useState<string | null>(null);
-  // Feature 2c: access control toggles loading state
-  const [accessLoadingId, setAccessLoadingId] = useState<string | null>(null);
-
-  // Progress panel toggle
   const [showProgressPanel, setShowProgressPanel] = useState(false);
 
   const getStatusBadge = (status: TaskItem['status']) => {
     switch (status) {
-      case "done": return <span className="bg-green-500/20 text-green-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><CheckCircle2 className="w-4 h-4" /> Hoàn thành</span>;
+      case "done":
+        return <span className="bg-green-500/20 text-green-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><Clock className="w-4 h-4" /> Hoàn thành</span>;
       case "pending":
-      default: return <span className="bg-amber-500/20 text-amber-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><Clock className="w-4 h-4" /> Đang chờ</span>;
+      default:
+        return <span className="bg-amber-500/20 text-amber-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><Clock className="w-4 h-4" /> Đang chờ</span>;
     }
   }
 
@@ -51,31 +60,7 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
     setReportFile(null);
   }
 
-  const handleManagerApprove = async (targetId: string) => {
-    await addCommit(task._id, { type: "approve", description: "Duyệt nội dung.", targetCommitId: targetId });
-    setEvaluatingCommitId(null);
-  }
-
-  const handleManagerReject = async (targetId: string) => {
-    if (!rejectText.trim()) return;
-    await addCommit(task._id, { type: "reject", description: rejectText, targetCommitId: targetId });
-    setRejectText("");
-    setIsRejecting(false);
-    setEvaluatingCommitId(null);
-  }
-
-  const renderCommitIcon = (type: CommitType | "edit") => {
-    switch (type) {
-      case "create": return <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center shrink-0 border border-blue-500/30"><Clock className="w-4 h-4" /></div>;
-      case "edit": return <div className="w-8 h-8 rounded-full bg-yellow-500/20 text-yellow-500 flex items-center justify-center shrink-0 border border-yellow-500/30"><Edit2 className="w-4 h-4" /></div>;
-      case "commit": return <div className="w-8 h-8 rounded-full bg-purple-500/20 text-purple-500 flex items-center justify-center shrink-0 border border-purple-500/30"><FileText className="w-4 h-4" /></div>;
-      case "approve": return <div className="w-8 h-8 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center shrink-0 border border-green-500/30"><CheckCircle2 className="w-4 h-4" /></div>;
-      case "reject": return <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-500 flex items-center justify-center shrink-0 border border-red-500/30"><XCircle className="w-4 h-4" /></div>;
-      default: return <div className="w-8 h-8 rounded-full bg-gray-500/20 text-gray-400 flex items-center justify-center shrink-0 border border-gray-500/30"><Clock className="w-4 h-4" /></div>;
-    }
-  }
-
-  const isCreatorOrAdmin = authUser?._id === task.creator?._id || authUser?.permissions?.approveTasks;
+  const isCreatorOrAdmin = !!(authUser?._id === task.creator?._id || authUser?.permissions?.approveTasks);
 
   const handleEditSubmit = async () => {
     if (!editDesc || !editDeadline) return;
@@ -97,14 +82,6 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
 
   const isAssignee = task.assignees.some(a => a.user?._id === authUser?._id);
   const isOverdue = new Date() > new Date(task.deadline);
-  const canEmployeeSubmit = isAssignee && task.status !== 'done' && !isOverdue;
-  const primaryCommits = task.commits.filter(c => {
-    if (c.targetCommitId) return false;
-    if (selectedAssigneeFilter && c.type === "commit") {
-      return c.userId?._id === selectedAssigneeFilter;
-    }
-    return true;
-  });
 
   return (
     <div className="flex-1 flex flex-col bg-[#131416] h-full overflow-hidden text-[#e1e1e1]">
@@ -147,8 +124,8 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
                 title="Xem danh sách"
               >
                 <div className="flex -space-x-2 shrink-0">
-                  {task.assignees.slice(0, 4).map((_, i) => (
-                    <img key={i} src="/avatar.png" className="w-6 h-6 rounded-full border-2 border-[#1e1f22] relative" style={{ zIndex: 10 - i }} />
+                  {task.assignees.slice(0, 4).map((assignee, i) => (
+                    <img key={i} src={assignee.user?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full border-2 border-[#1e1f22] object-cover relative" style={{ zIndex: 10 - i }} />
                   ))}
                   {task.assignees.length > 4 && (
                     <div className="w-6 h-6 rounded-full border-2 border-[#1e1f22] bg-[#2b2d31] text-[#e1e1e1] text-[10px] font-medium flex items-center justify-center relative" style={{ zIndex: 5 }}>
@@ -178,84 +155,17 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
                   ? 'text-red-400 bg-red-500/10 border border-red-500/20'
                   : 'text-[#ebaa16] bg-[#ebaa16]/10'
               }`}>
-                {isOverdue && task.status !== 'done' && <XCircle className="w-3.5 h-3.5" />}
+                {isOverdue && task.status !== 'done' && <Clock className="w-3.5 h-3.5" />}
                 {new Date(task.deadline).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                 {isOverdue && task.status !== 'done' && <span className="text-[11px] font-bold">· QUÁ HẠN</span>}
               </span>
             </div>
           </div>
 
-          {/* PROGRESS PANEL — chỉ hiện khi bấm nút */}
-          {showProgressPanel && task.assignees.length > 0 && (() => {
-            const doneCount = task.assignees.filter(a => a.status === "done").length;
-            const progress = Math.round((doneCount / task.assignees.length) * 100);
-            const getAssigneeStatusLabel = (status: string) => {
-              switch (status) {
-                case "done": return { label: "Hoàn thành", cls: "bg-green-500/20 text-green-400 border-green-500/30" };
-                case "submitted": return { label: "Đã nộp bài", cls: "bg-blue-500/20 text-blue-400 border-blue-500/30" };
-                case "rejected": return { label: "Cần làm lại", cls: "bg-red-500/20 text-red-400 border-red-500/30" };
-                default: return { label: "Đang chờ", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" };
-              }
-            };
-            const getSubmitCount = (userId: string) =>
-              task.commits.filter(c => c.type === "commit" && c.userId?._id === userId).length;
-            const getLastCommitTime = (userId: string) => {
-              const commits = task.commits.filter(c => c.type === "commit" && c.userId?._id === userId);
-              if (!commits.length) return null;
-              return new Date(commits[commits.length - 1].createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
-            };
-
-            return (
-              <div className="flex flex-col gap-3 bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-bold text-[#a1a1a1] tracking-wider uppercase flex items-center gap-1.5">
-                    <BarChart2 className="w-3.5 h-3.5" /> Tiến độ công việc
-                  </span>
-                  <span className="text-[13px] font-semibold text-white">{doneCount}/{task.assignees.length}</span>
-                </div>
-                {/* Progress bar */}
-                <div className="h-1.5 bg-[#2b2d31] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#0052cc] to-green-500 rounded-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <span className="text-[11px] text-[#a1a1a1]">{progress}% hoàn thành</span>
-                {/* Per-assignee rows */}
-                <div className="flex flex-col gap-2 mt-1">
-                  {task.assignees.map(a => {
-                    const { label, cls } = getAssigneeStatusLabel(a.status);
-                    const submitCount = getSubmitCount(a.user?._id);
-                    const lastTime = getLastCommitTime(a.user?._id);
-                    return (
-                      <div key={a._id} className="flex flex-col gap-1.5 bg-[#131416] p-3 rounded-md border border-[#2b2d31]">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <img src={a.user?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover shrink-0" />
-                            <span className="text-[13px] text-[#e1e1e1] font-medium truncate">{a.user?.fullname || "Unknown"}</span>
-                          </div>
-                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border shrink-0 ${cls}`}>{label}</span>
-                        </div>
-                        {a.personalNote && (
-                          <div className="flex items-start gap-1.5 text-[12px] text-[#a1a1a1]">
-                            <StickyNote className="w-3 h-3 shrink-0 mt-0.5 text-[#0052cc]" />
-                            <span className="italic">{a.personalNote}</span>
-                          </div>
-                        )}
-                        <div className="text-[11px] text-[#6b6d70] flex items-center gap-2">
-                          {submitCount > 0 ? (
-                            <span>Đã nộp {submitCount} lần · Lần cuối: {lastTime}</span>
-                          ) : (
-                            <span>Chưa nộp bài</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
+          {/* PROGRESS PANEL */}
+          {showProgressPanel && (
+            <TaskProgressPanel task={task} />
+          )}
 
           {/* MÔ TẢ YÊU CẦU */}
           <div className="flex flex-col gap-2">
@@ -300,146 +210,13 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
 
         {/* Right Column: Timeline & Actions */}
         <div className="flex-1 flex flex-col p-6 overflow-hidden bg-[#0a0a0c]">
-          <div className="shrink-0 mb-4">
-            <h3 className="text-[16px] font-semibold text-white mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#0052cc]" /> Lịch sử hoạt động
-            </h3>
-            {/* Feature 2b: Assignee filter tabs */}
-            {task.assignees.length > 1 && (
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => setSelectedAssigneeFilter(null)}
-                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors border ${
-                    selectedAssigneeFilter === null
-                      ? "bg-[#0052cc] border-[#0052cc] text-white"
-                      : "border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#4a4d52]"
-                  }`}
-                >
-                  Tất cả
-                </button>
-                {task.assignees.map(a => (
-                  <button
-                    key={a._id}
-                    onClick={() => setSelectedAssigneeFilter(
-                      selectedAssigneeFilter === a.user?._id ? null : a.user?._id
-                    )}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium transition-colors border ${
-                      selectedAssigneeFilter === a.user?._id
-                        ? "bg-[#0052cc] border-[#0052cc] text-white"
-                        : "border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#4a4d52]"
-                    }`}
-                  >
-                    <img src={a.user?.profilePicture || "/avatar.png"} className="w-4 h-4 rounded-full object-cover" />
-                    {a.user?.fullname?.split(" ").pop()}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 relative">
-            {/* Timeline Line */}
-            <div className="absolute top-4 bottom-4 left-4 w-0.5 bg-[#2b2d31]"></div>
-
-            <div className="flex flex-col gap-6 relative pb-6">
-              {primaryCommits.map((primaryCommit) => {
-                const evaluations = task.commits.filter(c => c.targetCommitId === primaryCommit._id);
-                const hasEvaluated = evaluations.some(e => e.type === 'approve' || e.type === 'reject');
-                const isEvaluating = evaluatingCommitId === primaryCommit._id;
-
-                return (
-                  <div key={primaryCommit._id} className="flex gap-4 group">
-                    <div className="z-10">{renderCommitIcon(primaryCommit.type)}</div>
-                    <div className="flex-1 bg-[#1e1f22] border border-[#2b2d31] p-4 rounded-lg shadow-sm group-hover:border-[#0052cc]/30 transition-colors flex flex-col gap-2">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <img src={primaryCommit.userId?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover" />
-                          <span className="font-semibold text-white text-[14px]">{primaryCommit.userId?.fullname || "Unknown"}</span>
-                        </div>
-                        <span className="text-[12px] text-[#a1a1a1]">
-                          {new Date(primaryCommit.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
-                        </span>
-                      </div>
-                      <p className="text-[14px] text-[#e1e1e1] leading-relaxed">{primaryCommit.description}</p>
-
-                      {primaryCommit.fileName && (
-                        <div className="mt-2 flex items-center gap-2 bg-[#131416] border border-[#2b2d31] w-max px-3 py-2 rounded-md hover:bg-[#2b2d31] cursor-pointer transition-colors">
-                          <Paperclip className="w-4 h-4 text-[#a1a1a1]" />
-                          <span className="text-[13px] text-[#e1e1e1] max-w-[200px] truncate">{primaryCommit.fileName}</span>
-                        </div>
-                      )}
-
-                      {/* Display nested Feedback/Evaluations */}
-                      {evaluations.length > 0 && (
-                        <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-[#2b2d31] relative">
-                          <div className="absolute top-0 left-4 w-px h-full bg-[#2b2d31]" />
-                          {evaluations.map(evalCommit => (
-                             <div key={evalCommit._id} className={`ml-8 p-3 rounded-md border ${evalCommit.type === 'reject' ? 'bg-red-500/10 border-red-500/20' : 'bg-green-500/10 border-green-500/20'} animate-in fade-in slide-in-from-top-2 duration-300`}>
-                               <div className="flex items-center gap-2 mb-1.5">
-                                 {evalCommit.type === 'reject' ? <XCircle className="w-4 h-4 text-red-500" /> : <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                                 <span className="font-semibold text-[13px] text-white">{evalCommit.userId?.fullname || "Unknown"} <span className="opacity-60 text-xs ml-1">(Quản lý)</span></span>
-                                 <span className="text-[12px] text-[#a1a1a1] ml-auto">
-                                   {new Date(evalCommit.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
-                                 </span>
-                               </div>
-                               <p className={`text-[13px] leading-relaxed ${evalCommit.type === 'reject' ? 'text-red-100' : 'text-green-100'}`}>{evalCommit.description}</p>
-                             </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Manager Action Form: Trượt xuống bên trong hộp nộp bài */}
-                      {role === 'manager' && primaryCommit.type === 'commit' && !hasEvaluated && task.status !== 'done' && (
-                        <div className="mt-3 pt-3 border-t border-[#2b2d31]">
-                          {isEvaluating ? (
-                            <div className="bg-[#131416] border border-blue-500/30 p-4 rounded-md flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
-                               <p className="text-[13px] text-[#e1e1e1] font-medium">Nhận xét bản thảo của {primaryCommit.userId.fullname}:</p>
-                               {!isRejecting ? (
-                                 <div className="flex gap-3 mt-1">
-                                   <button onClick={() => setIsRejecting(true)} className="px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 rounded-md text-[13px] font-semibold transition-colors">Yêu cầu làm lại</button>
-                                   <button onClick={() => handleManagerApprove(primaryCommit._id)} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-[13px] font-semibold transition-colors flex-1 shadow-sm">Duyệt Đạt</button>
-                                   <button onClick={() => setEvaluatingCommitId(null)} className="px-3 py-2 text-[#a1a1a1] hover:text-white transition-colors">Hủy</button>
-                                 </div>
-                               ) : (
-                                 <div className="flex flex-col gap-3">
-                                   <textarea
-                                     value={rejectText}
-                                     onChange={e => setRejectText(e.target.value)}
-                                     placeholder="Ghi rõ lý do cần sửa..."
-                                     className="w-full bg-[#1e1f22] border border-[#2b2d31] rounded-md p-3 text-[14px] focus:border-red-500 outline-none resize-none placeholder:text-[#a1a1a1]"
-                                     rows={3}
-                                   />
-                                   <div className="flex gap-2 justify-end">
-                                     <button onClick={() => setIsRejecting(false)} className="px-4 py-2 text-[13px] text-[#a1a1a1] hover:text-white transition-colors">Quay lại</button>
-                                     <button onClick={() => handleManagerReject(primaryCommit._id)} disabled={!rejectText.trim()} className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white rounded-md text-[13px] font-semibold transition-colors flex items-center gap-2"><Send className="w-3.5 h-3.5" /> Gửi phản hồi</button>
-                                   </div>
-                                 </div>
-                               )}
-                            </div>
-                          ) : isCreatorOrAdmin && primaryCommit.userId?._id !== authUser?._id ? (
-                            <button 
-                              onClick={() => setEvaluatingCommitId(primaryCommit._id)}
-                              className="text-[13px] text-[#0052cc] hover:text-white hover:bg-[#0052cc] px-3 py-1.5 rounded transition-colors flex items-center gap-1.5 font-medium border border-[#0052cc]/50 hover:border-transparent w-max"
-                            >
-                              <MessageSquareReply className="w-4 h-4" /> Đánh giá bản thảo này
-                            </button>
-                          ) : null}
-                        </div>
-                      )}
-
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          <TaskTimeline task={task} role={role} authUser={authUser} />
 
           {/* Employee Action (Submit File/Report) stays at the bottom to submit new files */}
           {isAssignee && task.status !== 'done' && (
             isOverdue ? (
-              // Hiển thị cảnh báo quá hạn thay vì form nộp bài
               <div className="mt-4 shrink-0 bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-center gap-3">
-                <XCircle className="w-5 h-5 text-red-500 shrink-0" />
+                <Clock className="w-5 h-5 text-red-500 shrink-0" />
                 <div>
                   <p className="text-[14px] font-semibold text-red-400">Task đã quá hạn</p>
                   <p className="text-[12px] text-red-300/70 mt-0.5">Thời gian nộp bài đã kết thúc. Vui lòng liên hệ quản lý để được gia hạn.</p>
@@ -478,58 +255,11 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
       </div>
 
       {showAssigneesList && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setShowAssigneesList(false)}>
-           <div className="w-[350px] bg-[#1e1f22] border border-[#2b2d31] rounded-xl shadow-2xl flex flex-col p-5 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#2b2d31]">
-                 <h3 className="text-white font-semibold text-[15px]">Được giao cho ({task.assignees.length})</h3>
-                 <button onClick={() => setShowAssigneesList(false)} className="text-[#a1a1a1] hover:text-white p-1 hover:bg-[#2b2d31] rounded transition-colors"><X className="w-4 h-4"/></button>
-              </div>
-               <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto custom-scrollbar">
-                 {task.assignees.map(a => (
-                   <div key={a.user?._id || Math.random()} className="flex flex-col gap-2 p-3 bg-[#131416] rounded-md border border-[#2b2d31]">
-                     <div className="flex items-center gap-3">
-                       <img src={a.user?.profilePicture || "/avatar.png"} className="w-8 h-8 rounded-full border border-[#2b2d31] object-cover" />
-                       <div className="flex flex-col flex-1 min-w-0">
-                         <span className="text-[14px] text-[#e1e1e1] font-medium truncate">{a.user?.fullname || "Unknown"}</span>
-                         <span className="text-[12px] text-[#a1a1a1]">
-                           {a.status === 'done' ? 'Hoàn thành' : a.status === 'submitted' ? 'Đã nộp bài' : a.status === 'rejected' ? 'Cần làm lại' : 'Đang chờ'}
-                         </span>
-                       </div>
-                     </div>
-                     {a.personalNote && (
-                       <div className="flex items-start gap-1.5 text-[12px] text-[#a1a1a1] bg-[#1e1f22] px-2 py-1.5 rounded border border-[#2b2d31]">
-                         <StickyNote className="w-3 h-3 shrink-0 mt-0.5 text-[#0052cc]" />
-                         <span className="italic">{a.personalNote}</span>
-                       </div>
-                     )}
-                     {/* Feature 2c: canViewOthers toggle — chỉ creator/manager thấy */}
-                     {isCreatorOrAdmin && task.assignees.length > 1 && (
-                       <div className="flex items-center justify-between pt-1 border-t border-[#2b2d31]">
-                         <span className="text-[12px] text-[#a1a1a1] flex items-center gap-1">
-                           {a.canViewOthers ? <Eye className="w-3.5 h-3.5 text-[#0052cc]" /> : <EyeOff className="w-3.5 h-3.5" />}
-                           Xem bài của người khác
-                         </span>
-                         <button
-                           disabled={accessLoadingId === a._id}
-                           onClick={async () => {
-                             setAccessLoadingId(a._id);
-                             await updateAccess(task._id, a.user._id, !a.canViewOthers);
-                             setAccessLoadingId(null);
-                           }}
-                           className={`relative w-10 h-5 rounded-full transition-colors duration-300 shrink-0 ${
-                             a.canViewOthers ? "bg-[#0052cc]" : "bg-[#2b2d31]"
-                           } ${accessLoadingId === a._id ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                         >
-                           <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-300 ${a.canViewOthers ? "translate-x-5" : "translate-x-0"}`} />
-                         </button>
-                       </div>
-                     )}
-                   </div>
-                 ))}
-               </div>
-            </div>
-         </div>
-
+        <AssigneeListModal 
+          task={task} 
+          isCreatorOrAdmin={isCreatorOrAdmin} 
+          onClose={() => setShowAssigneesList(false)} 
+        />
       )}
     </div>
   )

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { axiosInstance } from "../lib/axios";
+import { notificationService } from "@/services/notification.service";
 import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
 
@@ -41,10 +41,10 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   fetchNotifications: async () => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.get("/notifications");
+      const data = await notificationService.fetchNotifications();
       set({ 
-        notifications: res.data,
-        unreadCount: res.data.filter((n: NotificationItem) => !n.isRead).length
+        notifications: data,
+        unreadCount: data.filter((n: NotificationItem) => !n.isRead).length
       });
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -55,7 +55,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
   markAsRead: async (id) => {
     try {
-      await axiosInstance.put(`/notifications/${id}/read`);
+      await notificationService.markAsRead(id);
       set((state) => {
         const updated = state.notifications.map((n) =>
           n._id === id ? { ...n, isRead: true } : n
@@ -72,7 +72,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
   markAllAsRead: async () => {
     try {
-      await axiosInstance.put("/notifications/read-all");
+      await notificationService.markAllAsRead();
       set((state) => ({
         notifications: state.notifications.map((n) => ({ ...n, isRead: true })),
         unreadCount: 0,
@@ -87,7 +87,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     // Bug #6: Nếu socket chưa sẵn sàng, không đánh dấu đã subscribe
     // để TaskHeader có thể retry sau khi socket connect
     if (!socket) {
-      console.warn("[Notification] Socket chưa sẵn sàng, bỏ qua subscribe.");
+      console.warn("[Notification] Socket chưa sẵn sàng, bỏ quan subscribe.");
       return;
     }
 

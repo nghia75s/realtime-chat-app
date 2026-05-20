@@ -3,7 +3,7 @@ import Message from "../models/Message.js";
 import User from "../models/User.js";
 import Group from "../models/Group.js";
 import Notification from "../models/Notification.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { emitToUser } from "../lib/socket.js";
 import { ENV } from "../lib/env.js";
 import mongoose from "mongoose";
 
@@ -178,10 +178,9 @@ export const createTask = async (req, res) => {
     const clientUrl = ENV.CLIENT_URL || "http://localhost:5173";
     const creatorName = req.user.fullname;
 
-    for (const assigneeId of allAssigneeIds) {
-      const assigneeDoc = await User.findById(assigneeId);
-      if (!assigneeDoc) continue;
-
+    const assigneesDocs = await User.find({ _id: { $in: allAssigneeIds } });
+    const promises = assigneesDocs.map(async (assigneeDoc) => {
+      const assigneeId = assigneeDoc._id.toString();
       const dateStr = new Date(deadline).toLocaleDateString("vi-VN");
       const personalNote = assigneeNotes[assigneeId];
       const taskLink = `${clientUrl}/todo?taskId=${newTask._id}`;
@@ -203,15 +202,16 @@ export const createTask = async (req, res) => {
         message: `Quản lý ${creatorName} đã giao cho bạn một công việc: "${newTask.title}"`,
       });
       await newNotif.save();
-      await newNotif.populate("sender", "fullname profilePicture");
-      await newNotif.populate("taskId", "title");
+      await newNotif.populate([
+        { path: "sender", select: "fullname profilePicture" },
+        { path: "taskId", select: "title" }
+      ]);
 
-      const receiverSocketId = getReceiverSocketId(assigneeId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("newMessage", newMessage);
-        io.to(receiverSocketId).emit("newNotification", newNotif);
-      }
-    }
+      emitToUser(assigneeId, "newMessage", newMessage);
+      emitToUser(assigneeId, "newNotification", newNotif);
+    });
+
+    await Promise.all(promises);
 
     res.status(201).json(newTask);
   } catch (error) {
@@ -259,66 +259,70 @@ export const addCommit = async (req, res) => {
         message: `${req.user.fullname} đã nộp bản thảo cho công việc "${task.title}"`,
       });
       await newNotif.save();
-      await newNotif.populate("sender", "fullname profilePicture");
-      await newNotif.populate("taskId", "title");
+      await newNotif.populate([
+        { path: "sender", select: "fullname profilePicture" },
+        { path: "taskId", select: "title" }
+      ]);
 
-      const managerSocketId = getReceiverSocketId(task.creator.toString());
-      if (managerSocketId) {
-        io.to(managerSocketId).emit("newNotification", newNotif);
-      }
+      emitToUser(task.creator.toString(), "newNotification", newNotif);
     } else if (type === "approve" || type === "reject") {
       if (!req.user.permissions?.approveTasks) {
         return res.status(403).json({ message: "Bạn không có quyền duyệt task" });
       }
 
-      if (targetCommitId) {
-        const targetCommit = task.commits.find(
-          (c) => c._id.toString() === targetCommitId
-        );
-        if (targetCommit) {
-          const assigneeId = targetCommit.userId;
-          const assigneeIndex = task.assignees.findIndex(
-            (a) => a.user.toString() === assigneeId.toString()
-          );
-
-          if (assigneeIndex !== -1) {
-            task.assignees[assigneeIndex].status =
-              type === "approve" ? "done" : "rejected";
-
-            const clientUrl = ENV.CLIENT_URL || "http://localhost:5173";
-            const taskLink = `${clientUrl}/todo?taskId=${task._id}`;
-            const msgStatus =
-              type === "approve" ? "phê duyệt thành công" : "yêu cầu làm lại";
-            const msgText = `Quản lý ${req.user.fullname} đã ${msgStatus} phần công việc của bạn trong Task "${task.title}". Xem chi tiết tại: ${taskLink}`;
-
-            const newMessage = new Message({
-              senderId: userId,
-              receiverId: assigneeId,
-              text: msgText,
-            });
-            await newMessage.save();
-
-            const newNotif = new Notification({
-              recipient: assigneeId,
-              sender: userId,
-              type: type === "approve" ? "task_approve" : "task_reject",
-              taskId: task._id,
-              message: `Quản lý ${req.user.fullname} đã ${
-                type === "approve" ? "Duyệt Đạt" : "Yêu cầu làm lại"
-              } công việc "${task.title}"`,
-            });
-            await newNotif.save();
-            await newNotif.populate("sender", "fullname profilePicture");
-            await newNotif.populate("taskId", "title");
-
-            const receiverSocketId = getReceiverSocketId(assigneeId.toString());
-            if (receiverSocketId) {
-              io.to(receiverSocketId).emit("newMessage", newMessage);
-              io.to(receiverSocketId).emit("newNotification", newNotif);
-            }
-          }
-        }
+      if (!targetCommitId) {
+        return res.status(400).json({ message: "Thiếu targetCommitId để thực hiện thao tác" });
       }
+
+      const targetCommit = task.commits.find(
+        (c) => c._id.toString() === targetCommitId
+      );
+      if (!targetCommit) {
+        return res.status(400).json({ message: "Không tìm thấy commit được yêu cầu duyệt" });
+      }
+
+      const assigneeId = targetCommit.userId;
+      const assigneeIndex = task.assignees.findIndex(
+        (a) => a.user.toString() === assigneeId.toString()
+      );
+
+      if (assigneeIndex === -1) {
+        return res.status(400).json({ message: "Người nộp commit không thuộc danh sách người được giao của công việc này" });
+      }
+
+      task.assignees[assigneeIndex].status =
+        type === "approve" ? "done" : "rejected";
+
+      const clientUrl = ENV.CLIENT_URL || "http://localhost:5173";
+      const taskLink = `${clientUrl}/todo?taskId=${task._id}`;
+      const msgStatus =
+        type === "approve" ? "phê duyệt thành công" : "yêu cầu làm lại";
+      const msgText = `Quản lý ${req.user.fullname} đã ${msgStatus} phần công việc của bạn trong Task "${task.title}". Xem chi tiết tại: ${taskLink}`;
+
+      const newMessage = new Message({
+        senderId: userId,
+        receiverId: assigneeId,
+        text: msgText,
+      });
+      await newMessage.save();
+
+      const newNotif = new Notification({
+        recipient: assigneeId,
+        sender: userId,
+        type: type === "approve" ? "task_approve" : "task_reject",
+        taskId: task._id,
+        message: `Quản lý ${req.user.fullname} đã ${
+          type === "approve" ? "Duyệt Đạt" : "Yêu cầu làm lại"
+        } công việc "${task.title}"`,
+      });
+      await newNotif.save();
+      await newNotif.populate([
+        { path: "sender", select: "fullname profilePicture" },
+        { path: "taskId", select: "title" }
+      ]);
+
+      emitToUser(assigneeId.toString(), "newMessage", newMessage);
+      emitToUser(assigneeId.toString(), "newNotification", newNotif);
     }
 
     // Bug #1 FIX: Trạng thái tổng chỉ dựa vào allDone

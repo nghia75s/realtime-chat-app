@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { axiosInstance } from "@/lib/axios";
+import { adminService } from "@/services/admin.service";
 import { toast } from "react-hot-toast";
+import { useAuthStore } from "./useAuthStore";
 
 export interface AdminUser {
   _id: string;
@@ -8,18 +9,20 @@ export interface AdminUser {
   email: string;
   role: "admin" | "director" | "moderator" | "user";
   isActive: boolean;
+  lockReason?: string;
   department?: string;
-  profilePicture: string;
+  phoneNumber?: string;
+  age?: number;
+  gender?: string;
+  dateOfBirth?: string;
   createdAt: string;
+  profilePicture?: string;
 }
 
 export interface AdminStats {
-  total: number;
-  active: number;
-  locked: number;
-  admins: number;
-  managers: number;
-  employees: number;
+  totalUsers: number;
+  activeUsers: number;
+  lockedUsers: number;
 }
 
 export interface PaginationState {
@@ -28,18 +31,18 @@ export interface PaginationState {
   totalItems: number;
 }
 
-export const ROLE_LABELS: Record<AdminUser["role"], string> = {
-  admin: "Admin",
-  director: "Giám Đốc",
-  moderator: "Quản Lý",
-  user: "Nhân Viên",
+export const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin hệ thống",
+  director: "Giám đốc",
+  moderator: "Quản lý phòng ban",
+  user: "Nhân viên",
 };
 
-export const ROLE_COLORS: Record<AdminUser["role"], string> = {
-  admin: "bg-purple-500/20 text-purple-300 border border-purple-500/30",
-  director: "bg-orange-500/20 text-orange-300 border border-orange-500/30",
-  moderator: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
-  user: "bg-[#2b2d31] text-[#a1a1a1] border border-[#3a3b3e]",
+export const ROLE_COLORS: Record<string, string> = {
+  admin: "bg-red-500/20 text-red-400 border border-red-500/30",
+  director: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
+  moderator: "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30",
+  user: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
 };
 
 export interface Role {
@@ -73,13 +76,14 @@ interface AdminStore {
   stats: AdminStats | null;
   pagination: PaginationState;
   isLoading: boolean;
-  
+
   fetchUsers: (page?: number, limit?: number) => Promise<void>;
   fetchRoles: () => Promise<void>;
   updateUserRole: (id: string, role: AdminUser["role"]) => Promise<void>;
   updateUserDepartment: (id: string, department: string) => Promise<void>;
   updateUserStatus: (id: string, isActive: boolean, reason?: string) => Promise<AdminUser | undefined>;
   updateRolePermissions: (id: string, permissions: Partial<Role['permissions']>) => Promise<void>;
+  updateUserProfileAdmin: (id: string, data: Partial<AdminUser> & { profilePicture?: string }) => Promise<AdminUser | undefined>;
 }
 
 export const useAdminStore = create<AdminStore>((set, get) => ({
@@ -92,11 +96,11 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   fetchUsers: async (page = 1, limit = 7) => {
     set({ isLoading: true });
     try {
-      const res = await axiosInstance.get(`/admin/users?page=${page}&limit=${limit}`);
-      set({ 
-        users: res.data.users, 
-        stats: res.data.stats, 
-        pagination: res.data.pagination 
+      const data = await adminService.fetchUsers(page, limit);
+      set({
+        users: data.users,
+        stats: data.stats,
+        pagination: data.pagination
       });
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Không thể tải danh sách người dùng");
@@ -107,8 +111,8 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   fetchRoles: async () => {
     try {
-      const res = await axiosInstance.get('/admin/roles');
-      set({ roles: res.data });
+      const data = await adminService.fetchRoles();
+      set({ roles: data });
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Không thể tải danh sách vai trò");
     }
@@ -116,11 +120,17 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   updateUserRole: async (id, role) => {
     try {
-      const res = await axiosInstance.patch(`/admin/users/${id}/role`, { role });
+      const data = await adminService.updateUserRole(id, role);
       set(state => ({
         users: state.users.map(u => u._id === id ? { ...u, role } : u)
       }));
-      toast.success(res.data.message);
+
+      const currentAuthUser = useAuthStore.getState().authUser;
+      if (currentAuthUser && currentAuthUser._id === id) {
+        useAuthStore.setState({ authUser: { ...currentAuthUser, role } });
+      }
+
+      toast.success(data.message);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Lỗi cập nhật vai trò");
       // Re-fetch to sync if failed
@@ -130,11 +140,17 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   updateUserDepartment: async (id, department) => {
     try {
-      const res = await axiosInstance.patch(`/admin/users/${id}/department`, { department });
+      const data = await adminService.updateUserDepartment(id, department);
       set(state => ({
         users: state.users.map(u => u._id === id ? { ...u, department } : u)
       }));
-      toast.success(res.data.message);
+
+      const currentAuthUser = useAuthStore.getState().authUser;
+      if (currentAuthUser && currentAuthUser._id === id) {
+        useAuthStore.setState({ authUser: { ...currentAuthUser, department } });
+      }
+
+      toast.success(data.message);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Lỗi cập nhật phòng ban");
       get().fetchUsers(get().pagination.currentPage);
@@ -143,12 +159,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   updateUserStatus: async (id, isActive, reason) => {
     try {
-      const res = await axiosInstance.patch(`/admin/users/${id}/status`, { isActive, reason });
+      const data = await adminService.updateUserStatus(id, isActive, reason);
       set(state => ({
-        users: state.users.map(u => u._id === id ? res.data.user : u)
+        users: state.users.map(u => u._id === id ? data.user : u)
       }));
-      toast.success(res.data.message);
-      return res.data.user;
+      toast.success(data.message);
+      return data.user;
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Lỗi cập nhật trạng thái");
     }
@@ -156,13 +172,50 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
 
   updateRolePermissions: async (id, permissions) => {
     try {
-      const res = await axiosInstance.patch(`/admin/roles/${id}/permissions`, { permissions });
+      const data = await adminService.updateRolePermissions(id, permissions);
       set(state => ({
-        roles: state.roles.map(r => r.id === id ? { ...r, permissions: res.data.role.permissions } : r)
+        roles: state.roles.map(r => r.id === id ? { ...r, permissions: data.role.permissions } : r)
       }));
-      toast.success(res.data.message);
+      toast.success(data.message);
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Lỗi cập nhật quyền");
+    }
+  },
+
+  updateUserProfileAdmin: async (id, data) => {
+    set({ isLoading: true });
+    try {
+      const resData = await adminService.updateUserProfileAdmin(id, data);
+      const updatedUser = resData.user;
+      set(state => ({
+        users: state.users.map(u => u._id === id ? updatedUser : u)
+      }));
+
+      // Cập nhật authUser trong useAuthStore nếu admin tự sửa chính mình
+      const currentAuthUser = useAuthStore.getState().authUser;
+      if (currentAuthUser && currentAuthUser._id === id) {
+        useAuthStore.setState({
+          authUser: {
+            ...currentAuthUser,
+            fullname: updatedUser.fullname,
+            email: updatedUser.email,
+            profilePicture: updatedUser.profilePicture,
+            role: updatedUser.role,
+            department: updatedUser.department,
+            phoneNumber: updatedUser.phoneNumber,
+            age: updatedUser.age,
+            gender: updatedUser.gender,
+            dateOfBirth: updatedUser.dateOfBirth,
+          }
+        });
+      }
+
+      toast.success(resData.message || "Cập nhật thành công!");
+      return updatedUser;
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Lỗi cập nhật thông tin");
+    } finally {
+      set({ isLoading: false });
     }
   }
 }));

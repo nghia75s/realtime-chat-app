@@ -1,5 +1,5 @@
 import cloudinary from "../lib/cloudinary.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { emitToUser } from "../lib/socket.js";
 import GroupMessage from "../models/GroupMessage.js";
 import Group from "../models/Group.js";
 import User from "../models/User.js";
@@ -33,10 +33,7 @@ export const createGroup = async (req, res) => {
         populatedGroup.members.forEach(member => {
             const memberIdStr = member._id.toString();
             if (memberIdStr !== creatorId.toString()) {
-                const receiverSocketId = getReceiverSocketId(memberIdStr);
-                if (receiverSocketId) {
-                    io.to(receiverSocketId).emit("newGroupCreated", populatedGroup);
-                }
+                emitToUser(memberIdStr, "newGroupCreated", populatedGroup);
             }
         });
 
@@ -92,10 +89,7 @@ export const sendGroupMessage = async (req, res) => {
         group.members.forEach(memberId => {
             const memberIdStr = memberId.toString();
             if (memberIdStr !== senderId.toString()) {
-                const receiverSocketId = getReceiverSocketId(memberIdStr);
-                if (receiverSocketId) {
-                    io.to(receiverSocketId).emit("newGroupMessage", populatedMessage);
-                }
+                emitToUser(memberIdStr, "newGroupMessage", populatedMessage);
             }
         });
 
