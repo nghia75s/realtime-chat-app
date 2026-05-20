@@ -1,4 +1,4 @@
-import { X, Lock, Unlock } from "lucide-react"
+import { X } from "lucide-react"
 import type { AdminUser } from "@/store/useAdminStore"
 import { ROLE_LABELS, ROLE_COLORS, useAdminStore } from "@/store/useAdminStore"
 import { useState, useEffect } from "react"
