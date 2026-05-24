@@ -1,4 +1,4 @@
-import { authService } from "@/services/auth.service";
+import { authService } from "@/services/authService";
 import { create } from "zustand";
 import { toast } from "react-hot-toast";
 import { io, Socket } from "socket.io-client";
@@ -56,70 +56,70 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   onlineUsers: [],
   roleChangeAlert: null,
   accountLockAlert: null,
-  
+
   clearAlerts: () => set({ roleChangeAlert: null, accountLockAlert: null }),
 
   checkAuth: async () => {
     try {
-        const data = await authService.checkAuth();
-        set({authUser: data});
-        get().connectSocket();
+      const data = await authService.checkAuth();
+      set({ authUser: data });
+      get().connectSocket();
     } catch (error) {
-        console.log("Error checking auth:", error);
-        set({authUser: null})
+      console.log("Error checking auth:", error);
+      set({ authUser: null })
     } finally {
-        set({isCheckingAuth: false})
+      set({ isCheckingAuth: false })
     }
   },
 
   signup: async (data) => {
-    set({isSigningUp: true})
+    set({ isSigningUp: true })
     try {
-        const resData = await authService.signup(data);
-        set({authUser: resData});
-        get().connectSocket();
-        toast.success("Signup successful! You are now logged in.");
-        set({isSigningUp: false});
+      const resData = await authService.signup(data);
+      set({ authUser: resData });
+      get().connectSocket();
+      toast.success("Signup successful! You are now logged in.");
+      set({ isSigningUp: false });
     } catch (error: any) {
-        set({isSigningUp: false})
-        throw error;
+      set({ isSigningUp: false })
+      throw error;
     }
   },
 
   login: async (data) => {
-    set({isLoggingIn: true})
+    set({ isLoggingIn: true })
     try {
-        const resData = await authService.login(data);
-        set({authUser: resData});
-        get().connectSocket();
-        toast.success("Login successful!");
-        set({isLoggingIn: false});
+      const resData = await authService.login(data);
+      set({ authUser: resData });
+      get().connectSocket();
+      toast.success("Login successful!");
+      set({ isLoggingIn: false });
     } catch (error: any) {
-        set({isLoggingIn: false})
-        throw error;
+      set({ isLoggingIn: false })
+      throw error;
     }
   },
 
   logout: async () => {
     try {
-        await authService.logout();
-        set({authUser: null});
-        get().disconnectSocket();
-        toast.success("Logged out successfully.");
+      await authService.logout();
+      set({ authUser: null });
+      get().disconnectSocket();
+      toast.success("Logged out successfully.");
     } catch (error) {
-        console.log("Error during logout:", error);
-        toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
+      console.log("Error during logout:", error);
+      toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
     }
   },
 
   updateProfile: async (data) => {
     try {
-        const resData = await authService.updateProfile(data);
-        set({authUser: resData});
-        toast.success("Profile updated successfully.");
+      const resData = await authService.updateProfile(data);
+      set({ authUser: resData });
+      toast.success("Profile updated successfully.");
     } catch (error: any) {
-        const message = error?.response?.data?.message || "Profile update failed. Please try again.";
-        toast.error(message);
+      const message = error?.response?.data?.message || "Profile update failed. Please try again.";
+      toast.error(message);
     }
   },
 
@@ -184,5 +184,5 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
     set({ socket: null, onlineUsers: [] });
   }
-  
+
 }));

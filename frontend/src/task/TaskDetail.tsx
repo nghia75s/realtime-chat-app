@@ -19,7 +19,7 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
   const { authUser } = useAuthStore();
   const [reportText, setReportText] = useState("");
   const [reportFile, setReportFile] = useState<File | null>(null);
-  
+
   const formatLocalDateForInput = (dateInput: string) => {
     const date = new Date(dateInput);
     if (isNaN(date.getTime())) return "";
@@ -67,13 +67,13 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
     const taskDeadline = new Date(editDeadline);
     const now = new Date();
     const maxDeadline = new Date();
-    maxDeadline.setFullYear(maxDeadline.getFullYear() + 100);
+    maxDeadline.setFullYear(maxDeadline.getFullYear() + 20);
     if (taskDeadline <= now) {
-      toast.error("Deadline phải là thời điểm trong tương lai");
+      toast.error("Thời gian kết thúc trên Deadline đang ở quá khứ");
       return;
     }
     if (taskDeadline > maxDeadline) {
-      toast.error("Deadline không được vượt quá 100 năm kể từ hôm nay");
+      toast.error("Thời gian kết thúc trên Deadline quá xa");
       return;
     }
     await editTask(task._id, { description: editDesc, deadline: editDeadline });
@@ -104,11 +104,10 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
             {getStatusBadge(task.status)}
             <button
               onClick={() => setShowProgressPanel(p => !p)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-semibold border transition-all duration-200 ${
-                showProgressPanel
-                  ? 'bg-[#0052cc] border-[#0052cc] text-white shadow-sm shadow-[#0052cc]/30'
-                  : 'bg-[#1e1f22] border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#0052cc]/50'
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-semibold border transition-all duration-200 ${showProgressPanel
+                ? 'bg-[#0052cc] border-[#0052cc] text-white shadow-sm shadow-[#0052cc]/30'
+                : 'bg-[#1e1f22] border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#0052cc]/50'
+                }`}
             >
               <BarChart2 className="w-4 h-4" />
               Tiến độ công việc
@@ -118,7 +117,7 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
           <div className="flex flex-col gap-4 bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31]">
             <div className="flex items-center justify-between border-b border-[#2b2d31] pb-3">
               <span className="text-[#a1a1a1] text-[13px]">Giao cho</span>
-              <div 
+              <div
                 onClick={() => setShowAssigneesList(true)}
                 className="flex items-center gap-2 max-w-[200px] cursor-pointer hover:bg-[#2b2d31]/50 p-1.5 -mr-1.5 rounded-md transition-colors group"
                 title="Xem danh sách"
@@ -150,11 +149,10 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[#a1a1a1] text-[13px]">Deadline</span>
-              <span className={`text-[14px] font-medium px-2 py-1 rounded flex items-center gap-1.5 ${
-                isOverdue && task.status !== 'done'
-                  ? 'text-red-400 bg-red-500/10 border border-red-500/20'
-                  : 'text-[#ebaa16] bg-[#ebaa16]/10'
-              }`}>
+              <span className={`text-[14px] font-medium px-2 py-1 rounded flex items-center gap-1.5 ${isOverdue && task.status !== 'done'
+                ? 'text-red-400 bg-red-500/10 border border-red-500/20'
+                : 'text-[#ebaa16] bg-[#ebaa16]/10'
+                }`}>
                 {isOverdue && task.status !== 'done' && <Clock className="w-3.5 h-3.5" />}
                 {new Date(task.deadline).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                 {isOverdue && task.status !== 'done' && <span className="text-[11px] font-bold">· QUÁ HẠN</span>}
@@ -177,19 +175,19 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
                 </button>
               )}
             </div>
-            
+
             {isEditing ? (
               <div className="bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31] flex flex-col gap-3">
-                <textarea 
-                  value={editDesc} 
-                  onChange={e => setEditDesc(e.target.value)} 
+                <textarea
+                  value={editDesc}
+                  onChange={e => setEditDesc(e.target.value)}
                   className="w-full bg-[#131416] border border-[#2b2d31] rounded-md px-3 py-2 text-[14px] text-white outline-none focus:border-[#0052cc] resize-none"
                   rows={4}
                 />
                 <div className="flex items-center gap-2">
                   <label className="text-[13px] text-[#e1e1e1] whitespace-nowrap">Deadline mới:</label>
-                  <input 
-                    type="datetime-local" 
+                  <input
+                    type="datetime-local"
                     value={editDeadline}
                     onChange={e => setEditDeadline(e.target.value)}
                     className="flex-1 bg-[#131416] border border-[#2b2d31] rounded-md px-3 py-2 text-[14px] text-white outline-none focus:border-[#0052cc]"
@@ -255,10 +253,10 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
       </div>
 
       {showAssigneesList && (
-        <AssigneeListModal 
-          task={task} 
-          isCreatorOrAdmin={isCreatorOrAdmin} 
-          onClose={() => setShowAssigneesList(false)} 
+        <AssigneeListModal
+          task={task}
+          isCreatorOrAdmin={isCreatorOrAdmin}
+          onClose={() => setShowAssigneesList(false)}
         />
       )}
     </div>

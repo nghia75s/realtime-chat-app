@@ -51,7 +51,25 @@ export const getMyGroups = async (req, res) => {
             .populate("members", "-password")
             .populate("createdBy", "-password")
             .sort({ updatedAt: -1 });
-        res.status(200).json(groups);
+
+        // Lấy lastMessage cho từng nhóm
+        const groupsWithLastMessage = await Promise.all(groups.map(async (group) => {
+            const lastMsg = await GroupMessage.findOne({ groupId: group._id }).sort({ createdAt: -1 }).populate("senderId", "fullname");
+            return {
+                ...group.toObject(),
+                lastMessage: lastMsg || null,
+                lastMessageDate: lastMsg ? lastMsg.createdAt : group.createdAt
+            };
+        }));
+
+        // Sắp xếp lại theo lastMessageDate giảm dần
+        groupsWithLastMessage.sort((a, b) => {
+            const dateA = new Date(a.lastMessageDate);
+            const dateB = new Date(b.lastMessageDate);
+            return dateB - dateA;
+        });
+
+        res.status(200).json(groupsWithLastMessage);
     } catch (error) {
         console.log("Error in getMyGroups controller: ", error.message);
         res.status(500).json({ error: "Internal server error" });

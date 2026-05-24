@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { taskService } from "@/services/task.service";
+import { taskService } from "@/services/taskService";
 import toast from "react-hot-toast";
+import { useAuthStore } from "./useAuthStore";
 
 export type TaskStatus = "pending" | "done";
 export type AssigneeStatus = "pending" | "submitted" | "done" | "rejected";
@@ -75,9 +76,11 @@ interface TaskStore {
     targetCommitId?: string;
   }) => Promise<void>;
   updateAccess: (taskId: string, assigneeId: string, canViewOthers: boolean) => Promise<void>;
+  subscribeToTaskUpdates: () => void;
+  unsubscribeFromTaskUpdates: () => void;
 }
 
-export const useTaskStore = create<TaskStore>((set) => ({
+export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   isLoading: false,
   isCreating: false,
@@ -146,5 +149,25 @@ export const useTaskStore = create<TaskStore>((set) => ({
       console.error("Error updating access:", error);
       toast.error(error.response?.data?.message || "Lỗi cập nhật quyền truy cập");
     }
+  },
+
+  subscribeToTaskUpdates: () => {
+    const socket = useAuthStore.getState().socket;
+    if (!socket) return;
+    socket.off("taskUpdated");
+    socket.on("taskUpdated", (updatedTask: TaskItem) => {
+      set((state) => {
+        const exists = state.tasks.some((t) => t._id === updatedTask._id);
+        const newTasks = exists
+          ? state.tasks.map((t) => (t._id === updatedTask._id ? updatedTask : t))
+          : [updatedTask, ...state.tasks];
+        return { tasks: newTasks };
+      });
+    });
+  },
+
+  unsubscribeFromTaskUpdates: () => {
+    const socket = useAuthStore.getState().socket;
+    socket?.off("taskUpdated");
   },
 }));

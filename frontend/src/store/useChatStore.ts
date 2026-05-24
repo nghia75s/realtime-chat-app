@@ -1,13 +1,24 @@
-import { chatService } from "@/services/chat.service";
+import { chatService } from "@/services/chatService";
 import { create } from "zustand"
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
+import type { DocumentPayload } from "@/store/useMessageBubbleStore";
+
+export interface ManagerUser {
+  _id: string;
+  fullname: string;
+  profilePicture: string;
+  role: string;
+  department?: string;
+  email: string;
+}
 
 interface ChatStore {
     allContacts: any[];
     chats: any[];
     groups: any[];
     messages: any[];
+    managers: ManagerUser[];
     activeTab: string;
     selectedUser: any | null;
     isUsersLoading: boolean;
@@ -35,16 +46,27 @@ interface ChatStore {
     subscribeToMessages: () => void;
     unsubscribeFromMessages: () => void;
     fetchUnreadSummary: () => Promise<void>;
+    fetchManagers: () => Promise<void>;
+    sendDocumentMessage: (receiverId: string, documentPayload: DocumentPayload) => Promise<any>;
+    replyDocumentMessage: (messageId: string, status: "approved" | "rejected", note?: string) => Promise<any>;
 }
 
 // Helper: Đẩy item lên đầu mảng dựa theo _id, fallback unshift nếu chưa có
-function pushToTop(list: any[], id: string, fallback: any): any[] {
+function pushToTop(list: any[], id: string, fallback: any, newMessage?: any): any[] {
     const updated = [...list];
     const idx = updated.findIndex(item => item._id === id);
     if (idx !== -1) {
         const [item] = updated.splice(idx, 1);
+        if (newMessage) {
+            item.lastMessage = newMessage;
+            item.lastMessageDate = newMessage.createdAt;
+        }
         updated.unshift(item);
     } else {
+        if (newMessage) {
+            fallback.lastMessage = newMessage;
+            fallback.lastMessageDate = newMessage.createdAt;
+        }
         updated.unshift(fallback);
     }
     return updated;
@@ -55,6 +77,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     chats: [],
     groups: [],
     messages: [],
+    managers: [],
     activeTab: "personal",
     selectedUser: null,
     isUsersLoading: false,
@@ -169,7 +192,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         try {
             const data = await chatService.sendMessage(selectedUser._id, messageData);
             set({ messages: messages.concat(data) })
-            set({ chats: pushToTop(chats, selectedUser._id, selectedUser) });
+            set({ chats: pushToTop(chats, selectedUser._id, selectedUser, data) });
         } catch (error) {
             toast.error("Failed to send message. Please try again.");
             throw error;
@@ -180,7 +203,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         try {
             const data = await chatService.sendGroupMessage(selectedUser._id, messageData);
             set({ messages: messages.concat(data) })
-            set({ groups: pushToTop(groups, selectedUser._id, selectedUser) });
+            set({ groups: pushToTop(groups, selectedUser._id, selectedUser, data) });
         } catch (error) {
             toast.error("Failed to send group message. Please try again.");
             throw error;
@@ -221,36 +244,46 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
         socket.on("newMessage", (newMessage) => {
             const currentSelectedUser = get().selectedUser;
-            const senderIdToFind = typeof newMessage.senderId === "string" ? newMessage.senderId : newMessage.senderId?._id;
+            const authUser = useAuthStore.getState().authUser;
+            
+            const msgSenderId = typeof newMessage.senderId === "string" ? newMessage.senderId : newMessage.senderId?._id;
+            const msgReceiverId = typeof newMessage.receiverId === "string" ? newMessage.receiverId : newMessage.receiverId?._id;
+            
+            const partnerId = msgSenderId === authUser?._id ? msgReceiverId : msgSenderId;
 
             // Nếu đang mở chat với người này, cập nhật tin nhắn
-            if (currentSelectedUser && !currentSelectedUser.isGroup && senderIdToFind === currentSelectedUser._id) {
+            if (currentSelectedUser && !currentSelectedUser.isGroup && partnerId === currentSelectedUser._id) {
                 set({ messages: [...get().messages, newMessage] });
             }
 
             // Đẩy cuộc trò chuyện lên đầu danh sách
             const currentChats = get().chats;
             let updatedChats = [...currentChats];
-            const existingIndex = updatedChats.findIndex(c => c._id === senderIdToFind);
+            const existingIndex = updatedChats.findIndex(c => c._id === partnerId);
 
             if (existingIndex !== -1) {
                 const [chat] = updatedChats.splice(existingIndex, 1);
+                chat.lastMessage = newMessage;
+                chat.lastMessageDate = newMessage.createdAt;
                 updatedChats.unshift(chat);
                 set({ chats: updatedChats });
             } else {
-                const contactInfo = get().allContacts.find(c => c._id === senderIdToFind);
+                const contactInfo = get().allContacts.find(c => c._id === partnerId);
                 if (contactInfo) {
-                    updatedChats.unshift(contactInfo);
+                    const clonedContact = { ...contactInfo };
+                    clonedContact.lastMessage = newMessage;
+                    clonedContact.lastMessageDate = newMessage.createdAt;
+                    updatedChats.unshift(clonedContact);
                     set({ chats: updatedChats });
                 } else {
                     get().getMyChatPartners();
                 }
             }
 
-            // Đánh dấu chưa đọc nếu không phải đang xem chat với người này
-            const isViewingThisChat = currentSelectedUser && !currentSelectedUser.isGroup && senderIdToFind === currentSelectedUser._id;
-            if (!isViewingThisChat && senderIdToFind) {
-                get().addUnreadChat(senderIdToFind);
+            // Đánh dấu chưa đọc nếu không phải đang xem chat với người này VÀ tin nhắn không phải do mình gửi
+            const isViewingThisChat = currentSelectedUser && !currentSelectedUser.isGroup && partnerId === currentSelectedUser._id;
+            if (!isViewingThisChat && partnerId && msgSenderId !== authUser?._id) {
+                get().addUnreadChat(partnerId);
             }
         });
 
@@ -272,6 +305,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             if (existingIndex !== -1) {
                 const [group] = updatedGroups.splice(existingIndex, 1);
+                group.lastMessage = newGroupMessage;
+                group.lastMessageDate = newGroupMessage.createdAt;
                 updatedGroups.unshift(group);
                 set({ groups: updatedGroups });
             } else {
@@ -293,12 +328,34 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 set({ groups: [newGroupWithFlag, ...currentGroups] });
             }
         });
+
+        // Real-time: Quản lý phê duyệt / từ chối lá đơn
+        socket.off("documentReplied");
+        socket.on("documentReplied", ({ messageId, documentReplyData }: { messageId: string; documentReplyData: any }) => {
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? { ...m, documentReplyData } : m
+                ),
+            }));
+        });
+
+        // Toast thông báo kết quả phê duyệt cho người gửi đơn
+        socket.off("docApprovalNotif");
+        socket.on("docApprovalNotif", ({ status, message }: { status: string; message: string }) => {
+            if (status === "approved") {
+                toast.success(message);
+            } else {
+                toast.error(message);
+            }
+        });
     },
     unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
         socket?.off("newMessage");
         socket?.off("newGroupMessage");
         socket?.off("newGroupCreated");
+        socket?.off("documentReplied");
+        socket?.off("docApprovalNotif");
     },
     fetchUnreadSummary: async () => {
         try {
@@ -309,6 +366,47 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             set({ unreadChats, unreadGroups });
         } catch (error) {
             console.error("Failed to fetch unread summary:", error);
+        }
+    },
+
+    fetchManagers: async () => {
+        try {
+            const data = await chatService.getManagers();
+            set({ managers: data });
+        } catch (error) {
+            console.error("Failed to fetch managers:", error);
+        }
+    },
+
+    sendDocumentMessage: async (receiverId, documentPayload) => {
+        try {
+            const data = await chatService.sendDocumentMessage(receiverId, documentPayload);
+            const { selectedUser, messages, chats } = get();
+            // Nếu đang mở chat với người này thì thêm tin vào danh sách
+            if (selectedUser?._id === receiverId) {
+                set({ messages: [...messages, data] });
+            }
+            set({ chats: pushToTop(chats, receiverId, selectedUser, data) });
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Không thể gửi lá đơn");
+            throw error;
+        }
+    },
+
+    replyDocumentMessage: async (messageId, status, note) => {
+        try {
+            const data = await chatService.replyDocumentMessage(messageId, status, note);
+            // Cập nhật message trong danh sách hiện tại
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? { ...m, documentReplyData: data.documentReplyData } : m
+                ),
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Không thể gửi phản hồi");
+            throw error;
         }
     },
 }));

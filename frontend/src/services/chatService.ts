@@ -1,4 +1,5 @@
 import { axiosInstance } from "@/lib/axios";
+import type { DocumentPayload } from "@/store/useMessageBubbleStore";
 
 export const chatService = {
   getAllcontacts: async () => {
@@ -44,5 +45,20 @@ export const chatService = {
   fetchUnreadSummary: async () => {
     const res = await axiosInstance.get("messages/unread-summary");
     return res.data;
-  }
+  },
+
+  getManagers: async () => {
+    const res = await axiosInstance.get("messages/managers");
+    return res.data;
+  },
+
+  sendDocumentMessage: async (receiverId: string, documentPayload: DocumentPayload) => {
+    const res = await axiosInstance.post(`messages/send-document/${receiverId}`, { documentPayload });
+    return res.data;
+  },
+
+  replyDocumentMessage: async (messageId: string, status: "approved" | "rejected", note?: string) => {
+    const res = await axiosInstance.patch(`messages/${messageId}/document-reply`, { status, note });
+    return res.data;
+  },
 };

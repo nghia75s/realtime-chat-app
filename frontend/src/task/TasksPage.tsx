@@ -10,7 +10,7 @@ import { TaskDetail } from "./TaskDetail";
 
 export default function TasksPage() {
   const { authUser } = useAuthStore();
-  const { tasks, fetchTasks } = useTaskStore();
+  const { tasks, fetchTasks, subscribeToTaskUpdates, unsubscribeFromTaskUpdates } = useTaskStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const role = authUser?.permissions?.editTasks ? "manager" : "employee";
 
@@ -21,7 +21,11 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+    subscribeToTaskUpdates();
+    return () => {
+      unsubscribeFromTaskUpdates();
+    };
+  }, [fetchTasks, subscribeToTaskUpdates, unsubscribeFromTaskUpdates]);
 
   useEffect(() => {
     if (taskIdParam) {

@@ -22,14 +22,14 @@ const validateDeadline = (deadline) => {
   return null; // OK
 };
 
-// Helper: filter commits cho employee dựa theo canViewOthers
+// Helper: filter commits và assignees cho employee dựa theo canViewOthers
 const filterCommitsForEmployee = (task, myId) => {
   const myAssignee = task.assignees.find(
     (a) => a.user._id?.toString() === myId.toString() || a.user?.toString() === myId.toString()
   );
 
-  // Nếu được phép xem tất cả thì trả về nguyên
-  if (myAssignee?.canViewOthers) return task;
+  // Nếu không tìm thấy hoặc được phép xem tất cả thì trả về nguyên
+  if (!myAssignee || myAssignee.canViewOthers) return task;
 
   // Lấy tập commit IDs của mình
   const myCommitIds = new Set(
@@ -41,6 +41,7 @@ const filterCommitsForEmployee = (task, myId) => {
       .map((c) => c._id.toString())
   );
 
+  // 1. Lọc commits
   task.commits = task.commits.filter((c) => {
     // Luôn thấy logs hệ thống (create, edit)
     if (["create", "edit"].includes(c.type)) return true;
@@ -52,7 +53,32 @@ const filterCommitsForEmployee = (task, myId) => {
     return false;
   });
 
+  // 2. Lọc assignees: chỉ giữ lại chính mình
+  task.assignees = task.assignees.filter((a) => {
+    const uid = a.user._id?.toString() || a.user?.toString();
+    return uid === myId.toString();
+  });
+
   return task;
+};
+
+// Helper: Phát sự kiện taskUpdated tới tất cả người liên quan trong thời gian thực
+const emitTaskUpdateToAllInvolved = (task) => {
+  const creatorId = task.creator._id?.toString() || task.creator?.toString();
+
+  // 1. Gửi cho creator (manager - nhìn thấy tất cả)
+  const taskForCreator = task.toObject ? task.toObject({ virtuals: true }) : JSON.parse(JSON.stringify(task));
+  emitToUser(creatorId, "taskUpdated", taskForCreator);
+
+  // 2. Gửi cho từng assignee
+  task.assignees.forEach((assignee) => {
+    const assigneeId = assignee.user._id?.toString() || assignee.user?.toString();
+    if (assigneeId === creatorId) return; // Đã gửi ở trên
+
+    const plainTask = task.toObject ? task.toObject({ virtuals: true }) : JSON.parse(JSON.stringify(task));
+    const filteredTask = filterCommitsForEmployee(plainTask, assigneeId);
+    emitToUser(assigneeId, "taskUpdated", filteredTask);
+  });
 };
 
 // GET /api/tasks
@@ -183,14 +209,20 @@ export const createTask = async (req, res) => {
       const assigneeId = assigneeDoc._id.toString();
       const dateStr = new Date(deadline).toLocaleDateString("vi-VN");
       const personalNote = assigneeNotes[assigneeId];
-      const taskLink = `${clientUrl}/todo?taskId=${newTask._id}`;
-      const noteStr = personalNote ? ` Ghi chú riêng: ${personalNote}.` : "";
-      const msgText = `Quản lý ${creatorName} đã giao việc cho ${assigneeDoc.fullname} với deadline đến ngày ${dateStr} với ghi chú là ${description}.${noteStr} Xem chi tiết tại: ${taskLink}`;
+      const msgText = `Quản lý ${creatorName} đã giao việc cho ${assigneeDoc.fullname}: "${title}".`;
 
       const newMessage = new Message({
         senderId: creatorId,
         receiverId: assigneeId,
+        messageType: "task_assignment",
         text: msgText,
+        taskPayload: {
+          taskId: newTask._id,
+          title: title,
+          description: description,
+          deadline: deadline,
+          note: personalNote || "",
+        },
       });
       await newMessage.save();
 
@@ -206,12 +238,14 @@ export const createTask = async (req, res) => {
         { path: "sender", select: "fullname profilePicture" },
         { path: "taskId", select: "title" }
       ]);
-
       emitToUser(assigneeId, "newMessage", newMessage);
+      emitToUser(creatorId, "newMessage", newMessage); // Cập nhật cho người gửi
       emitToUser(assigneeId, "newNotification", newNotif);
     });
 
     await Promise.all(promises);
+
+    emitTaskUpdateToAllInvolved(newTask);
 
     res.status(201).json(newTask);
   } catch (error) {
@@ -292,12 +326,18 @@ export const addCommit = async (req, res) => {
 
       task.assignees[assigneeIndex].status =
         type === "approve" ? "done" : "rejected";
-
-      const clientUrl = ENV.CLIENT_URL || "http://localhost:5173";
-      const taskLink = `${clientUrl}/todo?taskId=${task._id}`;
       const msgStatus =
         type === "approve" ? "phê duyệt thành công" : "yêu cầu làm lại";
-      const msgText = `Quản lý ${req.user.fullname} đã ${msgStatus} phần công việc của bạn trong Task "${task.title}". Xem chi tiết tại: ${taskLink}`;
+      
+      let msgText = `Quản lý ${req.user.fullname} đã ${msgStatus} phần công việc của bạn trong Task "${task.title}"`;
+      let notifMessage = `Quản lý ${req.user.fullname} đã ${
+        type === "approve" ? "Duyệt Đạt" : "Yêu cầu làm lại"
+      } công việc "${task.title}"`;
+
+      if (type === "reject" && description) {
+        msgText += `. Lý do: ${description}`;
+        notifMessage += `. Lý do: ${description}`;
+      }
 
       const newMessage = new Message({
         senderId: userId,
@@ -311,9 +351,7 @@ export const addCommit = async (req, res) => {
         sender: userId,
         type: type === "approve" ? "task_approve" : "task_reject",
         taskId: task._id,
-        message: `Quản lý ${req.user.fullname} đã ${
-          type === "approve" ? "Duyệt Đạt" : "Yêu cầu làm lại"
-        } công việc "${task.title}"`,
+        message: notifMessage,
       });
       await newNotif.save();
       await newNotif.populate([
@@ -340,6 +378,8 @@ export const addCommit = async (req, res) => {
     await task.populate("creator", "fullname profilePicture email");
     await task.populate("assignees.user", "fullname profilePicture email");
     await task.populate("commits.userId", "fullname profilePicture");
+
+    emitTaskUpdateToAllInvolved(task);
 
     res.status(200).json(task);
   } catch (error) {
@@ -394,6 +434,8 @@ export const editTask = async (req, res) => {
     await task.populate("assignees.user", "fullname profilePicture email");
     await task.populate("commits.userId", "fullname profilePicture");
 
+    emitTaskUpdateToAllInvolved(task);
+
     res.status(200).json(task);
   } catch (error) {
     console.error("Error in editTask:", error.message);
@@ -433,6 +475,8 @@ export const updateAccess = async (req, res) => {
     await task.populate("creator", "fullname profilePicture email");
     await task.populate("assignees.user", "fullname profilePicture email");
     await task.populate("commits.userId", "fullname profilePicture");
+
+    emitTaskUpdateToAllInvolved(task);
 
     res.status(200).json(task);
   } catch (error) {

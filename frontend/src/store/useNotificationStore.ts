@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { notificationService } from "@/services/notification.service";
+import { notificationService } from "@/services/notificationService";
 import { useAuthStore } from "./useAuthStore";
 import toast from "react-hot-toast";
 
@@ -42,7 +42,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const data = await notificationService.fetchNotifications();
-      set({ 
+      set({
         notifications: data,
         unreadCount: data.filter((n: NotificationItem) => !n.isRead).length
       });

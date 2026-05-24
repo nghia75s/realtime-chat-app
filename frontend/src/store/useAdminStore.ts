@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { adminService } from "@/services/admin.service";
+import { adminService } from "@/services/adminService";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
 

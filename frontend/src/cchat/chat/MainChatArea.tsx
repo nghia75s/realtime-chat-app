@@ -1,12 +1,16 @@
-import { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { Phone, Video, PanelRightClose, PanelRightOpen, Smile, Send, Paperclip, Image as ImageIcon, FileText, Type, Maximize, Clock, ThumbsUp, X, Reply } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import NoChatHistoryPlaceholder from "@/components/ui/NoChatHistoryPlaceholder"
 import MessageLoadingSkeleton from "@/components/ui/MessageLoadingSkeleton"
 import { MessageBubble } from "./MessageBubble"
+import { DocumentMessageCard } from "./DocumentMessageCard"
+import { TaskMessageCard } from "./TaskMessageCard"
+import { DocumentViewerModal } from "./DocumentViewerModal"
 import { toast } from "react-hot-toast"
 import { EmojiPickerPanel } from "@/components/ui/EmojiPickerPanel"
+import { formatMessageDateDivider } from "@/lib/formatTime"
 
 // Emoticon shortcode → Emoji
 const EMOTICON_MAP: Record<string, string> = {
@@ -65,6 +69,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const [replyingTo, setReplyingTo] = useState<any | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
+  const [documentViewer, setDocumentViewer] = useState<{ htmlContent: string; templateName: string } | null>(null)
 
   const joinedGroupIdRef = useRef<string | null>(null);
 
@@ -242,20 +247,62 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           {messages && messages.length > 0 ? (
             messages.map((msg: any, index: number) => {
               const prevMsg = messages[index - 1];
-              const hideHeader = prevMsg && (prevMsg.senderId?._id || prevMsg.senderId) === (msg.senderId?._id || msg.senderId);
+              
+              const msgDateStr = msg.createdAt;
+              const prevDateStr = prevMsg?.createdAt;
+              const isDifferentDate = !prevDateStr || formatMessageDateDivider(msgDateStr) !== formatMessageDateDivider(prevDateStr);
+
+              const hideHeader = prevMsg && 
+                                 (prevMsg.senderId?._id || prevMsg.senderId) === (msg.senderId?._id || msg.senderId) && 
+                                 !isDifferentDate;
+
+              const dateDivider = isDifferentDate ? (
+                <div className="flex justify-center my-4">
+                  <span className="bg-[#2b2d31]/80 backdrop-blur-sm text-[#a1a1a1] text-[12px] font-medium px-3 py-1 rounded-full shadow-sm">
+                    {formatMessageDateDivider(msgDateStr)}
+                  </span>
+                </div>
+              ) : null;
+
+              // Tin nhắn lá đơn: dùng DocumentMessageCard
+              if (msg.messageType === "document") {
+                return (
+                  <React.Fragment key={msg._id}>
+                    {dateDivider}
+                    <DocumentMessageCard
+                      msg={msg}
+                      onViewFull={(html, name) => setDocumentViewer({ htmlContent: html, templateName: name })}
+                    />
+                  </React.Fragment>
+                )
+              }
+
+              // Tin nhắn giao việc: dùng TaskMessageCard
+              if (msg.messageType === "task_assignment") {
+                return (
+                  <React.Fragment key={msg._id}>
+                    {dateDivider}
+                    <TaskMessageCard msg={msg} />
+                  </React.Fragment>
+                )
+              }
+
               return (
-              <MessageBubble
-                key={msg._id}
-                msg={msg}
-                onImageLoad={scrollToBottom}
-                senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
-                senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
-                isGroupChat={isGroup}
-                hideHeader={hideHeader}
-                onReply={handleReply}
-                onForward={handleForward}
-              />
-            )})
+                <React.Fragment key={msg._id}>
+                  {dateDivider}
+                  <MessageBubble
+                    msg={msg}
+                    onImageLoad={scrollToBottom}
+                    senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
+                    senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
+                    isGroupChat={isGroup}
+                    hideHeader={hideHeader}
+                    onReply={handleReply}
+                    onForward={handleForward}
+                  />
+                </React.Fragment>
+              )
+            })
           ) : (
             < NoChatHistoryPlaceholder name={selectedUser.fullname} />
           )}
@@ -377,6 +424,15 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           </form>
         </div>
       </div>
+
+      {/* Document Viewer Modal (Zalo-style lightbox) */}
+      {documentViewer && (
+        <DocumentViewerModal
+          htmlContent={documentViewer.htmlContent}
+          templateName={documentViewer.templateName}
+          onClose={() => setDocumentViewer(null)}
+        />
+      )}
     </div>
   )
 }
