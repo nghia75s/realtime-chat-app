@@ -102,8 +102,8 @@ export function DocumentMessageCard({ msg, onViewFull }: DocumentMessageCardProp
           {/* Status badge */}
           {reply && (
             <div className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${reply.status === "approved"
-                ? "bg-green-500/20 text-green-400 border-green-500/30"
-                : "bg-red-500/20 text-red-400 border-red-500/30"
+              ? "bg-green-500/20 text-green-400 border-green-500/30"
+              : "bg-red-500/20 text-red-400 border-red-500/30"
               }`}>
               {reply.status === "approved" ? "✅ Đã duyệt" : "❌ Từ chối"}
             </div>
@@ -112,7 +112,7 @@ export function DocumentMessageCard({ msg, onViewFull }: DocumentMessageCardProp
 
         {/* Document preview — thu nhỏ, cắt chiều cao */}
         <div
-          className="relative overflow-hidden cursor-pointer group"
+          className="relative overflow-hidden cursor-pointer group m-3 rounded-lg border border-[#2b2d31]"
           style={{ height: "180px" }}
           onClick={() => payload?.htmlContent && onViewFull(payload.htmlContent, payload.templateName || "Lá đơn")}
         >

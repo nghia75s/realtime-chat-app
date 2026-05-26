@@ -61,4 +61,19 @@ export const chatService = {
     const res = await axiosInstance.patch(`messages/${messageId}/document-reply`, { status, note });
     return res.data;
   },
+
+  recallMessage: async (messageId: string) => {
+    const res = await axiosInstance.put(`messages/${messageId}/recall`);
+    return res.data;
+  },
+
+  deleteMessage: async (messageId: string) => {
+    const res = await axiosInstance.put(`messages/${messageId}/delete`);
+    return res.data;
+  },
+
+  forwardMessage: async (messageId: string, receiverIds: string[], note?: string) => {
+    const res = await axiosInstance.post(`messages/forward`, { messageId, receiverIds, note });
+    return res.data;
+  },
 };

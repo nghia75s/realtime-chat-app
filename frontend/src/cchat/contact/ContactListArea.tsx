@@ -17,7 +17,7 @@ function ContactList() {
   // Group contacts alphabetically by 'fullname'
   const groupedContacts = useMemo(() => {
     const groups: Record<string, any[]> = {};
-    if (!allContacts) return groups;
+    if (!Array.isArray(allContacts)) return groups;
     
     // Sort all contacts first
     const sorted = [...allContacts].sort((a, b) => {

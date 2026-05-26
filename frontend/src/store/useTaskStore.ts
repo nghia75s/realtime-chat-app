@@ -102,7 +102,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set({ isCreating: true });
     try {
       const dataRes = await taskService.createTask(data);
-      set((state) => ({ tasks: [dataRes, ...state.tasks] }));
+      set((state) => {
+        const exists = state.tasks.some((t) => t._id === dataRes._id);
+        if (exists) {
+          return { tasks: state.tasks.map((t) => (t._id === dataRes._id ? dataRes : t)) };
+        }
+        return { tasks: [dataRes, ...state.tasks] };
+      });
       toast.success("Đã tạo công việc thành công!");
     } catch (error: any) {
       console.error("Error creating task:", error);

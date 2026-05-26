@@ -8,6 +8,9 @@ import {
   getManagers,
   sendDocumentMessage,
   replyDocumentMessage,
+  recallMessage,
+  deleteMessage,
+  forwardMessage,
 } from "../controllers/message.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
@@ -19,9 +22,12 @@ router.get("/contacts", getAllContacts);
 router.get("/chats", getChatPartners);
 router.get("/unread-summary", getUnreadSummary);
 router.get("/managers", getManagers);
+router.post("/forward", forwardMessage);
 router.get("/:id", getMessagesByUserId);
 router.post("/send/:id", sendMessage);
 router.post("/send-document/:id", sendDocumentMessage);
 router.patch("/:id/document-reply", replyDocumentMessage);
+router.put("/:id/recall", recallMessage);
+router.put("/:id/delete", deleteMessage);
 
 export default router;

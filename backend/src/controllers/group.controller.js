@@ -78,7 +78,7 @@ export const getMyGroups = async (req, res) => {
 
 export const sendGroupMessage = async (req, res) => {
     try {
-        const { text, image } = req.body;
+        const { text, image, replyTo } = req.body;
         const { id: groupId } = req.params;
         const senderId = req.user._id;
         if (!text && !image) {
@@ -97,11 +97,19 @@ export const sendGroupMessage = async (req, res) => {
             const uploadResponse = await cloudinary.uploader.upload(image);
             imageUrl = uploadResponse.secure_url;
         }
-        const groupMessage = new GroupMessage({ senderId, groupId, text, image: imageUrl });
+        const groupMessage = new GroupMessage({ senderId, groupId, text, image: imageUrl, replyTo });
         await groupMessage.save();
 
         // Populate sender info for the response
-        const populatedMessage = await GroupMessage.findById(groupMessage._id).populate("senderId", "fullname profilePicture");
+        let populatedMessage = await GroupMessage.findById(groupMessage._id).populate("senderId", "fullname profilePicture");
+        
+        if (replyTo) {
+            populatedMessage = await populatedMessage.populate({
+                path: "replyTo",
+                select: "text image senderId",
+                populate: { path: "senderId", select: "fullname" }
+            });
+        }
 
         // Emit the new group message to all group members except the sender
         group.members.forEach(memberId => {
@@ -129,7 +137,16 @@ export const getGroupMessages = async (req, res) => {
         if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
             return res.status(403).json({ message: "You are not a member of this group." });
         }
-        const messages = await GroupMessage.find({ groupId }).populate("senderId", "fullname profilePicture").sort({ createdAt: 1 });
+        const messages = await GroupMessage.find({ 
+            groupId, 
+            deletedBy: { $ne: userId } 
+        }).populate("senderId", "fullname profilePicture")
+          .populate({
+            path: "replyTo",
+            select: "text image senderId",
+            populate: { path: "senderId", select: "fullname" }
+          })
+          .sort({ createdAt: 1 });
 
         // Đánh dấu đã đọc: thêm userId vào readBy của các tin chưa đọc (không phải do mình gửi)
         await GroupMessage.updateMany(

@@ -49,6 +49,9 @@ interface ChatStore {
     fetchManagers: () => Promise<void>;
     sendDocumentMessage: (receiverId: string, documentPayload: DocumentPayload) => Promise<any>;
     replyDocumentMessage: (messageId: string, status: "approved" | "rejected", note?: string) => Promise<any>;
+    recallMessage: (messageId: string) => Promise<any>;
+    deleteMessage: (messageId: string) => Promise<any>;
+    forwardMessage: (messageId: string, receiverIds: string[], note?: string) => Promise<any>;
 }
 
 // Helper: Đẩy item lên đầu mảng dựa theo _id, fallback unshift nếu chưa có
@@ -127,7 +130,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         set({ isContactsLoading: true });
         try {
             const data = await chatService.getAllcontacts();
-            set({ allContacts: data })
+            set({ allContacts: Array.isArray(data) ? data : [] })
         } catch (error: any) {
             const message = error?.response?.data?.message || "Failed to fetch contacts. Please try again.";
             toast.error(message);
@@ -339,6 +342,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             }));
         });
 
+        socket.off("messageRecalled");
+        socket.on("messageRecalled", ({ messageId, isRecalled }: { messageId: string; isRecalled: boolean }) => {
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? { ...m, isRecalled } : m
+                ),
+            }));
+        });
+
         // Toast thông báo kết quả phê duyệt cho người gửi đơn
         socket.off("docApprovalNotif");
         socket.on("docApprovalNotif", ({ status, message }: { status: string; message: string }) => {
@@ -356,6 +368,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         socket?.off("newGroupCreated");
         socket?.off("documentReplied");
         socket?.off("docApprovalNotif");
+        socket?.off("messageRecalled");
     },
     fetchUnreadSummary: async () => {
         try {
@@ -406,6 +419,80 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             return data;
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Không thể gửi phản hồi");
+            throw error;
+        }
+    },
+
+    recallMessage: async (messageId) => {
+        try {
+            const data = await chatService.recallMessage(messageId);
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? { ...m, isRecalled: true } : m
+                )
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi thu hồi tin nhắn");
+            throw error;
+        }
+    },
+
+    deleteMessage: async (messageId) => {
+        try {
+            const data = await chatService.deleteMessage(messageId);
+            set((state) => ({
+                messages: state.messages.filter((m) => m._id !== messageId)
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi xóa tin nhắn");
+            throw error;
+        }
+    },
+
+    forwardMessage: async (messageId, receiverIds, note) => {
+        try {
+            const data = await chatService.forwardMessage(messageId, receiverIds, note);
+            // data is an array of newly created messages (forwarded messages and optional notes)
+            const { selectedUser, messages, chats, groups } = get();
+            
+            let updatedChats = [...chats];
+            let updatedGroups = [...groups];
+
+            data.forEach((newMsg: any) => {
+                const receiverId = newMsg.receiverId;
+                const groupId = newMsg.groupId;
+                
+                if (receiverId) {
+                    const targetUser = get().allContacts.find(c => c._id === receiverId) || { _id: receiverId };
+                    updatedChats = pushToTop(updatedChats, receiverId, targetUser, newMsg);
+                } else if (groupId) {
+                    const targetGroup = groups.find(g => g._id === groupId) || { _id: groupId };
+                    updatedGroups = pushToTop(updatedGroups, groupId, targetGroup, newMsg);
+                }
+            });
+
+            let updatedMessages = [...messages];
+            if (selectedUser) {
+                const newMsgsForCurrentChat = data.filter((m: any) => 
+                    (m.receiverId === selectedUser._id || m.groupId === selectedUser._id)
+                );
+                if (newMsgsForCurrentChat.length > 0) {
+                    updatedMessages = [...updatedMessages, ...newMsgsForCurrentChat];
+                }
+            }
+
+            set({ 
+                chats: updatedChats, 
+                groups: updatedGroups, 
+                messages: updatedMessages 
+            });
+
+            toast.success("Đã chuyển tiếp tin nhắn");
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi chuyển tiếp tin nhắn");
             throw error;
         }
     },

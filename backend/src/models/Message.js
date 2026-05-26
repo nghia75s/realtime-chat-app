@@ -24,6 +24,22 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isRecalled: {
+      type: Boolean,
+      default: false,
+    },
+    isForwarded: {
+      type: Boolean,
+      default: false,
+    },
+    deletedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+    },
     // --- Document Message Fields ---
     messageType: {
       type: String,

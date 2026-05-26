@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
-import { Reply, Forward, Copy, Star, Info, Trash2, RotateCcw, MoreHorizontal } from "lucide-react"
+import { useChatStore } from "@/store/useChatStore"
+import { useMessageActionStore } from "@/store/useMessageActionStore"
+import { Reply, Forward, Copy, Info, Trash2, RotateCcw, MoreHorizontal, CheckSquare, Square, CornerUpRight } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { MessageBubbleProps } from "@/store/useMessageBubbleStore.ts"
@@ -15,10 +17,23 @@ import {
 export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean }) {
   const { msg, onImageLoad, senderAvatar, senderName, isGroupChat, onReply, onForward, hideHeader } = props
   const { authUser } = useAuthStore()
+  const { recallMessage, deleteMessage } = useChatStore()
+  const { 
+    isSelectionMode, 
+    toggleMessageSelection, 
+    selectedMessageIds, 
+    toggleSelectionMode,
+    openDetailsModal
+  } = useMessageActionStore()
+
   const senderId = typeof msg.senderId === "string" ? msg.senderId : msg.senderId?._id
   const isMe = senderId?.toString() === authUser?._id?.toString()
   const [showQuickActions, setShowQuickActions] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+
+  const isSelected = selectedMessageIds.includes(msg._id)
+  const isRecalled = msg.isRecalled === true
+  const isForwarded = msg.isForwarded === true
 
   const timeStr = new Date(msg.createdAt).toLocaleTimeString(undefined, {
     hour: "2-digit", minute: "2-digit",
@@ -31,113 +46,184 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
     }
   }
 
-  const handleStar = () => toast.success("Đã đánh dấu tin nhắn ⭐")
-  const handleRecall = () => toast("Chức năng thu hồi đang phát triển")
-  const handleDelete = () => toast("Chức năng xóa đang phát triển")
+  const handleRecall = async () => {
+    try {
+      await recallMessage(msg._id);
+      toast.success("Đã thu hồi tin nhắn");
+    } catch (error) {
+      // Error handled in store
+    }
+  }
+
+  const handleDelete = async () => {
+    try {
+      await deleteMessage(msg._id);
+      toast.success("Đã xóa tin nhắn");
+    } catch (error) {
+      // Error handled in store
+    }
+  }
+
+  const toggleSelect = () => {
+    toggleMessageSelection(msg._id, msg)
+  }
 
   return (
     <div
-      className={`flex w-full mb-2 group ${isMe ? "justify-end" : "justify-start"}`}
+      className={`flex w-full items-start group transition-colors px-4 py-1 mb-1 ${isSelected ? "bg-[#2b2d31]/40" : ""} ${isSelectionMode ? "cursor-pointer hover:bg-[#2b2d31]/20" : ""}`}
+      onClick={() => isSelectionMode && toggleSelect()}
       onMouseEnter={() => setShowQuickActions(true)}
       onMouseLeave={() => setShowQuickActions(false)}
     >
-      {/* Avatar của người gửi */}
-      {!isMe && (
-        <div className="flex items-start mr-2 shrink-0 w-8">
-          {!hideHeader && (
-            <img
-              src={senderAvatar || "/avatar.png"}
-              alt={senderName || "User"}
-              className="w-8 h-8 rounded-full object-cover border border-[#3a3b3e]"
-            />
+      {/* Selection Checkbox (luôn nằm lề trái) */}
+      {isSelectionMode && (
+        <div className="flex items-center justify-center w-8 shrink-0 pt-2 mr-2">
+          {isSelected ? (
+            <CheckSquare className="w-5 h-5 text-[#0052cc]" />
+          ) : (
+            <Square className="w-5 h-5 text-[#a1a1a1]" />
           )}
         </div>
       )}
 
-      {/* Quick Action Bar (Tin của MÌNH) */}
-      {isMe && (
-        <QuickActionBar 
-          msg={msg} 
-          isMe={isMe} 
-          show={showQuickActions || isDropdownOpen}
-          onReply={() => onReply?.(msg)}
-          onForward={() => onForward?.(msg)}
-          onCopy={handleCopy}
-          onStar={handleStar}
-          onRecall={handleRecall}
-          onDelete={handleDelete}
-          onDropdownChange={setIsDropdownOpen}
-        />
-      )}
-
-      {/* Bubble Chính */}
-      <div className={`flex flex-col max-w-[70%] gap-1 ${isMe ? "items-end" : "items-start"}`}>
-        {/* Tên người gửi (Chỉ hiển thị nếu là Group và là người khác nhắn) */}
-        {!isMe && isGroupChat && senderName && !hideHeader && (
-          <span className="text-[12px] font-semibold text-[#a1a1a1] ml-1 mb-0.5">{senderName}</span>
-        )}
-
-        {/* Ảnh */}
-        {msg.image && (
-          <div className="relative overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity border border-[#2b2d31]/50 shadow-sm">
-            <img src={msg.image} alt="Message" className="max-h-[300px] max-w-full w-auto object-contain" onLoad={onImageLoad} />
-            {!msg.text && (
-              <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded bg-black/60 text-white text-[11px] font-medium tracking-wide">
-                {timeStr}
-              </span>
+      {/* Container của bóng chat */}
+      <div className={`flex flex-1 ${isMe ? "justify-end" : "justify-start"}`}>
+        
+        {/* Avatar của người gửi (nếu không phải mình) */}
+        {!isMe && !isSelectionMode && (
+          <div className="flex items-start mr-2 shrink-0 w-8">
+            {!hideHeader && (
+              <img
+                src={senderAvatar || "/avatar.png"}
+                alt={senderName || "User"}
+                className="w-8 h-8 rounded-full object-cover border border-[#3a3b3e]"
+              />
             )}
           </div>
         )}
 
-        {/* Text */}
-        {msg.text && (
-          <div className={`px-[16px] py-[10px] rounded-lg text-[15px] shadow-sm flex flex-col gap-1 cursor-default select-text
-              ${isMe
-                ? "bg-[#0052cc] text-white rounded-tr-md rounded-tl-md rounded-bl-md rounded-br-sm"
-                : "bg-[#202124] text-[#e1e1e1] rounded-tr-md rounded-tl-md rounded-br-md rounded-bl-sm"
-              }
-            `}>
-            <p className="leading-[1.4] whitespace-pre-wrap break-words">
-              {msg.text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
-                if (part.match(/(https?:\/\/[^\s]+)/g)) {
-                  return (
-                    <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={`underline ${isMe ? 'text-blue-200 hover:text-white' : 'text-blue-400 hover:text-blue-300'} transition-colors`}>
-                      {part}
-                    </a>
-                  );
-                }
-                return part;
-              })}
-            </p>
-            <div className={`flex items-center justify-end gap-1 text-[11px] mt-0.5 ${isMe ? "text-blue-200" : "text-[#a1a1a1]"}`}>
-              <span>{timeStr}</span>
-              {isMe && <span>✓</span>}
+        {/* Quick Action Bar (Tin của MÌNH) */}
+        {isMe && !isSelectionMode && !isRecalled && (
+          <QuickActionBar 
+            msg={msg} 
+            isMe={isMe} 
+            show={showQuickActions || isDropdownOpen}
+            onReply={() => onReply?.(msg)}
+            onForward={() => onForward?.(msg)}
+            onCopy={handleCopy}
+            onSelectMany={() => toggleSelectionMode(true)}
+            onDetails={() => openDetailsModal(msg)}
+            onRecall={handleRecall}
+            onDelete={handleDelete}
+            onDropdownChange={setIsDropdownOpen}
+          />
+        )}
+
+        {/* Bubble Chính */}
+        <div className={`flex flex-col max-w-[75%] min-w-0 gap-1 ${isMe ? "items-end" : "items-start"}`}>
+          {/* Tên người gửi */}
+          {!isMe && isGroupChat && senderName && !hideHeader && (
+            <span className="text-[12px] font-semibold text-[#a1a1a1] ml-1 mb-0.5">{senderName}</span>
+          )}
+
+          {/* --- Trạng thái THU HỒI --- */}
+          {isRecalled ? (
+            <div className={`px-4 py-2.5 rounded-xl text-[14px] italic border ${isMe ? "border-[#3a3b3e] bg-[#2b2d31]/50 text-[#a1a1a1]" : "border-[#3a3b3e] bg-[#2b2d31]/50 text-[#a1a1a1]"}`}>
+              Tin nhắn đã được thu hồi
+              <div className="text-[10px] mt-1 text-right opacity-70">{timeStr}</div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Ảnh */}
+              {msg.image && (
+                <div className="relative overflow-hidden rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-sm border border-[#3a3b3e]/30">
+                  <img src={msg.image} alt="Message" className="max-h-[300px] max-w-full w-auto object-contain bg-[#1a1b1e]" onLoad={onImageLoad} />
+                  {!msg.text && (
+                    <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium tracking-wide">
+                      {timeStr}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Text */}
+              {msg.text && (
+                <div className={`px-[16px] py-[12px] rounded-2xl text-[15px] shadow-sm flex flex-col w-full min-w-0 gap-1.5 cursor-text select-text relative
+                    ${isMe
+                      ? "bg-[#0052cc] text-white"
+                      : "bg-[#2b2d31] text-[#e1e1e1]"
+                    }
+                  `}>
+                  
+                  {/* Dấu hiệu chuyển tiếp */}
+                  {isForwarded && (
+                    <div className={`flex items-center gap-1.5 text-[11.5px] font-medium mb-1 ${isMe ? "text-blue-200" : "text-[#a1a1a1]"}`}>
+                      <CornerUpRight className="w-3.5 h-3.5" /> Chuyển tiếp
+                    </div>
+                  )}
+
+                  {/* Khung trích dẫn tin nhắn trả lời */}
+                  {msg.replyTo && (
+                    <div 
+                      className={`pl-2 py-1 mb-1.5 border-l-[3px] rounded-r-md text-[13px] w-full max-w-[280px] sm:max-w-[360px] min-w-0 ${isMe ? "border-l-blue-200 bg-black/10 text-blue-100" : "border-l-[#0052cc] bg-[#1e1f22] text-[#a1a1a1]"} overflow-hidden`}
+                    >
+                      <div className="font-semibold truncate text-[12.5px]">{msg.replyTo.senderId?.fullname || "Người dùng"}</div>
+                      <div className="truncate opacity-90">
+                        {msg.replyTo.messageType === "document"
+                          ? `[Đơn] ${msg.replyTo.documentPayload?.templateName || "Tài liệu"}`
+                          : msg.replyTo.messageType === "task_assignment"
+                          ? `[Task] ${msg.replyTo.taskPayload?.title || "Công việc"}`
+                          : msg.replyTo.image && !msg.replyTo.text
+                          ? "[Hình ảnh]"
+                          : msg.replyTo.text || "[Tin nhắn]"}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="leading-[1.5] whitespace-pre-wrap break-words">
+                    {msg.text.split(/(https?:\/\/[^\s]+)/g).map((part: string, i: number) => {
+                      if (part.match(/(https?:\/\/[^\s]+)/g)) {
+                        return (
+                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={`underline ${isMe ? 'text-blue-200 hover:text-white' : 'text-blue-400 hover:text-blue-300'} transition-colors`}>
+                            {part}
+                          </a>
+                        );
+                      }
+                      return part;
+                    })}
+                  </p>
+                  <div className={`flex items-center justify-end gap-1.5 text-[10.5px] mt-0.5 ${isMe ? "text-blue-200" : "text-[#818181]"}`}>
+                    <span>{timeStr}</span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Quick Action Bar (Tin của NGƯỜI KHÁC) */}
+        {!isMe && !isSelectionMode && !isRecalled && (
+          <QuickActionBar 
+            msg={msg} 
+            isMe={isMe} 
+            show={showQuickActions || isDropdownOpen}
+            onReply={() => onReply?.(msg)}
+            onForward={() => onForward?.(msg)}
+            onCopy={handleCopy}
+            onSelectMany={() => toggleSelectionMode(true)}
+            onDetails={() => openDetailsModal(msg)}
+            onRecall={handleRecall}
+            onDelete={handleDelete}
+            onDropdownChange={setIsDropdownOpen}
+          />
         )}
       </div>
-
-      {/* Quick Action Bar (Tin của NGƯỜI KHÁC) */}
-      {!isMe && (
-        <QuickActionBar 
-          msg={msg} 
-          isMe={isMe} 
-          show={showQuickActions || isDropdownOpen}
-          onReply={() => onReply?.(msg)}
-          onForward={() => onForward?.(msg)}
-          onCopy={handleCopy}
-          onStar={handleStar}
-          onRecall={handleRecall}
-          onDelete={handleDelete}
-          onDropdownChange={setIsDropdownOpen}
-        />
-      )}
     </div>
   )
 }
 
 // === Component Thanh Nút Tương Tác ===
-function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onStar, onRecall, onDelete, onDropdownChange }: any) {
+function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectMany, onDetails, onRecall, onDelete, onDropdownChange }: any) {
   return (
     <div className={`flex items-center gap-0.5 ${isMe ? "mr-1.5" : "ml-1.5"} transition-opacity duration-150 ${show ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
       <TooltipProvider delayDuration={200}>
@@ -177,7 +263,6 @@ function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onStar, o
             </TooltipContent>
           </Tooltip>
           
-          {/* Nghệ thuật: Pop-up menu bóng bẩy */}
           <DropdownMenuContent align={isMe ? "end" : "start"} className="w-48 bg-[#1e1f22]/95 backdrop-blur-md border-[#3a3b3e] text-[#d1d1d1] p-1 shadow-2xl rounded-xl">
             <DropdownMenuItem onClick={onReply} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
               <Reply className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Trả lời
@@ -185,15 +270,15 @@ function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onStar, o
             <DropdownMenuItem onClick={onForward} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
               <Forward className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Chuyển tiếp tin nhắn
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onStar} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
-              <Star className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Đánh dấu tin nhắn
-            </DropdownMenuItem>
             {msg.text && (
               <DropdownMenuItem onClick={onCopy} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
                 <Copy className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Sao chép tin nhắn
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
+            <DropdownMenuItem onClick={onSelectMany} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
+              <CheckSquare className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Chọn nhiều
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDetails} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
               <Info className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Xem chi tiết
             </DropdownMenuItem>
             
