@@ -42,6 +42,11 @@ export const chatService = {
     return res.data;
   },
 
+  addGroupMember: async (groupId: string, userId: string) => {
+    const res = await axiosInstance.post(`groups/groups/${groupId}/members`, { userId });
+    return res.data;
+  },
+
   fetchUnreadSummary: async () => {
     const res = await axiosInstance.get("messages/unread-summary");
     return res.data;

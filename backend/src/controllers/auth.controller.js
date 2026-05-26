@@ -97,23 +97,27 @@ export const login = async (req, res) => {
       return res.status(403).json({ message: "Email chưa được xác thực. Vui lòng kiểm tra email để nhận mã OTP." });
     }
 
-    generateToken(user._id, res);
+    // Generate login OTP
+    const loginOtp = generateOtpCode();
+    const loginOtpExpiry = generateOtpExpiry();
 
-    const roleDoc = await Role.findOne({ id: user.role });
-    const permissions = roleDoc ? roleDoc.permissions : {};
+    user.loginOtp = loginOtp;
+    user.loginOtpExpiry = loginOtpExpiry;
+    await user.save();
 
-    res.status(200).json({
-      _id: user._id,
-      fullname: user.fullname,
+    // Send OTP email
+    try {
+      await sendOtpEmail(email, loginOtp, "2FA Login");
+    } catch (emailError) {
+      console.error("Failed to send login OTP email:", emailError);
+      return res.status(500).json({ message: "Không thể gửi mã xác thực. Vui lòng thử lại sau." });
+    }
+
+    // Return 202 to indicate OTP verification required
+    res.status(202).json({
+      message: "Mã xác thực 2FA đã được gửi tới email của bạn. Vui lòng nhập mã để hoàn thành đăng nhập.",
       email: user.email,
-      profilePicture: user.profilePicture,
-      role: user.role,
-      department: user.department,
-      phoneNumber: user.phoneNumber,
-      age: user.age,
-      gender: user.gender,
-      dateOfBirth: user.dateOfBirth,
-      permissions: permissions,
+      requiresOtp: true,
     });
   } catch (error) {
     console.error("Error in login controller:", error);
@@ -194,9 +198,83 @@ export const verifyotp = async (req, res) => {
     user.otpExpiry = undefined;
     await user.save();
 
-    res.status(200).json({ message: "Xác thực email thành công" });
+    // Generate JWT token
+    generateToken(user._id, res);
+
+    const roleDoc = await Role.findOne({ id: user.role });
+    const permissions = roleDoc ? roleDoc.permissions : {};
+
+    res.status(200).json({
+      _id: user._id,
+      fullname: user.fullname,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      role: user.role,
+      department: user.department,
+      phoneNumber: user.phoneNumber,
+      age: user.age,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
+      permissions: permissions,
+      message: "Xác thực email thành công",
+    });
   } catch (error) {
     console.error("Error in verifyotp controller:", error);
+    res.status(500).json({ message: "Không thể xác thực mã OTP" });
+  }
+};
+
+export const verifyLoginOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Email và mã OTP là bắt buộc" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Thông tin không hợp lệ" });
+    }
+
+    if (!user.loginOtp || !user.loginOtpExpiry) {
+      return res.status(400).json({ message: "Vui lòng yêu cầu gửi mã OTP trước" });
+    }
+
+    if (new Date() > user.loginOtpExpiry) {
+      return res.status(400).json({ message: "Mã OTP đã hết hạn. Vui lòng đăng nhập lại." });
+    }
+
+    if (user.loginOtp !== otp) {
+      return res.status(400).json({ message: "Mã OTP không chính xác" });
+    }
+
+    // Clear login OTP
+    user.loginOtp = undefined;
+    user.loginOtpExpiry = undefined;
+    await user.save();
+
+    // Generate JWT token
+    generateToken(user._id, res);
+
+    const roleDoc = await Role.findOne({ id: user.role });
+    const permissions = roleDoc ? roleDoc.permissions : {};
+
+    res.status(200).json({
+      _id: user._id,
+      fullname: user.fullname,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      role: user.role,
+      department: user.department,
+      phoneNumber: user.phoneNumber,
+      age: user.age,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
+      permissions: permissions,
+    });
+  } catch (error) {
+    console.error("Error in verifyLoginOtp controller:", error);
     res.status(500).json({ message: "Không thể xác thực mã OTP" });
   }
 };

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Search, UserPlus, Users as GroupIcon, ChevronDown } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -33,6 +34,7 @@ const renderLastMessagePreview = (msg: any, isGroup: boolean, authUser: any, par
 };
 
 export function ChatListSidebar() {
+  const navigate = useNavigate()
   const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, selectedUser, getMyGroups, groups, isGroupsLoading, activeTab, setActiveTab, unreadChats, unreadGroups } = useChatStore()
   const { onlineUsers, authUser } = useAuthStore()
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
@@ -54,7 +56,7 @@ export function ChatListSidebar() {
               className="w-full rounded-md bg-[#131416] py-[6px] pl-[30px] pr-3 text-[14px] text-[#e1e1e1] outline-none placeholder:text-[#a1a1a1] focus:ring-1 focus:ring-[#0052cc] transition-all border border-[#2b2d31]"
             />
           </div>
-          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Thêm bạn bè">
+          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Thêm bạn bè" onClick={() => navigate("/contacts") }>
             <UserPlus className="h-[18px] w-[18px]" />
           </button>
           <button 

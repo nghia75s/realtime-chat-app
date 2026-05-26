@@ -13,6 +13,7 @@ import { Eye, EyeOff, Loader2, ArrowLeft, LoaderIcon } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
 
 type ViewState = "login" | "2fa" | "forgot-password"
+type OtpType = "signup" | "login"
 
 export function LoginForm({
   className,
@@ -23,12 +24,13 @@ export function LoginForm({
   const [view, setView] = useState<ViewState>("login")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [otpType, setOtpType] = useState<OtpType>("signup")
 
   // Login States
   const [formData, setFromData] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string } | null>(null)
-  const { login, sendOtp, verifyOtp, isLoggingIn } = useAuthStore();
+  const { login, sendOtp, verifyOtp, verifyLoginOtp, isLoggingIn } = useAuthStore();
 
   // 2FA States
   const [otp, setOtp] = useState("")
@@ -53,15 +55,24 @@ export function LoginForm({
       navigate("/chat")
     } catch (error: any) {
       const message = error?.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra tài khoản và mật khẩu."
-      setError(message)
-      if (error?.response?.status === 403) {
-        // Email chưa verify, gửi OTP và chuyển sang 2FA
+      
+      // Check for 202 status (requires OTP for 2FA login)
+      if (error?.response?.status === 202) {
+        setOtpType("login")
+        setView("2fa")
+        setError("")
+        setOtp("")
+      } else if (error?.response?.status === 403) {
+        // Email chưa verify (signup OTP verification)
+        setOtpType("signup")
         try {
           await sendOtp(formData.email)
           setView("2fa")
         } catch (otpError: any) {
           setError("Không thể gửi mã OTP. Vui lòng thử lại sau.")
         }
+      } else {
+        setError(message)
       }
     }
   }
@@ -91,14 +102,14 @@ export function LoginForm({
         return
       }
 
-      await verifyOtp({ email, otp })
-
-      if (pendingCredentials) {
-        await login(pendingCredentials)
+      if (otpType === "login") {
+        // 2FA login verification
+        await verifyLoginOtp({ email, otp })
         navigate("/chat")
       } else {
-        setError("Xác thực thành công. Vui lòng đăng nhập lại.")
-        setView("login")
+        // Signup email verification
+        await verifyOtp({ email, otp })
+        navigate("/chat")
       }
     } catch (error: any) {
       const message = error?.response?.data?.message || "Xác thực thất bại. Vui lòng thử lại."
