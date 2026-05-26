@@ -1,34 +1,36 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar";
 import { useAuthStore } from "@/store/useAuthStore";
-import { mockDepartments, mockUsers } from "../admin/data";
+import { useAdminStore, DEPARTMENTS } from "@/store/useAdminStore";
 import { mockDocs, type DocCategory } from "./data";
 import { Folder, Image as ImageIcon, Link as LinkIcon, FileText, File, Download, ExternalLink, ChevronLeft, Search } from "lucide-react";
 
 export default function DocumentPage() {
   const { authUser } = useAuthStore();
+  const { users, fetchUsers } = useAdminStore();
+
+  useEffect(() => {
+    if (users.length === 0) fetchUsers(1, 100);
+  }, [users.length, fetchUsers]);
+
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<DocCategory | null>(null);
 
-  // Giả lập logic kiểm tra Trưởng Phòng:
-  // Nếu là tài khoản Nguyễn Văn A (mock ID: u2) đăng nhập, mà u2 ko phải trưởng phòng thì ko cho xem?
-  // Ở đây ta mô phỏng: lấy bộ phận của authUser (giả sử authUser là u1 hoặc u3 - là trưởng phòng)
-  // Tạm hardcode manager là người đang đăng nhập (hoặc dùng admin@gmail.com làm ví dụ xem hết được)
-  const isGlobalAdmin = authUser?.email === "admin@gmail.com";
+  const isGlobalAdmin = authUser?.email === "admin@gmail.com" || authUser?.role === "admin";
 
-  // Xác định department mà manager này quản lý
   const managedDept = useMemo(() => {
-    if (isGlobalAdmin) return mockDepartments[0]; // Admin xem tạm phòng Kỹ thuật
-    return mockDepartments.find(d => mockUsers.find(u => u.email === authUser?.email)?.id === d.managerId);
-  }, [authUser, isGlobalAdmin]);
+    if (isGlobalAdmin) return DEPARTMENTS[5]; // Kỹ thuật
+    const me = users.find(u => u.email === authUser?.email);
+    if (me?.role === "director" || me?.role === "moderator") return me.department;
+    return null;
+  }, [authUser, isGlobalAdmin, users]);
 
-  // Lấy nhân viên thuộc phòng ban đó
   const departmentEmployees = useMemo(() => {
     if (!managedDept) return [];
-    return mockUsers.filter(u => u.departmentId === managedDept.id);
-  }, [managedDept]);
+    return users.filter(u => u.department === managedDept);
+  }, [managedDept, users]);
 
-  const selectedUser = departmentEmployees.find(u => u.id === selectedUserId);
+  const selectedUser = departmentEmployees.find(u => u._id === selectedUserId);
   const userDocs = mockDocs.filter(d => d.userId === selectedUserId && (!activeCategory || d.category === activeCategory));
 
   if (!isGlobalAdmin && !managedDept) {
@@ -54,7 +56,7 @@ export default function DocumentPage() {
       <div className="w-[300px] bg-[#1e1f22] border-r border-[#2b2d31] flex flex-col shrink-0 z-10">
         <div className="p-4 border-b border-[#2b2d31] shrink-0">
           <h2 className="text-lg font-bold text-white">Quản lý Tài liệu</h2>
-          <p className="text-[13px] text-[#a1a1a1] mt-0.5">{managedDept?.name}</p>
+          <p className="text-[13px] text-[#a1a1a1] mt-0.5">{managedDept}</p>
         </div>
 
         <div className="p-3 border-b border-[#2b2d31]">
@@ -71,17 +73,17 @@ export default function DocumentPage() {
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {departmentEmployees.map((emp) => (
             <button
-              key={emp.id}
+              key={emp._id}
               onClick={() => {
-                setSelectedUserId(emp.id);
+                setSelectedUserId(emp._id);
                 setActiveCategory(null);
               }}
-              className={`w-full flex items-center gap-3 p-3 rounded-md transition-colors ${selectedUserId === emp.id ? "bg-[#0052cc]/10 text-white" : "hover:bg-[#2b2d31]/50 text-[#e1e1e1]"
+              className={`w-full flex items-center gap-3 p-3 rounded-md transition-colors ${selectedUserId === emp._id ? "bg-[#0052cc]/10 text-white" : "hover:bg-[#2b2d31]/50 text-[#e1e1e1]"
                 }`}
             >
-              <img src={emp.avatar} alt={emp.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+              <img src={emp.profilePicture || "/avatar.png"} alt={emp.fullname} className="w-10 h-10 rounded-full object-cover shrink-0" />
               <div className="text-left flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{emp.name}</p>
+                <p className="font-medium text-sm truncate">{emp.fullname}</p>
                 <p className="text-[12px] text-[#a1a1a1] truncate">{emp.email}</p>
               </div>
             </button>
@@ -112,9 +114,9 @@ export default function DocumentPage() {
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
-                  <img src={selectedUser.avatar} alt={selectedUser.name} className="w-8 h-8 rounded-full object-cover" />
+                  <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.fullname} className="w-8 h-8 rounded-full object-cover" />
                   <div>
-                    <h2 className="font-bold text-white text-sm">{selectedUser.name}</h2>
+                    <h2 className="font-bold text-white text-sm">{selectedUser.fullname}</h2>
                     <p className="text-xs text-[#a1a1a1]">Kho tài liệu cá nhân</p>
                   </div>
                 </div>

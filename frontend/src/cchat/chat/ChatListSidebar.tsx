@@ -5,10 +5,36 @@ import { useAuthStore } from "@/store/useAuthStore"
 import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton"
 import NoChatsFound from "@/components/ui/NoChatsFound"
 import { CreateGroupModal } from "./CreateGroupModal"
+import { formatRelativeTime } from "@/lib/formatTime"
 
-  export function ChatListSidebar() {
+const renderLastMessagePreview = (msg: any, isGroup: boolean, authUser: any, partnerName: string) => {
+  if (!msg) return null;
+  
+  const senderId = typeof msg.senderId === "object" ? msg.senderId?._id : msg.senderId;
+  const isMe = senderId?.toString() === authUser?._id?.toString();
+  
+  const senderPrefix = isMe ? "Bạn: " : (isGroup && msg.senderId?.fullname ? `${msg.senderId.fullname.split(" ").pop()}: ` : "");
+  
+  if (msg.messageType === "task_assignment") {
+    return `${senderPrefix}Có task mới được giao`;
+  }
+  
+  if (msg.messageType === "document") {
+    const senderName = isMe ? "Bạn" : partnerName; 
+    const displayName = isMe ? "Bạn" : (isGroup && msg.senderId?.fullname ? msg.senderId.fullname : senderName);
+    return `${displayName} đã gửi đơn từ cần phê duyệt`;
+  }
+  
+  if (msg.image && !msg.text) {
+    return `${senderPrefix}[Hình ảnh]`;
+  }
+  
+  return `${senderPrefix}${msg.text || ""}`;
+};
+
+export function ChatListSidebar() {
   const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, selectedUser, getMyGroups, groups, isGroupsLoading, activeTab, setActiveTab, unreadChats, unreadGroups } = useChatStore()
-  const { onlineUsers } = useAuthStore()
+  const { onlineUsers, authUser } = useAuthStore()
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
 
   useEffect(() => {
@@ -77,6 +103,7 @@ import { CreateGroupModal } from "./CreateGroupModal"
             ) : (
               chats.map((chat) => {
                 const isActive = selectedUser?._id === chat._id
+                const timeStr = chat.lastMessageDate ? formatRelativeTime(chat.lastMessageDate) : ""
                 return (
                   <div
                     key={chat._id}
@@ -90,10 +117,16 @@ import { CreateGroupModal } from "./CreateGroupModal"
                       }`}></div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center mb-0.5">
-                        <h4 className={`font-semibold text-[15px] truncate ${unreadChats.includes(chat._id) ? "text-white" : "text-[#e1e1e1]"}`}>{chat.fullname}</h4>
-                        {unreadChats.includes(chat._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
+                      <div className="flex justify-between items-start mb-0.5">
+                        <div className="flex items-center flex-1 min-w-0 mr-2">
+                          <h4 className={`font-semibold text-[15px] truncate ${unreadChats.includes(chat._id) ? "text-white" : "text-[#e1e1e1]"}`}>{chat.fullname}</h4>
+                          {unreadChats.includes(chat._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
+                        </div>
+                        {timeStr && <span className="text-[12px] text-[#a1a1a1] shrink-0 mt-0.5">{timeStr}</span>}
                       </div>
+                      <p className="text-[13px] text-[#a1a1a1] truncate">
+                        {renderLastMessagePreview(chat.lastMessage, false, authUser, chat.fullname)}
+                      </p>
                     </div>
                   </div>
                 )
@@ -112,6 +145,7 @@ import { CreateGroupModal } from "./CreateGroupModal"
             ) : (
               groups.map((group) => {
                 const isActive = selectedUser?._id === group._id
+                const timeStr = group.lastMessageDate ? formatRelativeTime(group.lastMessageDate) : ""
                 return (
                   <div
                     key={group._id}
@@ -128,11 +162,16 @@ import { CreateGroupModal } from "./CreateGroupModal"
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center mb-0.5">
-                        <h4 className={`font-semibold text-[15px] truncate ${unreadGroups.includes(group._id) ? "text-white" : "text-[#e1e1e1]"}`}>{group.name}</h4>
-                        {unreadGroups.includes(group._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
+                      <div className="flex justify-between items-start mb-0.5">
+                        <div className="flex items-center flex-1 min-w-0 mr-2">
+                          <h4 className={`font-semibold text-[15px] truncate ${unreadGroups.includes(group._id) ? "text-white" : "text-[#e1e1e1]"}`}>{group.name}</h4>
+                          {unreadGroups.includes(group._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
+                        </div>
+                        {timeStr && <span className="text-[12px] text-[#a1a1a1] shrink-0 mt-0.5">{timeStr}</span>}
                       </div>
-                      <p className="text-[12px] text-[#a1a1a1] truncate">{group.memberCount || 0} thành viên</p>
+                      <p className="text-[13px] text-[#a1a1a1] truncate">
+                        {renderLastMessagePreview(group.lastMessage, true, authUser, group.name) || `${group.memberCount || 0} thành viên`}
+                      </p>
                     </div>
                   </div>
                 )

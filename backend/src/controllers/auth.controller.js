@@ -1,6 +1,7 @@
 import { sendOtpEmail } from "../emails/emailHandlers.js";
 import { generateToken, generateOtpCode, generateOtpExpiry } from "../lib/utils.js";
 import User from "../models/User.js";
+import Role from "../models/Role.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 
@@ -84,6 +85,9 @@ export const login = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Thông tin đăng nhập không hợp lệ" });
+    
+    if (!user.isActive) return res.status(403).json({ message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
+
     // never tell the client which one is incorrect: password or email
 
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
@@ -95,11 +99,21 @@ export const login = async (req, res) => {
 
     generateToken(user._id, res);
 
+    const roleDoc = await Role.findOne({ id: user.role });
+    const permissions = roleDoc ? roleDoc.permissions : {};
+
     res.status(200).json({
       _id: user._id,
       fullname: user.fullname,
       email: user.email,
       profilePicture: user.profilePicture,
+      role: user.role,
+      department: user.department,
+      phoneNumber: user.phoneNumber,
+      age: user.age,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
+      permissions: permissions,
     });
   } catch (error) {
     console.error("Error in login controller:", error);

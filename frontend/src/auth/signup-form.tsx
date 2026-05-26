@@ -108,7 +108,7 @@ export function SignupForm({
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="input"
+                      className="input pr-10"
                     />
                     <button
                       type="button"
@@ -128,7 +128,7 @@ export function SignupForm({
                       type={showConfirmPassword ? "text" : "password"}
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                      className="input"
+                      className="input pr-10"
                     />
                     <button
                       type="button"

@@ -1,5 +1,5 @@
 import cloudinary from "../lib/cloudinary.js";
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { emitToUser } from "../lib/socket.js";
 import GroupMessage from "../models/GroupMessage.js";
 import Group from "../models/Group.js";
 import User from "../models/User.js";
@@ -33,10 +33,7 @@ export const createGroup = async (req, res) => {
         populatedGroup.members.forEach(member => {
             const memberIdStr = member._id.toString();
             if (memberIdStr !== creatorId.toString()) {
-                const receiverSocketId = getReceiverSocketId(memberIdStr);
-                if (receiverSocketId) {
-                    io.to(receiverSocketId).emit("newGroupCreated", populatedGroup);
-                }
+                emitToUser(memberIdStr, "newGroupCreated", populatedGroup);
             }
         });
 
@@ -54,7 +51,25 @@ export const getMyGroups = async (req, res) => {
             .populate("members", "-password")
             .populate("createdBy", "-password")
             .sort({ updatedAt: -1 });
-        res.status(200).json(groups);
+
+        // Lấy lastMessage cho từng nhóm
+        const groupsWithLastMessage = await Promise.all(groups.map(async (group) => {
+            const lastMsg = await GroupMessage.findOne({ groupId: group._id }).sort({ createdAt: -1 }).populate("senderId", "fullname");
+            return {
+                ...group.toObject(),
+                lastMessage: lastMsg || null,
+                lastMessageDate: lastMsg ? lastMsg.createdAt : group.createdAt
+            };
+        }));
+
+        // Sắp xếp lại theo lastMessageDate giảm dần
+        groupsWithLastMessage.sort((a, b) => {
+            const dateA = new Date(a.lastMessageDate);
+            const dateB = new Date(b.lastMessageDate);
+            return dateB - dateA;
+        });
+
+        res.status(200).json(groupsWithLastMessage);
     } catch (error) {
         console.log("Error in getMyGroups controller: ", error.message);
         res.status(500).json({ error: "Internal server error" });
@@ -92,10 +107,7 @@ export const sendGroupMessage = async (req, res) => {
         group.members.forEach(memberId => {
             const memberIdStr = memberId.toString();
             if (memberIdStr !== senderId.toString()) {
-                const receiverSocketId = getReceiverSocketId(memberIdStr);
-                if (receiverSocketId) {
-                    io.to(receiverSocketId).emit("newGroupMessage", populatedMessage);
-                }
+                emitToUser(memberIdStr, "newGroupMessage", populatedMessage);
             }
         });
 
@@ -118,6 +130,13 @@ export const getGroupMessages = async (req, res) => {
             return res.status(403).json({ message: "You are not a member of this group." });
         }
         const messages = await GroupMessage.find({ groupId }).populate("senderId", "fullname profilePicture").sort({ createdAt: 1 });
+
+        // Đánh dấu đã đọc: thêm userId vào readBy của các tin chưa đọc (không phải do mình gửi)
+        await GroupMessage.updateMany(
+            { groupId, senderId: { $ne: userId }, readBy: { $nin: [userId] } },
+            { $addToSet: { readBy: userId } }
+        );
+
         res.status(200).json(messages);
     } catch (error) {
         console.log("Error in getGroupMessages controller: ", error.message);
@@ -260,6 +279,11 @@ export const removeMember = async (req, res) => {
         // Allow group creator or the user themselves to remove members
         if (group.createdBy.toString() !== currentUserId.toString() && currentUserId.toString() !== userId) {
             return res.status(403).json({ message: "You don't have permission to remove this member." });
+        }
+
+        // Bug #3: Prevent creator from removing themselves — would lose group ownership
+        if (userId === group.createdBy.toString()) {
+            return res.status(400).json({ message: "Người tạo nhóm không thể rời khỏi nhóm. Hãy chuyển quyền sở hữu trước." });
         }
 
         if (!group.members.some(memberId => memberId.toString() === userId.toString())) {

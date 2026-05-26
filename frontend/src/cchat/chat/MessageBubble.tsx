@@ -97,7 +97,18 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                 : "bg-[#202124] text-[#e1e1e1] rounded-tr-md rounded-tl-md rounded-br-md rounded-bl-sm"
               }
             `}>
-            <p className="leading-[1.4] whitespace-pre-wrap break-words">{msg.text}</p>
+            <p className="leading-[1.4] whitespace-pre-wrap break-words">
+              {msg.text.split(/(https?:\/\/[^\s]+)/g).map((part, i) => {
+                if (part.match(/(https?:\/\/[^\s]+)/g)) {
+                  return (
+                    <a key={i} href={part} target="_blank" rel="noopener noreferrer" className={`underline ${isMe ? 'text-blue-200 hover:text-white' : 'text-blue-400 hover:text-blue-300'} transition-colors`}>
+                      {part}
+                    </a>
+                  );
+                }
+                return part;
+              })}
+            </p>
             <div className={`flex items-center justify-end gap-1 text-[11px] mt-0.5 ${isMe ? "text-blue-200" : "text-[#a1a1a1]"}`}>
               <span>{timeStr}</span>
               {isMe && <span>✓</span>}
