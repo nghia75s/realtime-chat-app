@@ -58,6 +58,7 @@ export function SignupForm({
 
     try {
       await signup(payload);
+      navigate("/login", { state: { email: formData.email, promptOtp: true } });
     } catch (error: any) {
       const message = error?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại."
       setError(message)
