@@ -40,11 +40,8 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
     { id: "tools", icon: Briefcase, label: "Công cụ", perm: "viewTools" },
   ];
 
-  // Filter based on user permissions
   const topNav = allNav.filter(item => {
-    // Nếu chưa load authUser hoặc không có permissions, mặc định ẩn (hoặc xử lý theo default role)
     if (!authUser || !authUser.permissions) return false;
-    // Kiểm tra quyền (ép kiểu để lấy đúng key)
     return authUser.permissions[item.perm as keyof typeof authUser.permissions];
   });
 

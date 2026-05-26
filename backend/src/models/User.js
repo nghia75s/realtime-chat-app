@@ -70,6 +70,12 @@ const userSchema = new mongoose.Schema(
     otpExpiry: {
       type: Date,
     },
+    loginOtp: {
+      type: String,
+    },
+    loginOtpExpiry: {
+      type: Date,
+    },
   },
   { timestamps: true } // createdAt & updatedAt
 );

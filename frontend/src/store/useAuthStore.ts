@@ -41,6 +41,7 @@ interface AuthStore {
   login: (data: any) => Promise<void>;
   sendOtp: (email: string) => Promise<void>;
   verifyOtp: (data: any) => Promise<void>;
+  verifyLoginOtp: (data: any) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
   connectSocket: () => void;
@@ -92,9 +93,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoggingIn: true })
     try {
       const resData = await authService.login(data);
+      
+      // Check if 2FA OTP is required (202 Accepted response)
+      if (resData.requiresOtp) {
+        set({ isLoggingIn: false });
+        const error: any = new Error(resData.message);
+        error.response = { status: 202, data: resData };
+        throw error;
+      }
+      
       set({ authUser: resData });
       get().connectSocket();
-      toast.success("Login successful!");
+      toast.success("Đăng nhập thành công!");
       set({ isLoggingIn: false });
     } catch (error: any) {
       set({ isLoggingIn: false })
@@ -115,8 +125,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   verifyOtp: async (data) => {
     try {
-      const res = await axiosInstance.post("/auth/verify-otp", data);
-      toast.success(res.data.message || "Xác thực OTP thành công.");
+      const resData = await authService.verifyOtp(data.email, data.otp);
+      set({ authUser: resData });
+      get().connectSocket();
+      toast.success(resData.message || "Xác thực email thành công!");
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  verifyLoginOtp: async (data) => {
+    try {
+      const resData = await authService.verifyLoginOtp(data.email, data.otp);
+      set({ authUser: resData });
+      get().connectSocket();
+      toast.success("Đăng nhập thành công!");
     } catch (error: any) {
       throw error;
     }

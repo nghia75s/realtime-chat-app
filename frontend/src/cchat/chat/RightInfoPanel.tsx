@@ -1,24 +1,37 @@
-import { useState } from "react"
-import { Bell, Clock, ShieldAlert, ChevronRight, Image as ImageIcon, FileText, Link as LinkIcon, Pin, Users, UserPlus, LogOut, MoreHorizontal, Shield, Crown } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Bell, Clock, ShieldAlert, ChevronRight, Image as ImageIcon, FileText, Link as LinkIcon, Pin, Users, UserPlus, LogOut, Crown, Search, Check } from "lucide-react"
 import { ArchivePanel } from "./ArchivePanel"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { toast } from "react-hot-toast"
+import { useChatStore } from "@/store/useChatStore"
+import { useAuthStore } from "@/store/useAuthStore"
 
 export function RightInfoPanel({ chat }: { chat: any }) {
   const [view, setView] = useState<"info" | "archive">("info")
   const [archiveTab, setArchiveTab] = useState<"media" | "file" | "link">("media")
   const [isMembersOpen, setIsMembersOpen] = useState(true)
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+
+  const { allContacts, getAllcontacts, addGroupMember, setSelectedUser } = useChatStore()
+  const { authUser } = useAuthStore()
+
+  useEffect(() => {
+    if (isAddMemberOpen && allContacts.length === 0) {
+      getAllcontacts()
+    }
+  }, [isAddMemberOpen, allContacts.length, getAllcontacts])
 
   const openArchive = (tab: "media" | "file" | "link") => {
     setArchiveTab(tab)
@@ -31,6 +44,31 @@ export function RightInfoPanel({ chat }: { chat: any }) {
   const isGroup = chat.isGroup || false
   const members = chat.members || []
   const creatorId = typeof chat.createdBy === "string" ? chat.createdBy : chat.createdBy?._id
+  const memberIds = members.map((member: any) => typeof member === "string" ? member : member._id)
+  const availableContacts = allContacts.filter(contact => !memberIds.includes(contact._id))
+  const filteredContacts = availableContacts.filter(contact =>
+    contact.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  const selectedMember = allContacts.find(contact => contact._id === selectedMemberId)
+
+  const handleAddMember = async () => {
+    if (!selectedMemberId) {
+      toast.error("Vui lòng chọn thành viên để thêm")
+      return
+    }
+
+    try {
+      const updatedGroup = await addGroupMember(chat._id, selectedMemberId)
+      setSelectedUser({ ...updatedGroup, isGroup: true })
+      toast.success(`${selectedMember?.fullname || "Thành viên"} đã được thêm vào nhóm`)
+      setIsAddMemberOpen(false)
+      setSearchQuery("")
+      setSelectedMemberId(null)
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   if (view === "archive") {
     return <ArchivePanel initialTab={archiveTab} onBack={() => setView("info")} />
@@ -60,8 +98,8 @@ export function RightInfoPanel({ chat }: { chat: any }) {
                 <span className="text-[12px] text-[#a1a1a1] text-center leading-tight">Tắt thông báo</span>
               </div>
               
-              {isGroup && (
-                <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-16" onClick={() => toast("Chức năng thêm đang phát triển")}>
+              {isGroup && creatorId === authUser?._id && (
+                <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-16" onClick={() => setIsAddMemberOpen(true)}>
                   <div className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-[#131416] text-[#a1a1a1] transition-colors group-hover:bg-[#2b2d31] group-hover:text-white">
                     <UserPlus className="h-[18px] w-[18px]" />
                   </div>
@@ -186,6 +224,70 @@ export function RightInfoPanel({ chat }: { chat: any }) {
           </div>
         </div>
       </div>
+      <Dialog open={isAddMemberOpen} onOpenChange={(open) => !open && setIsAddMemberOpen(false)}>
+        <DialogContent className="max-w-[440px] p-0 overflow-hidden bg-[#1e1f22] text-[#e1e1e1] border border-[#2b2d31] shadow-2xl rounded-xl">
+          <DialogHeader className="px-5 py-4 border-b border-[#2b2d31] bg-[#1a1b1e]">
+            <DialogTitle className="text-[16px] font-semibold flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-[#0052cc]" />
+              Thêm thành viên vào nhóm
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="px-5 py-4">
+            <p className="text-[14px] text-[#a1a1a1] mb-4">
+              Chọn một thành viên chưa có trong nhóm để thêm.
+            </p>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#a1a1a1]" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm kiếm liên hệ..."
+                className="w-full rounded-full bg-[#131416] py-2 pl-[38px] pr-4 text-[14px] outline-none border border-[#2b2d31] focus:border-[#0052cc] focus:ring-1 focus:ring-[#0052cc] transition-all"
+              />
+            </div>
+            <div className="mt-4 max-h-[280px] overflow-y-auto custom-scrollbar flex flex-col gap-2 pr-1">
+              {filteredContacts.length > 0 ? (
+                filteredContacts.map((contact: any) => {
+                  const isSelected = selectedMemberId === contact._id
+                  return (
+                    <button
+                      key={contact._id}
+                      type="button"
+                      onClick={() => setSelectedMemberId(contact._id)}
+                      className={`w-full rounded-xl border px-3 py-3 text-left transition-colors ${isSelected ? "border-[#0052cc] bg-[#1d2a48]" : "border-[#2b2d31] hover:border-[#0052cc] hover:bg-[#2b2d31]"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <img src={contact.profilePicture || "/avatar.png"} alt={contact.fullname} className="w-10 h-10 rounded-full object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[14px] font-medium text-[#e1e1e1]">{contact.fullname}</p>
+                          {contact.email && <p className="text-[12px] text-[#a1a1a1] truncate">{contact.email}</p>}
+                        </div>
+                        {isSelected && (
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0052cc] text-white">
+                            <Check className="h-4 w-4" />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })
+              ) : (
+                <div className="py-10 text-center text-[#a1a1a1]">Không còn thành viên nào phù hợp để thêm.</div>
+              )}
+            </div>
+          </div>
+
+          <div className="px-5 py-4 border-t border-[#2b2d31] flex justify-end gap-3 bg-[#1a1b1e]">
+            <button type="button" onClick={() => setIsAddMemberOpen(false)} className="px-5 py-2 rounded-md bg-[#2b2b2e] text-[#e1e1e1] hover:bg-[#3a3b3e] transition-colors">
+              Hủy
+            </button>
+            <button type="button" onClick={handleAddMember} disabled={!selectedMemberId} className="px-5 py-2 rounded-md bg-[#0052cc] text-white hover:bg-[#0047b3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              Thêm
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

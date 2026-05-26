@@ -1,10 +1,16 @@
 ﻿import nodemailer from "nodemailer";
 import { ENV } from "../lib/env.js";
 
-const createOtpEmailTemplate = (otpCode) => {
+const createOtpEmailTemplate = (otpCode, type = "email verification") => {
+  const titleMap = {
+    "2FA Login": "Mã xác thực 2FA đăng nhập",
+    "email verification": "Mã xác thực OTP của bạn",
+  };
+  const title = titleMap[type] || titleMap["email verification"];
+
   return `
     <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
-      <h2 style="color: #1a73e8;">Mã xác thực OTP của bạn</h2>
+      <h2 style="color: #1a73e8;">${title}</h2>
       <p>Chào bạn,</p>
       <p>Đây là mã xác thực 6 chữ số của bạn:</p>
       <p style="font-size: 32px; font-weight: bold; letter-spacing: 0.2em;">${otpCode}</p>
@@ -29,14 +35,21 @@ const createTransporter = () => {
   });
 };
 
-export const sendOtpEmail = async (email, otpCode) => {
+export const sendOtpEmail = async (email, otpCode, type = "email verification") => {
   const transporter = createTransporter();
+  
+  const subjectMap = {
+    "2FA Login": "Mã xác thực 2FA đăng nhập",
+    "email verification": "Mã OTP xác thực tài khoản",
+  };
+  const subject = subjectMap[type] || subjectMap["email verification"];
+
   const mailOptions = {
     from: `${ENV.EMAIL_FROM_NAME} <${ENV.EMAIL_FROM}>`,
     to: email,
-    subject: "Mã OTP xác thực tài khoản",
+    subject: subject,
     text: `Mã xác thực của bạn là ${otpCode}. Mã có hiệu lực trong 5 phút.`,
-    html: createOtpEmailTemplate(otpCode),
+    html: createOtpEmailTemplate(otpCode, type),
   };
 
   try {

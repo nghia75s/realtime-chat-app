@@ -41,6 +41,7 @@ interface ChatStore {
     sendMessage: (messageData: any) => Promise<void>;
     sendGroupMessage: (messageData: any) => Promise<void>;
     createGroup: (groupData: { name: string; members: string[]; groupPicture?: string | null; description?: string }) => Promise<any>;
+    addGroupMember: (groupId: string, userId: string) => Promise<any>;
     joinGroup: (groupId: string) => void;
     leaveGroup: (groupId: string) => void;
     subscribeToMessages: () => void;
@@ -222,6 +223,24 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         } finally {
             set({ isGroupsLoading: false });
         }
+    },
+    addGroupMember: async (groupId, userId) => {
+      try {
+        const data = await chatService.addGroupMember(groupId, userId);
+        set((state) => ({
+          groups: state.groups.map((group) =>
+            group._id === data._id ? { ...data, isGroup: true } : group
+          )
+        }));
+        if (get().selectedUser?.isGroup && get().selectedUser._id === data._id) {
+          set({ selectedUser: { ...data, isGroup: true } });
+        }
+        return data;
+      } catch (error: any) {
+        const message = error?.response?.data?.message || "Failed to add member. Please try again.";
+        toast.error(message);
+        throw error;
+      }
     },
     joinGroup: (groupId) => {
         const socket = useAuthStore.getState().socket;
