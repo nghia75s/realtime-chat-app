@@ -505,3 +505,114 @@ export const forwardMessage = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// POST /api/messages/pin/:messageId
+export const pinMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    // Check both Message and GroupMessage
+    let message = await Message.findById(messageId);
+    let isGroup = false;
+    
+    if (!message) {
+      message = await GroupMessage.findById(messageId);
+      isGroup = true;
+    }
+
+    if (!message) return res.status(404).json({ message: "Message not found" });
+
+    message.isPinned = !message.isPinned;
+    if (message.isPinned) {
+      message.pinnedBy = userId;
+    } else {
+      message.pinnedBy = null;
+    }
+    
+    await message.save();
+    
+    const populatedMessage = await message.populate("senderId", "fullname profilePicture");
+
+    // Send a system message
+    const actionText = message.isPinned ? "đã ghim" : "đã bỏ ghim";
+    let systemMsg;
+    
+    if (isGroup) {
+      systemMsg = new GroupMessage({
+        senderId: userId,
+        groupId: message.groupId,
+        messageType: "system",
+        text: `Người dùng ${req.user.fullname} ${actionText} một tin nhắn.`,
+      });
+      await systemMsg.save();
+      const populatedSystemMsg = await systemMsg.populate("senderId", "fullname profilePicture");
+      
+      // Emit to group members
+      const group = await mongoose.model("Group").findById(message.groupId);
+      if (group) {
+        group.members.forEach((memberId) => {
+          const memberIdStr = memberId.toString();
+          emitToUser(memberIdStr, "messagePinned", { messageId: message._id, isPinned: message.isPinned, message: populatedMessage });
+          emitToUser(memberIdStr, "newGroupMessage", populatedSystemMsg);
+        });
+      }
+    } else {
+      systemMsg = new Message({
+        senderId: userId,
+        receiverId: message.senderId.equals(userId) ? message.receiverId : message.senderId,
+        messageType: "system",
+        text: `Người dùng ${req.user.fullname} ${actionText} một tin nhắn.`,
+      });
+      await systemMsg.save();
+      const populatedSystemMsg = await systemMsg.populate("senderId", "fullname profilePicture");
+      
+      // Emit to both direct users
+      const otherUserId = message.senderId.equals(userId) ? message.receiverId : message.senderId;
+      emitToUser(userId.toString(), "messagePinned", { messageId: message._id, isPinned: message.isPinned, message: populatedMessage });
+      emitToUser(otherUserId.toString(), "messagePinned", { messageId: message._id, isPinned: message.isPinned, message: populatedMessage });
+      emitToUser(userId.toString(), "newMessage", populatedSystemMsg);
+      emitToUser(otherUserId.toString(), "newMessage", populatedSystemMsg);
+    }
+
+    res.status(200).json(populatedMessage);
+  } catch (error) {
+    console.error("Error in pinMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// GET /api/messages/pinned/:chatId
+export const getPinnedMessages = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user._id;
+
+    // We don't know if chatId is a user ID or group ID.
+    // Try to find group messages first
+    const groupMessages = await GroupMessage.find({ groupId: chatId, isPinned: true })
+      .populate("senderId", "fullname profilePicture")
+      .populate("pinnedBy", "fullname")
+      .sort({ updatedAt: -1 });
+
+    if (groupMessages.length > 0) {
+      return res.status(200).json(groupMessages);
+    }
+
+    // Try direct messages
+    const directMessages = await Message.find({
+      $or: [
+        { senderId: userId, receiverId: chatId, isPinned: true },
+        { senderId: chatId, receiverId: userId, isPinned: true }
+      ]
+    })
+      .populate("senderId", "fullname profilePicture")
+      .populate("pinnedBy", "fullname")
+      .sort({ updatedAt: -1 });
+
+    res.status(200).json(directMessages);
+  } catch (error) {
+    console.error("Error in getPinnedMessages:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

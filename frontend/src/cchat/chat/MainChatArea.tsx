@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { Phone, Video, PanelRightClose, PanelRightOpen, Smile, Send, Paperclip, Image as ImageIcon, FileText, Type, Maximize, Clock, ThumbsUp, X, Reply, Trash2, Copy, RotateCcw } from "lucide-react"
+import { Phone, Video, PanelRightClose, PanelRightOpen, Smile, Send, Paperclip, Image as ImageIcon, FileText, Type, Maximize, Clock, ThumbsUp, X, Reply, Trash2, Copy, RotateCcw, Pin } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useMessageActionStore } from "@/store/useMessageActionStore"
@@ -11,6 +11,7 @@ import { TaskMessageCard } from "./TaskMessageCard"
 import { DocumentViewerModal } from "./DocumentViewerModal"
 import { MessageDetailsModal } from "./modals/MessageDetailsModal"
 import { ForwardMessageModal } from "./modals/ForwardMessageModal"
+import { PinnedMessageBar } from "./PinnedMessageBar"
 import { toast } from "react-hot-toast"
 import { EmojiPickerPanel } from "@/components/ui/EmojiPickerPanel"
 import { formatMessageDateDivider } from "@/lib/formatTime"
@@ -56,6 +57,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     unsubscribeFromMessages,
     messages,
     isMessagesLoading,
+    getPinnedMessages
   } = useChatStore()
   const { onlineUsers, authUser } = useAuthStore()
   
@@ -119,6 +121,8 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   useEffect(() => {
     if (selectedUser) {
       setIsScrolled(false);
+      getPinnedMessages(selectedUser._id);
+      
       if (isGroup) {
         getGroupMessageByUserId(selectedUser._id);
         joinGroup(selectedUser._id);
@@ -134,7 +138,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
         joinedGroupIdRef.current = null;
       }
     };
-  }, [selectedUser, isGroup, getMessagesByUserId, getGroupMessageByUserId, joinGroup, leaveGroup])
+  }, [selectedUser, isGroup, getMessagesByUserId, getGroupMessageByUserId, joinGroup, leaveGroup, getPinnedMessages])
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -247,6 +251,8 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
         </div>
       </div>
 
+      <PinnedMessageBar />
+
       {/* Message History */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 relative">
         {(isMessagesLoading || !isScrolled) && (
@@ -276,6 +282,21 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                 </div>
               ) : null;
 
+              // Tin nhắn hệ thống (System Message)
+              if (msg.messageType === "system") {
+                return (
+                  <React.Fragment key={msg._id}>
+                    {dateDivider}
+                    <div className="flex justify-center my-3 w-full">
+                      <span className="text-[12px] font-medium text-[#a1a1a1] bg-[#2b2d31]/50 px-4 py-1.5 rounded-full text-center max-w-[80%] break-words shadow-sm border border-[#3a3b3e]/30">
+                        {msg.text?.includes("ghim") && <Pin className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5 text-[#0052cc]" />}
+                        {msg.text || "Thông báo hệ thống"}
+                      </span>
+                    </div>
+                  </React.Fragment>
+                )
+              }
+
               // Tin nhắn lá đơn: dùng DocumentMessageCard
               if (msg.messageType === "document") {
                 return (
@@ -284,6 +305,10 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                     <DocumentMessageCard
                       msg={msg}
                       onViewFull={(html, name) => setDocumentViewer({ htmlContent: html, templateName: name })}
+                      senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
+                      senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
+                      isGroupChat={isGroup}
+                      hideHeader={hideHeader}
                     />
                   </React.Fragment>
                 )
@@ -294,7 +319,13 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                 return (
                   <React.Fragment key={msg._id}>
                     {dateDivider}
-                    <TaskMessageCard msg={msg} />
+                    <TaskMessageCard
+                      msg={msg}
+                      senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
+                      senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
+                      isGroupChat={isGroup}
+                      hideHeader={hideHeader}
+                    />
                   </React.Fragment>
                 )
               }

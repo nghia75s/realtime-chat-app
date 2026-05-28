@@ -43,7 +43,7 @@ const messageSchema = new mongoose.Schema(
     // --- Document Message Fields ---
     messageType: {
       type: String,
-      enum: ["text", "document", "task_assignment"],
+      enum: ["text", "document", "task_assignment", "system"],
       default: "text",
     },
     documentPayload: {
@@ -66,6 +66,14 @@ const messageSchema = new mongoose.Schema(
       deadline: Date,
       note: String,
     },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    pinnedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }
   },
   { timestamps: true }
 );

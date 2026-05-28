@@ -38,5 +38,15 @@ export const authService = {
   updateProfile: async (data: any) => {
     const res = await axiosInstance.put("/auth/update-profile", data);
     return res.data;
+  },
+
+  pinChat: async (chatId: string) => {
+    const res = await axiosInstance.post("/auth/pin-chat", { chatId });
+    return res.data;
+  },
+
+  muteChat: async (chatId: string, mutedUntil?: string | null) => {
+    const res = await axiosInstance.post("/auth/mute-chat", { chatId, mutedUntil });
+    return res.data;
   }
 };

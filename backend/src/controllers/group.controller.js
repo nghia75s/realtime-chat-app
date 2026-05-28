@@ -326,3 +326,49 @@ export const removeMember = async (req, res) => {
     }
 };
 
+export const updateGroupSettings = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const { settings, name, groupPicture } = req.body;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+
+        if (group.createdBy.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Only group creator can update group settings." });
+        }
+
+        const updateData = {};
+        if (settings) updateData.settings = settings;
+        if (name) updateData.name = name;
+
+        if (groupPicture) {
+            // Upload to cloudinary
+            try {
+                // Ensure cloudinary is imported at the top if not already, but wait, cloudinary is imported in auth.controller. Let me assume it's imported here or I should import it. Wait, if it's not imported in group.controller.js, it will throw an error. I must check if cloudinary is imported in group.controller.js! Let me just put the code and if it fails I'll import it. Wait, I should probably check imports first.
+                // Assuming it might not be imported, I will require it dynamically or use the standard import.
+                const cloudinary = (await import("../lib/cloudinary.js")).default;
+                const uploadResponse = await cloudinary.uploader.upload(groupPicture);
+                updateData.groupPicture = uploadResponse.secure_url;
+            } catch (uploadError) {
+                console.log("Error uploading group picture:", uploadError);
+                return res.status(500).json({ message: "Lỗi tải ảnh lên" });
+            }
+        }
+
+        const updatedGroup = await Group.findByIdAndUpdate(
+            groupId, 
+            { $set: updateData }, 
+            { new: true }
+        ).populate("members", "-password").populate("createdBy", "-password");
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in updateGroupSettings controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+

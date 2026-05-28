@@ -24,6 +24,14 @@ const groupMessageSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
     }],
+    isPinned: {
+        type: Boolean,
+        default: false,
+    },
+    pinnedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+    },
     isRecalled: {
         type: Boolean,
         default: false,
@@ -42,9 +50,9 @@ const groupMessageSchema = new mongoose.Schema(
     },
     // --- Document Message Fields ---
     messageType: {
-      type: String,
-      enum: ["text", "document", "task_assignment"],
-      default: "text",
+        type: String,
+        enum: ["text", "document", "task_assignment", "system"],
+        default: "text",
     },
     documentPayload: {
       templateId: String,

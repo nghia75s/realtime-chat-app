@@ -81,4 +81,19 @@ export const chatService = {
     const res = await axiosInstance.post(`messages/forward`, { messageId, receiverIds, note });
     return res.data;
   },
+
+  pinMessage: async (messageId: string) => {
+    const res = await axiosInstance.post(`messages/pin/${messageId}`);
+    return res.data;
+  },
+
+  getPinnedMessages: async (chatId: string) => {
+    const res = await axiosInstance.get(`messages/pinned/${chatId}`);
+    return res.data;
+  },
+
+  updateGroupSettings: async (groupId: string, settings: any) => {
+    const res = await axiosInstance.put(`groups/groups/${groupId}/settings`, { settings });
+    return res.data;
+  }
 };

@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useChatStore } from "@/store/useChatStore"
 import { useMessageActionStore } from "@/store/useMessageActionStore"
-import { Reply, Forward, Copy, Info, Trash2, RotateCcw, MoreHorizontal, CheckSquare, Square, CornerUpRight } from "lucide-react"
+import { Reply, Forward, Copy, Info, Trash2, RotateCcw, MoreHorizontal, CheckSquare, Square, CornerUpRight, Pin } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { MessageBubbleProps } from "@/store/useMessageBubbleStore.ts"
@@ -17,7 +17,7 @@ import {
 export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean }) {
   const { msg, onImageLoad, senderAvatar, senderName, isGroupChat, onReply, onForward, hideHeader } = props
   const { authUser } = useAuthStore()
-  const { recallMessage, deleteMessage } = useChatStore()
+  const { recallMessage, deleteMessage, pinMessage } = useChatStore()
   const { 
     isSelectionMode, 
     toggleMessageSelection, 
@@ -59,6 +59,15 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
     try {
       await deleteMessage(msg._id);
       toast.success("Đã xóa tin nhắn");
+    } catch (error) {
+      // Error handled in store
+    }
+  }
+
+  const handlePin = async () => {
+    try {
+      await pinMessage(msg._id);
+      // Success toast can be omitted since system message and real-time update will be obvious
     } catch (error) {
       // Error handled in store
     }
@@ -115,6 +124,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
             onDetails={() => openDetailsModal(msg)}
             onRecall={handleRecall}
             onDelete={handleDelete}
+            onPin={handlePin}
             onDropdownChange={setIsDropdownOpen}
           />
         )}
@@ -214,6 +224,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
             onDetails={() => openDetailsModal(msg)}
             onRecall={handleRecall}
             onDelete={handleDelete}
+            onPin={handlePin}
             onDropdownChange={setIsDropdownOpen}
           />
         )}
@@ -223,7 +234,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
 }
 
 // === Component Thanh Nút Tương Tác ===
-function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectMany, onDetails, onRecall, onDelete, onDropdownChange }: any) {
+function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectMany, onDetails, onRecall, onDelete, onPin, onDropdownChange }: any) {
   return (
     <div className={`flex items-center gap-0.5 ${isMe ? "mr-1.5" : "ml-1.5"} transition-opacity duration-150 ${show ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
       <TooltipProvider delayDuration={200}>
@@ -263,12 +274,15 @@ function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectM
             </TooltipContent>
           </Tooltip>
           
-          <DropdownMenuContent align={isMe ? "end" : "start"} className="w-48 bg-[#1e1f22]/95 backdrop-blur-md border-[#3a3b3e] text-[#d1d1d1] p-1 shadow-2xl rounded-xl">
+          <DropdownMenuContent align={isMe ? "end" : "start"} className="w-48 bg-[#1e1f22]/95 backdrop-blur-md border-[#3a3b3e] text-[#d1d1d1] p-1 shadow-2xl rounded-xl z-50">
             <DropdownMenuItem onClick={onReply} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
               <Reply className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Trả lời
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onForward} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
               <Forward className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Chuyển tiếp tin nhắn
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onPin} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
+              <Pin className="w-4 h-4 mr-2 text-[#a1a1a1]" /> {msg.isPinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
             </DropdownMenuItem>
             {msg.text && (
               <DropdownMenuItem onClick={onCopy} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">

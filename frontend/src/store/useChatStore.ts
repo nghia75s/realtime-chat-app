@@ -53,6 +53,10 @@ interface ChatStore {
     recallMessage: (messageId: string) => Promise<any>;
     deleteMessage: (messageId: string) => Promise<any>;
     forwardMessage: (messageId: string, receiverIds: string[], note?: string) => Promise<any>;
+    updateGroupSettings: (groupId: string, settings: any) => Promise<any>;
+    pinnedMessages: any[];
+    getPinnedMessages: (chatId: string) => Promise<void>;
+    pinMessage: (messageId: string) => Promise<void>;
 }
 
 // Helper: Đẩy item lên đầu mảng dựa theo _id, fallback unshift nếu chưa có
@@ -81,6 +85,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     chats: [],
     groups: [],
     messages: [],
+    pinnedMessages: [],
     managers: [],
     activeTab: "personal",
     selectedUser: null,
@@ -131,8 +136,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         set({ isContactsLoading: true });
         try {
             const data = await chatService.getAllcontacts();
+            console.log("Danh sách tất cả Users lấy được:", data);
             set({ allContacts: Array.isArray(data) ? data : [] })
         } catch (error: any) {
+            console.error("Lỗi khi lấy contacts:", error);
             const message = error?.response?.data?.message || "Failed to fetch contacts. Please try again.";
             toast.error(message);
         } finally {
@@ -370,6 +377,29 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             }));
         });
 
+        socket.off("messagePinned");
+        socket.on("messagePinned", ({ messageId, isPinned, message }) => {
+            set((state) => {
+                const currentPinned = state.pinnedMessages;
+                let newPinned = [...currentPinned];
+                
+                if (isPinned) {
+                    if (!currentPinned.some(m => m._id === messageId)) {
+                        newPinned = [message, ...currentPinned];
+                    }
+                } else {
+                    newPinned = currentPinned.filter(m => m._id !== messageId);
+                }
+                
+                return { 
+                    pinnedMessages: newPinned,
+                    messages: state.messages.map((m) =>
+                        m._id === messageId ? { ...m, isPinned, pinnedBy: message.pinnedBy } : m
+                    )
+                };
+            });
+        });
+
         // Toast thông báo kết quả phê duyệt cho người gửi đơn
         socket.off("docApprovalNotif");
         socket.on("docApprovalNotif", ({ status, message }: { status: string; message: string }) => {
@@ -438,6 +468,25 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             return data;
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Không thể gửi phản hồi");
+            throw error;
+        }
+    },
+
+    getPinnedMessages: async (chatId) => {
+        try {
+            const data = await chatService.getPinnedMessages(chatId);
+            set({ pinnedMessages: data });
+        } catch (error) {
+            console.error("Failed to fetch pinned messages:", error);
+        }
+    },
+
+    pinMessage: async (messageId) => {
+        try {
+            await chatService.pinMessage(messageId);
+            // Cập nhật state sẽ được xử lý qua socket event "messagePinned"
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Không thể thao tác ghim tin nhắn");
             throw error;
         }
     },
@@ -512,6 +561,24 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             return data;
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Lỗi chuyển tiếp tin nhắn");
+            throw error;
+        }
+    },
+
+    updateGroupSettings: async (groupId, settings) => {
+        try {
+            const data = await chatService.updateGroupSettings(groupId, settings);
+            set((state) => ({
+                groups: state.groups.map((group) =>
+                    group._id === data._id ? { ...data, isGroup: true } : group
+                )
+            }));
+            if (get().selectedUser?.isGroup && get().selectedUser._id === data._id) {
+                set({ selectedUser: { ...data, isGroup: true } });
+            }
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi cập nhật cấu hình nhóm");
             throw error;
         }
     },

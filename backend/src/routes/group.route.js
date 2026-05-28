@@ -5,6 +5,7 @@ import {
     getGroupDetail,
     updateGroup,
     deleteGroup,
+    updateGroupSettings,
     addMember,
     removeMember,
     sendGroupMessage,
@@ -20,6 +21,7 @@ router.post("/groups", createGroup);
 router.get("/groups", getMyGroups);
 router.get("/groups/:id", getGroupDetail);
 router.put("/groups/:id", updateGroup);
+router.put("/groups/:id/settings", updateGroupSettings);
 router.delete("/groups/:id", deleteGroup);
 
 router.post("/groups/:id/members", addMember);

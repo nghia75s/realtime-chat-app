@@ -23,12 +23,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.1",
     "node-cron": "^4.2.1",
-<<<<<<< HEAD
     "nodemailer": "^8.0.8",
-=======
-    "nodemailer": "^8.0.7",
     "readdirp": "^5.0.0",
->>>>>>> 00c66ea7bac5b5dad809fe8eb215d1fd80d1b6d6
     "resend": "^6.0.2",
     "socket.io": "^4.8.3"
   },
