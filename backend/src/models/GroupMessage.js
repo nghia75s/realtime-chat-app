@@ -20,6 +20,14 @@ const groupMessageSchema = new mongoose.Schema(
     image: {
         type: String,
     },
+    file: {
+      type: new mongoose.Schema({
+        name: String,
+        type: String,
+        url: String,
+        size: Number,
+      }, { _id: false }),
+    },
     readBy: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -51,7 +59,7 @@ const groupMessageSchema = new mongoose.Schema(
     // --- Document Message Fields ---
     messageType: {
         type: String,
-        enum: ["text", "document", "task_assignment", "system"],
+        enum: ["text", "file", "document", "task_assignment", "system"],
         default: "text",
     },
     documentPayload: {

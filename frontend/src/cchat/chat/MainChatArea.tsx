@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { Phone, Video, PanelRightClose, PanelRightOpen, Smile, Send, Paperclip, Image as ImageIcon, FileText, Type, Maximize, Clock, ThumbsUp, X, Reply, Trash2, Copy, RotateCcw, Pin } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -73,8 +73,10 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const isGroup = selectedUser?.isGroup || false
   const isOnline = selectedUser ? onlineUsers.includes(selectedUser._id) : false
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const attachmentInputRef = useRef<HTMLInputElement>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [fileAttachment, setFileAttachment] = useState<{ file: File; data: string } | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
   const [text, setText] = useState("")
   const [isSending, setIsSending] = useState(false)
@@ -83,6 +85,54 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
   const [documentViewer, setDocumentViewer] = useState<{ htmlContent: string; templateName: string } | null>(null)
+  const [imageModalIndex, setImageModalIndex] = useState<number | null>(null)
+  const [imageZoom, setImageZoom] = useState<number>(1)
+  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
+  const [isPanning, setIsPanning] = useState(false)
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null)
+  const [didDrag, setDidDrag] = useState(false)
+
+  const imageMessages = useMemo(() => {
+    return messages?.filter((msg: any) => msg.image).map((msg: any) => ({
+      id: msg._id,
+      image: msg.image,
+      createdAt: msg.createdAt,
+    })) ?? []
+  }, [messages])
+
+  const openImageModal = (message: any) => {
+    const messageId = typeof message === "string" ? message : message?._id
+    const index = imageMessages.findIndex((item) => item.id === messageId)
+    if (index !== -1) {
+      setImageModalIndex(index)
+      setImageZoom(1)
+      setImageOffset({ x: 0, y: 0 })
+      setDidDrag(false)
+    }
+  }
+
+  const closeImageModal = () => {
+    setImageModalIndex(null)
+    setImageZoom(1)
+    setImageOffset({ x: 0, y: 0 })
+    setIsPanning(false)
+    setDragStart(null)
+    setDidDrag(false)
+  }
+
+  const showPreviousImage = () => {
+    setImageModalIndex((current) => {
+      if (current === null || imageMessages.length === 0) return null
+      return current === 0 ? imageMessages.length - 1 : current - 1
+    })
+  }
+
+  const showNextImage = () => {
+    setImageModalIndex((current) => {
+      if (current === null || imageMessages.length === 0) return null
+      return current === imageMessages.length - 1 ? 0 : current + 1
+    })
+  }
 
   const joinedGroupIdRef = useRef<string | null>(null);
 
@@ -117,8 +167,35 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     };
   }, []);
 
+  useEffect(() => {
+    if (imageModalIndex === null) return
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeImageModal()
+      } else if (e.key === "ArrowLeft") {
+        showPreviousImage()
+      } else if (e.key === "ArrowRight") {
+        showNextImage()
+      }
+    }
+
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [imageModalIndex, imageMessages.length])
+
+  useEffect(() => {
+    setImageZoom(1)
+    setImageOffset({ x: 0, y: 0 })
+    setIsPanning(false)
+    setDragStart(null)
+    setDidDrag(false)
+  }, [imageModalIndex])
+
   // Chat specific logic
   useEffect(() => {
+    setReplyingTo(null)
+
     if (selectedUser) {
       setIsScrolled(false);
       getPinnedMessages(selectedUser._id);
@@ -155,27 +232,38 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() && !imagePreview) return;
+    if (!text.trim() && !imagePreview && !fileAttachment) return;
     const msgText = text.trim();
     const msgImg = imagePreview;
     const replyToId = replyingTo?._id;
+    const filePayload = fileAttachment
+      ? {
+          name: fileAttachment.file.name,
+          type: fileAttachment.file.type,
+          size: fileAttachment.file.size,
+          data: fileAttachment.data,
+        }
+      : undefined;
 
     setIsSending(true);
     setText("");
     setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setFileAttachment(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+    if (attachmentInputRef.current) attachmentInputRef.current.value = "";
     setReplyingTo(null);
 
     try {
       if (isGroup) {
-        await sendGroupMessage({ text: msgText, image: msgImg, replyTo: replyToId });
+        await sendGroupMessage({ text: msgText, image: msgImg, file: filePayload, replyTo: replyToId });
       } else {
-        await sendMessage({ text: msgText, image: msgImg, replyTo: replyToId });
+        await sendMessage({ text: msgText, image: msgImg, file: filePayload, replyTo: replyToId });
       }
     } catch (error) {
       console.error("Failed to send message:", error);
       setText(msgText);
       setImagePreview(msgImg);
+      setFileAttachment(fileAttachment);
       // fallback in case of error
       setReplyingTo(replyingTo);
     } finally {
@@ -192,19 +280,56 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     openForwardModal([msg]);
   }
 
+  const handleSendLike = async () => {
+    if (!selectedUser || isSending) return;
+    setIsSending(true);
+
+    try {
+      if (isGroup) {
+        await sendGroupMessage({ text: "👍", image: null, replyTo: null });
+      } else {
+        await sendMessage({ text: "👍", image: null, replyTo: null });
+      }
+    } catch (error) {
+      console.error("Failed to send like message:", error);
+    } finally {
+      setIsSending(false);
+    }
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+      setFileAttachment(null);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFileAttachment({ file, data: reader.result as string });
+      setImagePreview(null);
+    };
     reader.readAsDataURL(file);
   }
 
   const removeImage = () => {
     setImagePreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (imageInputRef.current) imageInputRef.current.value = "";
+  }
+
+  const removeFileAttachment = () => {
+    setFileAttachment(null);
+    if (attachmentInputRef.current) attachmentInputRef.current.value = "";
   }
 
   if (!selectedUser) return null;
@@ -336,6 +461,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   <MessageBubble
                     msg={msg}
                     onImageLoad={scrollToBottom}
+                    onImageClick={openImageModal}
                     senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
                     senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
                     isGroupChat={isGroup}
@@ -465,12 +591,15 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           <div className="flex items-center px-2 py-2 gap-1 h-[40px]">
             <button disabled={isSending} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Smile className="w-[18px] h-[18px]" /></button>
 
-            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageChange} className="hidden" />
-            <button disabled={isSending} onClick={() => fileInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
+            <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageChange} className="hidden" />
+            <input type="file" ref={attachmentInputRef} onChange={handleFileChange} className="hidden" />
+            <button disabled={isSending} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
               <ImageIcon className="w-[18px] h-[18px]" />
             </button>
 
-            <button disabled={isSending} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Paperclip className="w-[18px] h-[18px]" /></button>
+            <button disabled={isSending} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
+              <Paperclip className="w-[18px] h-[18px]" />
+            </button>
             <button disabled={isSending} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" /></button>
             <button disabled={isSending} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" /></button>
             <button disabled={isSending} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" /></button>
@@ -488,6 +617,8 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                     ? `[Đơn] ${replyingTo.documentPayload?.templateName || "Tài liệu"}`
                     : replyingTo.messageType === "task_assignment"
                     ? `[Task] ${replyingTo.taskPayload?.title || "Công việc"}`
+                    : replyingTo.messageType === "file"
+                    ? "[File đính kèm]"
                     : replyingTo.image && !replyingTo.text
                     ? "[Hình ảnh]"
                     : replyingTo.text || "[Tin nhắn]"}
@@ -513,6 +644,29 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   <button
                     onClick={removeImage}
                     className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#2b2d31] flex items-center justify-center text-[#e1e1e1] hover:bg-red-500 hover:text-white transition-colors"
+                    type="button"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {fileAttachment && (
+              <div className="px-4 py-3 pb-0">
+                <div className="relative flex items-center gap-3 w-full max-w-full rounded-2xl border border-[#2b2d31] bg-[#1b1d21] p-3">
+                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#131619] border border-[#2b2d31]">
+                    <FileText className="w-5 h-5 text-[#67d7ff]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-white truncate">{fileAttachment.file.name}</p>
+                    <p className="text-[12px] text-[#9ca3af] truncate">
+                      {fileAttachment.file.type || "Tệp đính kèm"} · {(fileAttachment.file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <button
+                    onClick={removeFileAttachment}
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#2b2d31] flex items-center justify-center text-[#e1e1e1] hover:bg-red-500 hover:text-white transition-colors"
                     type="button"
                   >
                     <X className="w-3 h-3" />
@@ -569,10 +723,16 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                     </div>
                   )}
                 </div>
-                <button type="button" disabled={isSending} className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50">
+                <button
+                  type="button"
+                  disabled={isSending}
+                  onClick={handleSendLike}
+                  title="Gửi like"
+                  className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50"
+                >
                   <ThumbsUp className="w-5 h-5" />
                 </button>
-                <button name="send" type="submit" disabled={(!text.trim() && !imagePreview) || isSending} className="p-1.5 text-[#0052cc] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent">
+                <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending} className="p-1.5 text-[#0052cc] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent">
                   <Send className="w-5 h-5" />
                 </button>
               </div>
@@ -592,6 +752,139 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
 
       <MessageDetailsModal />
       <ForwardMessageModal />
+
+      {imageModalIndex !== null && imageMessages[imageModalIndex] && (
+        <div
+          className="fixed inset-0 z-[220] flex items-center justify-center bg-black/85 backdrop-blur-sm px-4 py-6"
+          onClick={(e) => { if (e.target === e.currentTarget) closeImageModal() }}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh] w-full flex flex-col items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); closeImageModal() }}
+              className="absolute top-4 right-4 z-20 inline-flex items-center justify-center rounded-full bg-[#111214]/95 p-2 text-[#e1e1e1] hover:bg-white/10 transition-colors"
+              aria-label="Đóng"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="relative w-full max-w-[1000px] max-h-[calc(100vh-120px)] flex flex-col items-center justify-center gap-3">
+              <div className="relative w-full flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); showPreviousImage() }}
+                  className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-white/20 transition-colors"
+                  aria-label="Ảnh trước"
+                >
+                  ‹
+                </button>
+
+                <div
+                  className="overflow-hidden rounded-3xl border border-white/10 bg-[#101113]"
+                  style={{ maxHeight: '80vh', width: '100%', touchAction: 'none' }}
+                  onWheel={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    if (e.deltaY < 0) {
+                      setImageZoom((prev) => Math.min(prev + 0.25, 3))
+                    } else {
+                      setImageZoom((prev) => Math.max(prev - 0.25, 1))
+                    }
+                  }}
+                  onMouseMove={(e) => {
+                    if (!isPanning || !dragStart) return
+                    e.stopPropagation()
+                    const deltaX = e.clientX - dragStart.x
+                    const deltaY = e.clientY - dragStart.y
+                    if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+                      setDidDrag(true)
+                    }
+                    setImageOffset((prev) => ({ x: prev.x + deltaX, y: prev.y + deltaY }))
+                    setDragStart({ x: e.clientX, y: e.clientY })
+                  }}
+                  onMouseUp={(e) => {
+                    if (!isPanning) return
+                    e.stopPropagation()
+                    setIsPanning(false)
+                    setDragStart(null)
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isPanning) return
+                    e.stopPropagation()
+                    setIsPanning(false)
+                    setDragStart(null)
+                  }}
+                >
+                  <img
+                    src={imageMessages[imageModalIndex].image}
+                    alt={`Ảnh ${imageModalIndex + 1}`}
+                    className="w-full object-contain shadow-2xl"
+                    style={{
+                      transform: `translate(${imageOffset.x}px, ${imageOffset.y}px) scale(${imageZoom})`,
+                      transition: isPanning ? 'none' : 'transform 0.2s ease',
+                      cursor: imageZoom === 1 ? 'zoom-in' : isPanning ? 'grabbing' : 'grab'
+                    }}
+                    onMouseDown={(e) => {
+                      if (imageZoom <= 1) return
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setIsPanning(true)
+                      setDragStart({ x: e.clientX, y: e.clientY })
+                      setDidDrag(false)
+                    }}
+                    onClick={(e) => {
+                      if (didDrag) {
+                        setDidDrag(false)
+                        return
+                      }
+                      e.stopPropagation()
+                      setImageZoom((prev) => prev === 1 ? 2 : 1)
+                      if (imageZoom === 1) {
+                        setImageOffset({ x: 0, y: 0 })
+                      }
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); showNextImage() }}
+                  className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-white/20 transition-colors"
+                  aria-label="Ảnh tiếp"
+                >
+                  ›
+                </button>
+              </div>
+
+            </div>
+
+            <div className="w-full max-w-[1000px] flex flex-col items-center gap-3">
+              <div className="flex items-center justify-between w-full text-sm text-[#d1d5db]">
+                <span>{imageModalIndex + 1} / {imageMessages.length}</span>
+                <span>{imageMessages[imageModalIndex].createdAt ? new Date(imageMessages[imageModalIndex].createdAt).toLocaleString() : ""}</span>
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto py-2 w-full">
+                {imageMessages.map((item, idx) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setImageModalIndex(idx) }}
+                    className={`relative h-16 min-w-[90px] overflow-hidden rounded-2xl border ${idx === imageModalIndex ? "border-[#0052cc]" : "border-white/10"} shadow-sm bg-[#111214]`}
+                  >
+                    <img src={item.image} alt={`Thu nhỏ ${idx + 1}`} className="h-full w-full object-cover" />
+                    {idx === imageModalIndex && (
+                      <span className="absolute inset-x-0 bottom-0 bg-[#000000]/70 text-[11px] text-white text-center py-1">
+                        {idx + 1}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

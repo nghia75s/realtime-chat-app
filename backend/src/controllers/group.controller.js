@@ -78,11 +78,11 @@ export const getMyGroups = async (req, res) => {
 
 export const sendGroupMessage = async (req, res) => {
     try {
-        const { text, image, replyTo } = req.body;
+        const { text, image, file, replyTo } = req.body;
         const { id: groupId } = req.params;
         const senderId = req.user._id;
-        if (!text && !image) {
-            return res.status(400).json({ message: "Text or image is required." });
+        if (!text && !image && !file) {
+            return res.status(400).json({ message: "Text, image, or file is required." });
         }
         const group = await Group.findById(groupId);
         if (!group) {
@@ -97,7 +97,27 @@ export const sendGroupMessage = async (req, res) => {
             const uploadResponse = await cloudinary.uploader.upload(image);
             imageUrl = uploadResponse.secure_url;
         }
-        const groupMessage = new GroupMessage({ senderId, groupId, text, image: imageUrl, replyTo });
+
+        let filePayload;
+        if (file?.data) {
+            const fileName = file.name || "attachment";
+            const fileBaseName = fileName.replace(/\.[^/.]+$/, "");
+            const fileExtension = fileName.split(".").pop()?.toLowerCase();
+            const uploadResponse = await cloudinary.uploader.upload(file.data, {
+                resource_type: "raw",
+                public_id: fileBaseName,
+                format: fileExtension,
+                use_filename: false,
+                unique_filename: false,
+            });
+            filePayload = {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                url: uploadResponse.secure_url,
+            };
+        }
+        const groupMessage = new GroupMessage({ senderId, groupId, text, image: imageUrl, file: filePayload, replyTo, messageType: filePayload ? "file" : "text" });
         await groupMessage.save();
 
         // Populate sender info for the response

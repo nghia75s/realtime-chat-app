@@ -36,10 +36,16 @@ export interface Message {
   receiverId?: string;
   text?: string;
   image?: string;
+  file?: {
+    name: string;
+    type: string;
+    url: string;
+    size?: number;
+  };
   isRecalled?: boolean;
   isForwarded?: boolean;
   replyTo?: any;
-  messageType?: "text" | "document" | "task_assignment" | "system";
+  messageType?: "text" | "file" | "document" | "task_assignment" | "system";
   documentPayload?: DocumentPayload;
   documentReplyData?: DocumentReplyData;
   taskPayload?: TaskPayload;
@@ -49,6 +55,7 @@ export interface Message {
 export interface MessageBubbleProps {
   msg: Message;
   onImageLoad?: () => void;
+  onImageClick?: (msg: Message) => void;
   senderAvatar?: string;
   senderName?: string;
   isGroupChat?: boolean;

@@ -6,7 +6,7 @@ import { Search, X, MessageSquare } from "lucide-react"
 
 export function ForwardMessageModal() {
   const { isForwardModalOpen, closeForwardModal, forwardMessages, clearSelection } = useMessageActionStore()
-  const { chats, groups, allContacts, getAllcontacts, getMyChatPartners, getMyGroups, forwardMessage } = useChatStore()
+  const { selectedUser, chats, groups, allContacts, getAllcontacts, getMyChatPartners, getMyGroups, forwardMessage } = useChatStore()
 
   const [activeTab, setActiveTab] = useState<"recent" | "groups" | "friends">("recent")
   const [searchQuery, setSearchQuery] = useState("")
@@ -27,47 +27,57 @@ export function ForwardMessageModal() {
   }, [isForwardModalOpen, getAllcontacts, getMyChatPartners, getMyGroups])
 
   // Get a unified list of all targets across all tabs for metadata lookup
+  const currentTargetId = selectedUser?._id
+
   const allPossibleTargets = useMemo(() => {
     const list: Array<{ id: string; name: string; avatar: string; type: "user" | "group" }> = [];
     const addedIds = new Set<string>();
 
     chats.forEach(c => {
-      if (!addedIds.has(c._id)) {
+      if (c._id !== currentTargetId && !addedIds.has(c._id)) {
         addedIds.add(c._id);
         list.push({ id: c._id, name: c.fullname, avatar: c.profilePicture, type: "user" });
       }
     });
 
     groups.forEach(g => {
-      if (!addedIds.has(g._id)) {
+      if (g._id !== currentTargetId && !addedIds.has(g._id)) {
         addedIds.add(g._id);
         list.push({ id: g._id, name: g.name, avatar: g.groupPicture, type: "group" });
       }
     });
 
     allContacts.forEach(c => {
-      if (!addedIds.has(c._id)) {
+      if (c._id !== currentTargetId && !addedIds.has(c._id)) {
         addedIds.add(c._id);
         list.push({ id: c._id, name: c.fullname, avatar: c.profilePicture, type: "user" });
       }
     });
 
     return list;
-  }, [chats, groups, allContacts]);
+  }, [chats, groups, allContacts, currentTargetId]);
 
   // Get filtered targets list based on active tab
   const targets = useMemo(() => {
     if (activeTab === "recent") {
       return [
-        ...chats.map(c => ({ id: c._id, name: c.fullname, avatar: c.profilePicture, type: "user" as const })),
-        ...groups.map(g => ({ id: g._id, name: g.name, avatar: g.groupPicture, type: "group" as const }))
+        ...chats
+          .filter(c => c._id !== currentTargetId)
+          .map(c => ({ id: c._id, name: c.fullname, avatar: c.profilePicture, type: "user" as const })),
+        ...groups
+          .filter(g => g._id !== currentTargetId)
+          .map(g => ({ id: g._id, name: g.name, avatar: g.groupPicture, type: "group" as const }))
       ];
     } else if (activeTab === "groups") {
-      return groups.map(g => ({ id: g._id, name: g.name, avatar: g.groupPicture, type: "group" as const }));
+      return groups
+        .filter(g => g._id !== currentTargetId)
+        .map(g => ({ id: g._id, name: g.name, avatar: g.groupPicture, type: "group" as const }));
     } else {
-      return allContacts.map(c => ({ id: c._id, name: c.fullname, avatar: c.profilePicture, type: "user" as const }));
+      return allContacts
+        .filter(c => c._id !== currentTargetId)
+        .map(c => ({ id: c._id, name: c.fullname, avatar: c.profilePicture, type: "user" as const }));
     }
-  }, [activeTab, chats, groups, allContacts])
+  }, [activeTab, chats, groups, allContacts, currentTargetId])
 
   const filteredTargets = useMemo(() => {
     return targets.filter(t => t.name?.toLowerCase().includes(searchQuery.toLowerCase()))
