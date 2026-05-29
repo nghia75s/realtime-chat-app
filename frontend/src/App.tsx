@@ -3,6 +3,7 @@ import LoginPage from "./pages/LoginPage"
 import SignupPage from "./pages/SignupPage"
 import ChatPage from "./pages/ChatPage"
 import { useAuthStore } from "./store/useAuthStore"
+import { useChatStore } from "./store/useChatStore"
 import { useEffect } from "react"
 import PageLoader from "./components/ui/PageLoader"
 import ContactsPage from "./pages/ContactsPage"
@@ -10,15 +11,22 @@ import TasksPage from "./task/TasksPage"
 import DocumentFillerPage from "./tools/DocumentFillerPage"
 import AdminPage from "./admin/AdminPage"
 import DocumentPage from "./cloud/DocumentPage"
+import GlobalAlerts from "./components/ui/GlobalAlerts"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
+  const { fetchUnreadSummary } = useChatStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  console.log("Auth User:", authUser, "Is Checking Auth:", isCheckingAuth);
+  // Sync unread badge từ server mỗi khi user login hoặc reload trang
+  useEffect(() => {
+    if (authUser) {
+      fetchUnreadSummary();
+    }
+  }, [authUser]);
 
   if (isCheckingAuth) {
     return <PageLoader />
@@ -30,13 +38,14 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={authUser ? <Navigate to="/chat" /> : <LoginPage />} />
         <Route path="/signup" element={authUser ? <Navigate to="/chat" /> : <SignupPage />} />
-        <Route path="/chat" element={authUser ? <ChatPage /> : <Navigate to="/login" />} />
-        <Route path="/contacts" element={authUser ? <ContactsPage /> : <Navigate to="/login" />} />
-        <Route path="/todo" element={authUser ? <TasksPage /> : <Navigate to="/login" />} />
-        <Route path="/tools" element={authUser ? <DocumentFillerPage /> : <Navigate to="/login" />} />
-        <Route path="/cloud" element={authUser ? <DocumentPage /> : <Navigate to="/login" />} />
-        <Route path="/admin" element={authUser && authUser.email === "admin@gmail.com" ? <AdminPage /> : <Navigate to="/chat" />} />
+        <Route path="/chat" element={authUser ? (authUser.permissions?.viewChat !== false ? <ChatPage /> : <Navigate to="/login" />) : <Navigate to="/login" />} />
+        <Route path="/contacts" element={authUser ? (authUser.permissions?.viewContacts ? <ContactsPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
+        <Route path="/todo" element={authUser ? (authUser.permissions?.viewTasks ? <TasksPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
+        <Route path="/tools" element={authUser ? (authUser.permissions?.viewTools ? <DocumentFillerPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
+        <Route path="/cloud" element={authUser ? (authUser.permissions?.viewCloud ? <DocumentPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
+        <Route path="/admin" element={authUser && authUser.permissions?.viewAdmin ? <AdminPage /> : <Navigate to="/chat" />} />
       </Routes>
+      {authUser && <GlobalAlerts />}
     </BrowserRouter>
   )
 }

@@ -18,6 +18,7 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useChatStore } from "@/store/useChatStore"
 
 interface PrimarySidebarProps {
   activeTab: "chat" | "contacts" | "todo" | "cloud" | "tools" | "admin" | "";
@@ -26,19 +27,26 @@ interface PrimarySidebarProps {
 export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
   const navigate = useNavigate()
   const { logout, authUser } = useAuthStore()
+  const { unreadChats, unreadGroups } = useChatStore()
+  const totalUnread = unreadChats.length + unreadGroups.length
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
 
-  const topNav = [
-    { id: "chat", icon: MessageCircle, label: "Tin nhắn" },
-    { id: "contacts", icon: BookUser, label: "Danh bạ" },
-    { id: "todo", icon: CheckSquare, label: "To-Do" },
-    { id: "cloud", icon: Cloud, label: "Cloud của tôi" },
-    { id: "tools", icon: Briefcase, label: "Công cụ" },
-  ]
+  const allNav = [
+    { id: "chat", icon: MessageCircle, label: "Tin nhắn", perm: "viewChat" },
+    { id: "contacts", icon: BookUser, label: "Danh bạ", perm: "viewContacts" },
+    { id: "todo", icon: CheckSquare, label: "To-Do", perm: "viewTasks" },
+    { id: "cloud", icon: Cloud, label: "Cloud của tôi", perm: "viewCloud" },
+    { id: "tools", icon: Briefcase, label: "Công cụ", perm: "viewTools" },
+  ];
 
-  if (authUser?.email === "admin@gmail.com") {
-    topNav.push({ id: "admin", icon: ShieldCheck, label: "Quản trị Admin" })
+  const topNav = allNav.filter(item => {
+    if (!authUser || !authUser.permissions) return false;
+    return authUser.permissions[item.perm as keyof typeof authUser.permissions];
+  });
+
+  if (authUser?.permissions?.viewAdmin) {
+    topNav.push({ id: "admin", icon: ShieldCheck, label: "Quản trị Admin", perm: "viewAdmin" })
   }
 
   return (
@@ -49,8 +57,10 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
           className="h-[48px] w-[48px] border border-white/20 shadow-md cursor-pointer hover:border-white/50 transition-colors"
           onClick={() => setIsAccountModalOpen(true)}
         >
-          <AvatarImage src="/avatars/me.png" />
-          <AvatarFallback className="bg-purple-300 text-purple-900 font-bold">Dat</AvatarFallback>
+          <AvatarImage src={authUser?.profilePicture || "/avatar.png"} />
+          <AvatarFallback className="bg-purple-300 text-purple-900 font-bold">
+            {authUser?.fullname?.charAt(0)?.toUpperCase() || "?"}
+          </AvatarFallback>
         </Avatar>
 
         {/* Top Navigation */}
@@ -76,9 +86,9 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
                     className={`h-[28px] w-[28px] ${isActive ? "fill-white/10 text-white" : "fill-transparent"}`}
                     strokeWidth={isActive ? 2 : 1.5}
                   />
-                  {item.id === "chat" && (
+                  {item.id === "chat" && totalUnread > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff4a4a] px-1 text-[11px] font-bold text-white shadow-sm ring-2 ring-[#7c3aed]">
-                      5+
+                      {totalUnread > 99 ? "99+" : totalUnread}
                     </span>
                   )}
                 </div>

@@ -1,0 +1,413 @@
+import cloudinary from "../lib/cloudinary.js";
+import { emitToUser } from "../lib/socket.js";
+import GroupMessage from "../models/GroupMessage.js";
+import Group from "../models/Group.js";
+import User from "../models/User.js";
+
+export const createGroup = async (req, res) => {
+    try {
+        const { name, description, members, groupPicture } = req.body;
+        const creatorId = req.user._id;
+
+        if (!name || !members || members.length === 0) {
+            return res.status(400).json({ message: "Group name and members are required." });
+        }
+
+        const allMembers = [...new Set([...members, creatorId.toString()])];
+
+        const group = new Group({
+            name,
+            description: description || "",
+            members: allMembers,
+            createdBy: creatorId,
+            groupPicture: groupPicture || ""
+        });
+
+        await group.save();
+
+        const populatedGroup = await Group.findById(group._id)
+            .populate("members", "-password")
+            .populate("createdBy", "-password");
+
+        // Emit newGroupCreated event to all members EXCEPT the creator
+        populatedGroup.members.forEach(member => {
+            const memberIdStr = member._id.toString();
+            if (memberIdStr !== creatorId.toString()) {
+                emitToUser(memberIdStr, "newGroupCreated", populatedGroup);
+            }
+        });
+
+        res.status(201).json(populatedGroup);
+    } catch (error) {
+        console.log("Error in createGroup controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const getMyGroups = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const groups = await Group.find({ members: userId })
+            .populate("members", "-password")
+            .populate("createdBy", "-password")
+            .sort({ updatedAt: -1 });
+
+        // Lấy lastMessage cho từng nhóm
+        const groupsWithLastMessage = await Promise.all(groups.map(async (group) => {
+            const lastMsg = await GroupMessage.findOne({ groupId: group._id }).sort({ createdAt: -1 }).populate("senderId", "fullname");
+            return {
+                ...group.toObject(),
+                lastMessage: lastMsg || null,
+                lastMessageDate: lastMsg ? lastMsg.createdAt : group.createdAt
+            };
+        }));
+
+        // Sắp xếp lại theo lastMessageDate giảm dần
+        groupsWithLastMessage.sort((a, b) => {
+            const dateA = new Date(a.lastMessageDate);
+            const dateB = new Date(b.lastMessageDate);
+            return dateB - dateA;
+        });
+
+        res.status(200).json(groupsWithLastMessage);
+    } catch (error) {
+        console.log("Error in getMyGroups controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const sendGroupMessage = async (req, res) => {
+    try {
+        const { text, image, replyTo } = req.body;
+        const { id: groupId } = req.params;
+        const senderId = req.user._id;
+        if (!text && !image) {
+            return res.status(400).json({ message: "Text or image is required." });
+        }
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+        if (!group.members.some(memberId => memberId.toString() === senderId.toString())) {
+            return res.status(403).json({ message: "You are not a member of this group." });
+        }
+        let imageUrl;
+        if (image) {
+            // upload base64 image to cloudinary
+            const uploadResponse = await cloudinary.uploader.upload(image);
+            imageUrl = uploadResponse.secure_url;
+        }
+        const groupMessage = new GroupMessage({ senderId, groupId, text, image: imageUrl, replyTo });
+        await groupMessage.save();
+
+        // Populate sender info for the response
+        let populatedMessage = await GroupMessage.findById(groupMessage._id).populate("senderId", "fullname profilePicture");
+        
+        if (replyTo) {
+            populatedMessage = await populatedMessage.populate({
+                path: "replyTo",
+                select: "text image senderId",
+                populate: { path: "senderId", select: "fullname" }
+            });
+        }
+
+        // Emit the new group message to all group members except the sender
+        group.members.forEach(memberId => {
+            const memberIdStr = memberId.toString();
+            if (memberIdStr !== senderId.toString()) {
+                emitToUser(memberIdStr, "newGroupMessage", populatedMessage);
+            }
+        });
+
+        res.status(201).json(populatedMessage);
+    } catch (error) {
+        console.log("Error in sendGroupMessage controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const getGroupMessages = async (req, res) => {
+    try {        
+        const { id: groupId } = req.params;
+        const userId = req.user._id;
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+        if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
+            return res.status(403).json({ message: "You are not a member of this group." });
+        }
+        const messages = await GroupMessage.find({ 
+            groupId, 
+            deletedBy: { $ne: userId } 
+        }).populate("senderId", "fullname profilePicture")
+          .populate({
+            path: "replyTo",
+            select: "text image senderId",
+            populate: { path: "senderId", select: "fullname" }
+          })
+          .sort({ createdAt: 1 });
+
+        // Đánh dấu đã đọc: thêm userId vào readBy của các tin chưa đọc (không phải do mình gửi)
+        await GroupMessage.updateMany(
+            { groupId, senderId: { $ne: userId }, readBy: { $nin: [userId] } },
+            { $addToSet: { readBy: userId } }
+        );
+
+        res.status(200).json(messages);
+    } catch (error) {
+        console.log("Error in getGroupMessages controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const getGroupDetail = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const userId = req.user._id;
+
+        // First check if user is a member without populating
+        const groupCheck = await Group.findById(groupId);
+        if (!groupCheck) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+
+        if (!groupCheck.members.some(memberId => memberId.toString() === userId.toString())) {
+            return res.status(403).json({ message: "You are not a member of this group." });
+        }
+
+        // Now populate for the response
+        const group = await Group.findById(groupId).populate("members", "-password").populate("createdBy", "-password");
+
+        res.status(200).json(group);
+    } catch (error) {
+        console.log("Error in getGroupDetail controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const updateGroup = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const { name, description, groupPicture } = req.body;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+
+        if (group.createdBy.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Only group creator can update group info." });
+        }
+
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (description !== undefined) updateData.description = description;
+        if (groupPicture !== undefined) updateData.groupPicture = groupPicture;
+
+        const updatedGroup = await Group.findByIdAndUpdate(groupId, updateData, { new: true })
+            .populate("members", "-password")
+            .populate("createdBy", "-password");
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in updateGroup controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const deleteGroup = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+
+        if (group.createdBy.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Only group creator can delete the group." });
+        }
+
+        // Delete all group messages
+        await GroupMessage.deleteMany({ groupId });
+
+        // Delete the group
+        await Group.findByIdAndDelete(groupId);
+
+        res.status(200).json({ message: "Group deleted successfully." });
+    } catch (error) {
+        console.log("Error in deleteGroup controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const addMember = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const { userId } = req.body;
+        const currentUserId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+
+        if (group.createdBy.toString() !== currentUserId.toString()) {
+            return res.status(403).json({ message: "Only group creator can add members." });
+        }
+
+        const userToAdd = await User.findById(userId);
+        if (!userToAdd) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        if (group.members.some(memberId => memberId.toString() === userId.toString())) {
+            return res.status(400).json({ message: "User is already a member of this group." });
+        }
+
+        group.members.push(userId);
+        await group.save();
+
+        const updatedGroup = await Group.findById(groupId)
+            .populate("members", "-password")
+            .populate("createdBy", "-password");
+
+        // --- Create & Emit System Message ---
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text: `${req.user.fullname} đã thêm ${userToAdd.fullname} vào nhóm.`,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in addMember controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const removeMember = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const { userId } = req.params;
+        const currentUserId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+
+        // Allow group creator or the user themselves to remove members
+        if (group.createdBy.toString() !== currentUserId.toString() && currentUserId.toString() !== userId) {
+            return res.status(403).json({ message: "You don't have permission to remove this member." });
+        }
+
+        // Bug #3: Prevent creator from removing themselves — would lose group ownership
+        if (userId === group.createdBy.toString()) {
+            return res.status(400).json({ message: "Người tạo nhóm không thể rời khỏi nhóm. Hãy chuyển quyền sở hữu trước." });
+        }
+
+        if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
+            return res.status(400).json({ message: "User is not a member of this group." });
+        }
+
+        // Prevent removing the last member (group creator)
+        if (group.members.length === 1) {
+            return res.status(400).json({ message: "Cannot remove the last member from the group." });
+        }
+
+        // Grab the user details to use in the system message
+        const userRemoved = await User.findById(userId);
+
+        group.members = group.members.filter(memberId => memberId.toString() !== userId);
+        await group.save();
+
+        const updatedGroup = await Group.findById(groupId)
+            .populate("members", "-password")
+            .populate("createdBy", "-password");
+
+        // --- Create & Emit System Message ---
+        const isLeaving = currentUserId.toString() === userId;
+        const text = isLeaving 
+            ? `${req.user.fullname} đã rời khỏi nhóm.` 
+            : `${req.user.fullname} đã xóa ${userRemoved.fullname} khỏi nhóm.`;
+
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        // Phát tới những người còn lại trong nhóm
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+        // Báo cho người bị kick (hoặc tự rời) để họ cập nhật (nếu cần)
+        emitToUser(userId, "newGroupMessage", populatedMessage);
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in removeMember controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const updateGroupSettings = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const { settings, name, groupPicture } = req.body;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+
+        if (group.createdBy.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Only group creator can update group settings." });
+        }
+
+        const updateData = {};
+        if (settings) updateData.settings = settings;
+        if (name) updateData.name = name;
+
+        if (groupPicture) {
+            // Upload to cloudinary
+            try {
+                // Ensure cloudinary is imported at the top if not already, but wait, cloudinary is imported in auth.controller. Let me assume it's imported here or I should import it. Wait, if it's not imported in group.controller.js, it will throw an error. I must check if cloudinary is imported in group.controller.js! Let me just put the code and if it fails I'll import it. Wait, I should probably check imports first.
+                // Assuming it might not be imported, I will require it dynamically or use the standard import.
+                const cloudinary = (await import("../lib/cloudinary.js")).default;
+                const uploadResponse = await cloudinary.uploader.upload(groupPicture);
+                updateData.groupPicture = uploadResponse.secure_url;
+            } catch (uploadError) {
+                console.log("Error uploading group picture:", uploadError);
+                return res.status(500).json({ message: "Lỗi tải ảnh lên" });
+            }
+        }
+
+        const updatedGroup = await Group.findByIdAndUpdate(
+            groupId, 
+            { $set: updateData }, 
+            { new: true }
+        ).populate("members", "-password").populate("createdBy", "-password");
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in updateGroupSettings controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+

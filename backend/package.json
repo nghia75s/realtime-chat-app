@@ -22,6 +22,9 @@
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.10.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.8",
+    "readdirp": "^5.0.0",
     "resend": "^6.0.2",
     "socket.io": "^4.8.3"
   },

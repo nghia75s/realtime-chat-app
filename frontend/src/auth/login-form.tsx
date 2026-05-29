@@ -1,6 +1,6 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -13,20 +13,24 @@ import { Eye, EyeOff, Loader2, ArrowLeft, LoaderIcon } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
 
 type ViewState = "login" | "2fa" | "forgot-password"
+type OtpType = "signup" | "login"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
+  const location = useLocation()
   const navigate = useNavigate()
   const [view, setView] = useState<ViewState>("login")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [otpType, setOtpType] = useState<OtpType>("signup")
 
   // Login States
   const [formData, setFromData] = useState({ email: "", password: "" })
   const [showPassword, setShowPassword] = useState(false)
-  const { login, isLoggingIn } = useAuthStore();
+  const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string } | null>(null)
+  const { login, sendOtp, verifyOtp, verifyLoginOtp, isLoggingIn } = useAuthStore();
 
   // 2FA States
   const [otp, setOtp] = useState("")
@@ -37,7 +41,6 @@ export function LoginForm({
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    login(formData)
     setError("")
 
     if (!formData.email || !formData.password) {
@@ -45,14 +48,42 @@ export function LoginForm({
       return
     }
 
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // Chuyển sang 2FA
-      setView("2fa")
-    }, 1000)
+    setPendingCredentials(formData)
+
+    try {
+      await login(formData)
+      navigate("/chat")
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra tài khoản và mật khẩu."
+      
+      // Check for 202 status (requires OTP for 2FA login)
+      if (error?.response?.status === 202) {
+        setOtpType("login")
+        setView("2fa")
+        setError("")
+        setOtp("")
+      } else if (error?.response?.status === 403) {
+        // Email chưa verify (signup OTP verification)
+        setOtpType("signup")
+        try {
+          await sendOtp(formData.email)
+          setView("2fa")
+        } catch (otpError: any) {
+          setError("Không thể gửi mã OTP. Vui lòng thử lại sau.")
+        }
+      } else {
+        setError(message)
+      }
+    }
   }
+
+  useEffect(() => {
+    const state = location.state as { email?: string; promptOtp?: boolean } | null
+    if (state?.promptOtp) {
+      setFromData((prev) => ({ ...prev, email: state.email || prev.email }))
+      setView("2fa")
+    }
+  }, [location.state])
 
   const handle2FASubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,15 +95,28 @@ export function LoginForm({
     }
 
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      if (otp === "123456") {
+    try {
+      const email = pendingCredentials?.email || formData.email
+      if (!email) {
+        setError("Vui lòng nhập email để xác thực.")
+        return
+      }
+
+      if (otpType === "login") {
+        // 2FA login verification
+        await verifyLoginOtp({ email, otp })
         navigate("/chat")
       } else {
-        setError("Mã xác thực không chính xác.")
+        // Signup email verification
+        await verifyOtp({ email, otp })
+        navigate("/chat")
       }
-    }, 1000)
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Xác thực thất bại. Vui lòng thử lại."
+      setError(message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
@@ -126,7 +170,7 @@ export function LoginForm({
                   </Field>
 
                   <Field>
-                    <div className="flex items-center">
+                    <div className="flex items-center justify-between">
                       <FieldLabel>Mật khẩu</FieldLabel>
                       <button
                         type="button"
@@ -134,7 +178,7 @@ export function LoginForm({
                           setView("forgot-password");
                           setError("");
                         }}
-                        className="ml-auto text-sm underline-offset-4 hover:underline text-primary"
+                        className="text-sm underline-offset-4 hover:underline text-primary"
                       >
                         Quên mật khẩu?
                       </button>
@@ -145,7 +189,7 @@ export function LoginForm({
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) => setFromData({...formData, password: e.target.value})}
-                        className="input"
+                        className="input pr-10"
                       />
                       <button
                         type="button"
@@ -211,6 +255,32 @@ export function LoginForm({
                   <Field>
                     <Button type="submit" disabled={isLoading} className="w-full">
                       {isLoading ? <Loader2 className="animate-spin" /> : "Xác nhận mã"}
+                    </Button>
+                  </Field>
+
+                  <Field>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={isLoading || !formData.email}
+                      onClick={async () => {
+                        setError("")
+                        if (!formData.email) {
+                          setError("Vui lòng nhập email để gửi lại mã OTP.")
+                          return
+                        }
+                        setIsLoading(true)
+                        try {
+                          await sendOtp(formData.email)
+                        } catch (error: any) {
+                          setError(error?.response?.data?.message || "Không thể gửi lại mã OTP.")
+                        } finally {
+                          setIsLoading(false)
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      Gửi lại mã OTP
                     </Button>
                   </Field>
 

@@ -1,7 +1,10 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { X, Camera } from "lucide-react"
+import { useAuthStore } from "@/store/useAuthStore"
 
 export const ProfileView = ({ onViewChange, onClose }: any) => {
+  const { authUser } = useAuthStore()
+
   return (
     <div className="flex flex-col w-full min-h-[500px] h-full relative animate-in zoom-in-95 duration-200">
       {/* Header */}
@@ -21,8 +24,8 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
         <div className="flex items-end gap-3">
           <div className="relative group/avatar cursor-pointer" onClick={() => onViewChange("edit-avatar")}>
             <Avatar className="w-[76px] h-[76px] border-4 border-white shadow-sm ring-1 ring-zinc-200">
-              <AvatarImage src="/avatars/me.png" />
-              <AvatarFallback>Dat</AvatarFallback>
+              <AvatarImage src={authUser?.profilePicture || "/avatar.png"} />
+              <AvatarFallback>{authUser?.fullname?.charAt(0)?.toUpperCase() || "?"}</AvatarFallback>
             </Avatar>
             {/* Camera icon button */}
             <div className="absolute bottom-0 right-0 w-8 h-8 bg-[#f5f6f8] rounded-full border-[1.5px] border-white flex items-center justify-center hover:bg-zinc-200 transition-colors shadow-sm">
@@ -30,7 +33,7 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
             </div>
           </div>
           <div className="flex items-center gap-2 mb-2 group/name">
-            <h3 className="text-[18px] font-semibold text-zinc-900 pb-0.5">Nguyễn Tiến Đạt</h3>
+            <h3 className="text-[18px] font-semibold text-zinc-900 pb-0.5">{authUser?.fullname || "Người dùng"}</h3>
           </div>
         </div>
       </div>
@@ -42,23 +45,27 @@ export const ProfileView = ({ onViewChange, onClose }: any) => {
           <div className="flex flex-col gap-3.5 text-[14px] pt-1">
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Giới tính</span>
-              <span className="text-zinc-900 font-medium">Nam</span>
+              <span className="text-zinc-900 font-medium">{authUser?.gender || "Chưa cập nhật"}</span>
             </div>
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Ngày sinh</span>
-              <span className="text-zinc-900 font-medium">23 tháng 10, 2005</span>
+              <span className="text-zinc-900 font-medium">{authUser?.dateOfBirth || "Chưa cập nhật"}</span>
             </div>
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Điện thoại</span>
-              <span className="text-zinc-900 font-medium">+84 586 724 620</span>
+              <span className="text-zinc-900 font-medium">{authUser?.phoneNumber || "Chưa cập nhật"}</span>
             </div>
             <div className="border-t border-zinc-100 my-0 pt-3 grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Phòng ban</span>
-              <span className="text-[#7c3aed] font-semibold bg-[#ede9fe] w-max px-2 py-0.5 rounded text-[13px]">Phòng ban IT</span>
+              <span className="text-[#7c3aed] font-semibold bg-[#ede9fe] w-max px-2 py-0.5 rounded text-[13px]">
+                {authUser?.department || "Chưa xếp phòng"}
+              </span>
             </div>
             <div className="grid grid-cols-[100px_1fr] items-start">
               <span className="text-zinc-500 font-medium">Chức vụ</span>
-              <span className="text-zinc-900 font-medium">Nhân viên</span>
+              <span className="text-zinc-900 font-medium">
+                {authUser?.role === "admin" ? "Admin" : authUser?.role === "director" ? "Giám đốc" : authUser?.role === "moderator" ? "Quản lý" : "Nhân viên"}
+              </span>
             </div>
           </div>
         </div>

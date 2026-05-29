@@ -20,3 +20,11 @@ export const generateToken = (userId, res) => {
 
   return token;
 };
+
+export const generateOtpCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export const generateOtpExpiry = () => {
+  return new Date(Date.now() + 5 * 60 * 1000);
+};

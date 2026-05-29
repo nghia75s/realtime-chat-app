@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
-    fallback:{
+    fallback: {
       type: String
     },
     profilePicture: {
@@ -25,9 +25,65 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin", "moderator"],
+      enum: ["admin", "director", "moderator", "user"],
       default: "user",
-    }
+    },
+    unreadSince: {
+      type: Date,
+      default: null,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    phoneNumber: {
+      type: String,
+      default: "",
+    },
+    age: {
+      type: Number,
+      default: null,
+    },
+    gender: {
+      type: String,
+      default: "",
+    },
+    dateOfBirth: {
+      type: String,
+      default: "",
+    },
+    department: {
+      type: String,
+      default: "",
+    },
+    lockReason: {
+      type: String,
+      default: "",
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      type: String,
+    },
+    otpExpiry: {
+      type: Date,
+    },
+    loginOtp: {
+      type: String,
+    },
+    loginOtpExpiry: {
+      type: Date,
+    },
+    pinnedChats: [{
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: 'pinnedChatsModel' // Can be User or Group
+    }],
+    mutedChats: [{
+      chatId: { type: mongoose.Schema.Types.ObjectId },
+      mutedUntil: { type: Date }
+    }],
   },
   { timestamps: true } // createdAt & updatedAt
 );

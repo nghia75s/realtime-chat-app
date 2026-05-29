@@ -1,12 +1,38 @@
-import { axiosInstance } from "@/lib/axios";
+import { authService } from "@/services/authService";
 import { create } from "zustand";
 import { toast } from "react-hot-toast";
 import { io, Socket } from "socket.io-client";
+import { axiosInstance } from "@/lib/axios";
 
 const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
 
+export interface AuthUser {
+  _id: string;
+  fullname: string;
+  email: string;
+  profilePicture: string;
+  role: string;
+  department?: string;
+  phoneNumber?: string;
+  age?: number;
+  gender?: string;
+  dateOfBirth?: string;
+  permissions?: {
+    viewChat?: boolean;
+    viewContacts?: boolean;
+    viewTasks?: boolean;
+    editTasks?: boolean;
+    approveTasks?: boolean;
+    viewCloud?: boolean;
+    viewTools?: boolean;
+    viewAdmin?: boolean;
+  };
+  pinnedChats?: string[];
+  mutedChats?: { chatId: string, mutedUntil: string }[];
+}
+
 interface AuthStore {
-  authUser: any | null;
+  authUser: AuthUser | null;
   isCheckingAuth: boolean;
   isSigningUp: boolean;
   isLoggingIn: boolean;
@@ -15,10 +41,18 @@ interface AuthStore {
   checkAuth: () => Promise<void>;
   signup: (data: any) => Promise<void>;
   login: (data: any) => Promise<void>;
+  sendOtp: (email: string) => Promise<void>;
+  verifyOtp: (data: any) => Promise<void>;
+  verifyLoginOtp: (data: any) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
+  pinChat: (chatId: string) => Promise<void>;
+  muteChat: (chatId: string, mutedUntil?: string | null) => Promise<void>;
   connectSocket: () => void;
   disconnectSocket: () => void;
+  roleChangeAlert: { oldRole: string, newRole: string } | null;
+  accountLockAlert: { reason: string } | null;
+  clearAlerts: () => void;
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -28,70 +62,139 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isLoggingIn: false,
   socket: null,
   onlineUsers: [],
-  
+  roleChangeAlert: null,
+  accountLockAlert: null,
+
+  clearAlerts: () => set({ roleChangeAlert: null, accountLockAlert: null }),
+
   checkAuth: async () => {
     try {
-        const res = await axiosInstance.get("/auth/check");
-        set({authUser: res.data});
-        get().connectSocket();
+      const data = await authService.checkAuth();
+      set({ authUser: data });
+      get().connectSocket();
     } catch (error) {
-        console.log("Error checking auth:", error);
-        set({authUser: null})
+      console.log("Error checking auth:", error);
+      set({ authUser: null })
     } finally {
-        set({isCheckingAuth: false})
+      set({ isCheckingAuth: false })
     }
   },
 
   signup: async (data) => {
-    set({isSigningUp: true})
+    set({ isSigningUp: true })
     try {
-        const res = await axiosInstance.post("/auth/signup", data);
-        set({authUser: res.data});
-        get().connectSocket();
-        toast.success("Signup successful! You are now logged in.");
+      const res = await axiosInstance.post("/auth/signup", data);
+      toast.success(res.data.message || "Đăng ký thành công! Vui lòng kiểm tra email để nhận mã OTP.");
     } catch (error: any) {
-        const message = error?.response?.data?.message || "Signup failed. Please try again.";
-        toast.error(message);
+      set({ isSigningUp: false })
+      throw error;
     } finally {
-        set({isSigningUp: false})
+      set({ isSigningUp: false });
     }
   },
 
   login: async (data) => {
-    set({isLoggingIn: true})
+    set({ isLoggingIn: true })
     try {
-        const res = await axiosInstance.post("/auth/login", data);
-        set({authUser: res.data});
-        get().connectSocket();
-        toast.success("Login successful!");
+      const resData = await authService.login(data);
+      
+      // Check if 2FA OTP is required (202 Accepted response)
+      if (resData.requiresOtp) {
+        set({ isLoggingIn: false });
+        const error: any = new Error(resData.message);
+        error.response = { status: 202, data: resData };
+        throw error;
+      }
+      
+      set({ authUser: resData });
+      get().connectSocket();
+      toast.success("Đăng nhập thành công!");
+      set({ isLoggingIn: false });
     } catch (error: any) {
-        const message = error?.response?.data?.message || "Login failed. Please try again.";
-        toast.error(message);
+      set({ isLoggingIn: false })
+      throw error;
     } finally {
-        set({isLoggingIn: false})
+      set({ isLoggingIn: false });
+    }
+  },
+
+  sendOtp: async (email) => {
+    try {
+      const res = await axiosInstance.post("/auth/send-otp", { email });
+      toast.success(res.data.message || "Mã OTP đã được gửi.");
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  verifyOtp: async (data) => {
+    try {
+      const resData = await authService.verifyOtp(data.email, data.otp);
+      set({ authUser: resData });
+      get().connectSocket();
+      toast.success(resData.message || "Xác thực email thành công!");
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  verifyLoginOtp: async (data) => {
+    try {
+      const resData = await authService.verifyLoginOtp(data.email, data.otp);
+      set({ authUser: resData });
+      get().connectSocket();
+      toast.success("Đăng nhập thành công!");
+    } catch (error: any) {
+      throw error;
     }
   },
 
   logout: async () => {
     try {
-        await axiosInstance.post("/auth/logout");
-        set({authUser: null});
-        get().disconnectSocket();
-        toast.success("Logged out successfully.");
+      await authService.logout();
+      set({ authUser: null });
+      get().disconnectSocket();
+      toast.success("Logged out successfully.");
     } catch (error) {
-        console.log("Error during logout:", error);
-        toast.error("Logout failed. Please try again.");
+      console.log("Error during logout:", error);
+      toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
     }
   },
 
   updateProfile: async (data) => {
     try {
-        const res = await axiosInstance.put("/auth/update-profile", data);
-        set({authUser: res.data});
-        toast.success("Profile updated successfully.");
+      const resData = await authService.updateProfile(data);
+      set({ authUser: resData });
+      toast.success("Profile updated successfully.");
     } catch (error: any) {
-        const message = error?.response?.data?.message || "Profile update failed. Please try again.";
-        toast.error(message);
+      const message = error?.response?.data?.message || "Profile update failed. Please try again.";
+      toast.error(message);
+    }
+  },
+
+  pinChat: async (chatId: string) => {
+    try {
+      const resData = await authService.pinChat(chatId);
+      const currentAuthUser = get().authUser;
+      if (currentAuthUser) {
+        set({ authUser: { ...currentAuthUser, pinnedChats: resData.pinnedChats } });
+      }
+    } catch (error) {
+      console.log("Error pinning chat:", error);
+      toast.error("Không thể ghim hội thoại.");
+    }
+  },
+
+  muteChat: async (chatId: string, mutedUntil?: string | null) => {
+    try {
+      const resData = await authService.muteChat(chatId, mutedUntil);
+      const currentAuthUser = get().authUser;
+      if (currentAuthUser) {
+        set({ authUser: { ...currentAuthUser, mutedChats: resData.mutedChats } });
+      }
+    } catch (error) {
+      console.log("Error muting chat:", error);
+      toast.error("Không thể cấu hình thông báo.");
     }
   },
 
@@ -112,6 +215,41 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     newSocket.on("getOnlineUsers", (userIds: string[]) => {
       set({ onlineUsers: userIds });
     });
+
+    newSocket.on("roleUpdated", (data) => {
+      if (data && data.oldRole && data.newRole) {
+        set({ roleChangeAlert: data });
+      } else {
+        toast.error("Vai trò của bạn đã bị thay đổi bởi Admin. Vui lòng đăng nhập lại.");
+        get().logout();
+      }
+    });
+
+    newSocket.on("accountLocked", (data) => {
+      setTimeout(() => {
+        set({ accountLockAlert: { reason: data?.reason || "Vi phạm quy định" } });
+      }, 3000);
+    });
+
+    newSocket.on("profileUpdated", (updatedUser) => {
+      const currentAuthUser = get().authUser;
+      if (currentAuthUser && currentAuthUser._id === updatedUser._id) {
+        set({
+          authUser: {
+            ...currentAuthUser,
+            fullname: updatedUser.fullname,
+            email: updatedUser.email,
+            profilePicture: updatedUser.profilePicture,
+            role: updatedUser.role,
+            department: updatedUser.department,
+            phoneNumber: updatedUser.phoneNumber,
+            age: updatedUser.age,
+            gender: updatedUser.gender,
+            dateOfBirth: updatedUser.dateOfBirth,
+          }
+        });
+      }
+    });
   },
 
   disconnectSocket: () => {
@@ -121,5 +259,5 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
     set({ socket: null, onlineUsers: [] });
   }
-  
+
 }));

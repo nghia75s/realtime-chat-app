@@ -1,24 +1,48 @@
 import { useEffect, useState } from "react"
-import { Search, UserPlus, Users as GroupIcon, ChevronDown, Users } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Search, UserPlus, Users as GroupIcon, ChevronDown, Pin } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton"
 import NoChatsFound from "@/components/ui/NoChatsFound"
 import { CreateGroupModal } from "./CreateGroupModal"
+import { formatRelativeTime } from "@/lib/formatTime"
+
+const renderLastMessagePreview = (msg: any, isGroup: boolean, authUser: any, partnerName: string) => {
+  if (!msg) return null;
+  
+  const senderId = typeof msg.senderId === "object" ? msg.senderId?._id : msg.senderId;
+  const isMe = senderId?.toString() === authUser?._id?.toString();
+  
+  const senderPrefix = isMe ? "Bạn: " : (isGroup && msg.senderId?.fullname ? `${msg.senderId.fullname.split(" ").pop()}: ` : "");
+  
+  if (msg.messageType === "task_assignment") {
+    return `${senderPrefix}Có task mới được giao`;
+  }
+  
+  if (msg.messageType === "document") {
+    const senderName = isMe ? "Bạn" : partnerName; 
+    const displayName = isMe ? "Bạn" : (isGroup && msg.senderId?.fullname ? msg.senderId.fullname : senderName);
+    return `${displayName} đã gửi đơn từ cần phê duyệt`;
+  }
+  
+  if (msg.image && !msg.text) {
+    return `${senderPrefix}[Hình ảnh]`;
+  }
+  
+  return `${senderPrefix}${msg.text || ""}`;
+};
 
 export function ChatListSidebar() {
-  const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, selectedUser } = useChatStore()
-  const { onlineUsers } = useAuthStore()
-  const [activeTab, setActiveTab] = useState<"all" | "unread">("all")
+  const navigate = useNavigate()
+  const { getMyChatPartners, chats, isUsersLoading, setSelectedUser, selectedUser, getMyGroups, groups, isGroupsLoading, activeTab, setActiveTab, unreadChats, unreadGroups } = useChatStore()
+  const { onlineUsers, authUser } = useAuthStore()
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
 
   useEffect(() => {
     getMyChatPartners()
-  }, [getMyChatPartners])
-
-  if (isUsersLoading) {
-    return <UsersLoadingSkeleton />
-  }
+    getMyGroups()
+  }, [getMyChatPartners, getMyGroups])
 
   return (
     <div className="flex w-[320px] shrink-0 flex-col border-r border-[#2b2d31] bg-[#1e1f22] h-full z-10 text-[#e1e1e1]">
@@ -32,7 +56,7 @@ export function ChatListSidebar() {
               className="w-full rounded-md bg-[#131416] py-[6px] pl-[30px] pr-3 text-[14px] text-[#e1e1e1] outline-none placeholder:text-[#a1a1a1] focus:ring-1 focus:ring-[#0052cc] transition-all border border-[#2b2d31]"
             />
           </div>
-          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Thêm bạn bè">
+          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Thêm bạn bè" onClick={() => navigate("/contacts") }>
             <UserPlus className="h-[18px] w-[18px]" />
           </button>
           <button 
@@ -47,16 +71,18 @@ export function ChatListSidebar() {
         <div className="flex items-center justify-between mt-1 border-b border-[#2b2d31]">
           <div className="flex gap-4">
             <button
-              onClick={() => setActiveTab("all")}
-              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors ${activeTab === "all" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
+              onClick={() => setActiveTab("personal")}
+              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors relative ${activeTab === "personal" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
             >
-              Tất cả
+              Cá nhân
+              {unreadChats.length > 0 && <span className="absolute top-0 -right-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_4px_rgba(239,68,68,0.8)]"></span>}
             </button>
             <button
-              onClick={() => setActiveTab("unread")}
-              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors ${activeTab === "unread" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
+              onClick={() => setActiveTab("group")}
+              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors relative ${activeTab === "group" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
             >
-              Chưa đọc
+              Nhóm
+              {unreadGroups.length > 0 && <span className="absolute top-0 -right-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_4px_rgba(239,68,68,0.8)]"></span>}
             </button>
           </div>
           <div className="flex items-center gap-1 text-[#a1a1a1] cursor-pointer hover:text-white pb-2 transition-colors">
@@ -66,35 +92,116 @@ export function ChatListSidebar() {
         </div>
       </div>
 
-      {/* Chat List (ScrollArea) */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {chats.length === 0 ? (
-          <NoChatsFound />
-        ) : (
-          chats.map((chat) => {
-            const isActive = selectedUser?._id === chat._id
-            return (
-              <div
-                key={chat._id}
-                className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
-                onClick={() => setSelectedUser(chat)}
-              >
-                <div className="relative">
-                  <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
-                  {/* Trạng thái online: xanh nếu online, xám nếu offline */}
-                  <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1e1f22] transition-colors ${
-                    onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-[#4e4f52]"
-                  }`}></div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-0.5">
-                    <h4 className="font-semibold text-[15px] truncate text-[#e1e1e1]">{chat.fullname}</h4>
+      {/* Content List */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        
+        {/* Tab Cá Nhân */}
+        {activeTab === "personal" && (
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {isUsersLoading ? (
+              <UsersLoadingSkeleton />
+            ) : chats.length === 0 ? (
+              <NoChatsFound />
+            ) : (
+              [...chats].sort((a, b) => {
+                const aPinned = authUser?.pinnedChats?.includes(a._id);
+                const bPinned = authUser?.pinnedChats?.includes(b._id);
+                if (aPinned && !bPinned) return -1;
+                if (!aPinned && bPinned) return 1;
+                const aTime = a.lastMessageDate ? new Date(a.lastMessageDate).getTime() : 0;
+                const bTime = b.lastMessageDate ? new Date(b.lastMessageDate).getTime() : 0;
+                return bTime - aTime;
+              }).map((chat) => {
+                const isActive = selectedUser?._id === chat._id
+                const isPinned = authUser?.pinnedChats?.includes(chat._id)
+                const timeStr = chat.lastMessageDate ? formatRelativeTime(chat.lastMessageDate) : ""
+                return (
+                  <div
+                    key={chat._id}
+                    className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
+                    onClick={() => setSelectedUser(chat)}
+                  >
+                    <div className="relative flex shrink-0">
+                      <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
+                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1e1f22] transition-colors ${
+                        onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-[#4e4f52]"
+                      }`}></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-0.5">
+                        <div className="flex items-center flex-1 min-w-0 mr-2">
+                          <h4 className={`font-semibold text-[15px] truncate ${unreadChats.includes(chat._id) ? "text-white" : "text-[#e1e1e1]"}`}>{chat.fullname}</h4>
+                          {isPinned && <Pin className="h-3 w-3 text-[#1877F2] fill-current ml-2 shrink-0" />}
+                          {unreadChats.includes(chat._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
+                        </div>
+                        {timeStr && <span className="text-[12px] text-[#a1a1a1] shrink-0 mt-0.5">{timeStr}</span>}
+                      </div>
+                      <p className="text-[13px] text-[#a1a1a1] truncate">
+                        {renderLastMessagePreview(chat.lastMessage, false, authUser, chat.fullname)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )
-          })
+                )
+              })
+            )}
+          </div>
         )}
+
+        {/* Tab Nhóm */}
+        {activeTab === "group" && (
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {isGroupsLoading ? (
+              <UsersLoadingSkeleton />
+            ) : groups.length === 0 ? (
+              <div className="px-4 py-6 text-[#717171] text-[13px] italic text-center">Bạn chưa tham gia nhóm nào</div>
+            ) : (
+              [...groups].sort((a, b) => {
+                const aPinned = authUser?.pinnedChats?.includes(a._id);
+                const bPinned = authUser?.pinnedChats?.includes(b._id);
+                if (aPinned && !bPinned) return -1;
+                if (!aPinned && bPinned) return 1;
+                const aTime = a.lastMessageDate ? new Date(a.lastMessageDate).getTime() : 0;
+                const bTime = b.lastMessageDate ? new Date(b.lastMessageDate).getTime() : 0;
+                return bTime - aTime;
+              }).map((group) => {
+                const isActive = selectedUser?._id === group._id
+                const isPinned = authUser?.pinnedChats?.includes(group._id)
+                const timeStr = group.lastMessageDate ? formatRelativeTime(group.lastMessageDate) : ""
+                return (
+                  <div
+                    key={group._id}
+                    className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
+                    onClick={() => setSelectedUser(group)}
+                  >
+                    <div className="relative flex shrink-0">
+                      <div className="w-[44px] h-[44px] rounded-full bg-[#2b2d31] flex items-center justify-center border border-[#4e4f52] overflow-hidden">
+                        {group.groupPicture ? (
+                          <img src={group.groupPicture} alt={group.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <GroupIcon className="w-5 h-5 text-[#a1a1a1]" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-0.5">
+                        <div className="flex items-center flex-1 min-w-0 mr-2">
+                          <h4 className={`font-semibold text-[15px] truncate ${unreadGroups.includes(group._id) ? "text-white" : "text-[#e1e1e1]"}`}>{group.name}</h4>
+                          {isPinned && <Pin className="h-3 w-3 text-[#1877F2] fill-current ml-2 shrink-0" />}
+                          {unreadGroups.includes(group._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
+                        </div>
+                        {timeStr && <span className="text-[12px] text-[#a1a1a1] shrink-0 mt-0.5">{timeStr}</span>}
+                      </div>
+                      <p className="text-[13px] text-[#a1a1a1] truncate">
+                        {renderLastMessagePreview(group.lastMessage, true, authUser, group.name) || `${group.memberCount || 0} thành viên`}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        )}
+
       </div>
 
       <CreateGroupModal isOpen={isCreateGroupOpen} onClose={() => setIsCreateGroupOpen(false)} />

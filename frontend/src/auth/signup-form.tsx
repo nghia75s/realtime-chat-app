@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -25,30 +25,44 @@ export function SignupForm({
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [error, setError] = useState("")
 
-  const { signup, isSigningUp } = useAuthStore();
+  const { signup, isSigningUp, authUser } = useAuthStore();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (authUser) {
+      navigate("/chat")
+    }
+  }, [authUser, navigate])
 
   const handleSignupSubmit = async (e : React.FormEvent) => {
     e.preventDefault();
+    setError("")
 
     // Validate client-side trước khi gửi
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      console.error("Vui lòng nhập đầy đủ thông tin đăng ký");
+      setError("Vui lòng nhập đầy đủ thông tin đăng ký");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      console.error("Mật khẩu xác nhận không khớp");
+      setError("Mật khẩu xác nhận không khớp");
       return;
     }
 
     const payload = {
-      fullName: formData.name,
+      fullname: formData.name,
       email: formData.email,
       password: formData.password,
     };
 
-    await signup(payload);
+    try {
+      await signup(payload);
+      navigate("/login", { state: { email: formData.email, promptOtp: true } });
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại."
+      setError(message)
+    }
   }
 
   return (
@@ -94,7 +108,7 @@ export function SignupForm({
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="input"
+                      className="input pr-10"
                     />
                     <button
                       type="button"
@@ -114,7 +128,7 @@ export function SignupForm({
                       type={showConfirmPassword ? "text" : "password"}
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                      className="input"
+                      className="input pr-10"
                     />
                     <button
                       type="button"
@@ -127,6 +141,10 @@ export function SignupForm({
                 </Field>
 
                 
+
+                {error && (
+                  <p className="text-sm rounded-md bg-destructive/10 text-destructive font-medium p-2 text-center border border-destructive/20">{error}</p>
+                )}
 
                 <Field>
                   <Button type="submit" disabled={isSigningUp} className="w-full">

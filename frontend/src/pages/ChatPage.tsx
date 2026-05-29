@@ -20,7 +20,7 @@ export default function ChatPage() {
       <ChatListSidebar />
 
       {/* Cột 3: Khu vực nhắn tin chính */}
-      <div className="flex-1 flex flex-col min-h-screen relative border-l border-[#2b2d31]">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen relative border-l border-[#2b2d31]">
         {selectedUser ? (
           <MainChatArea 
             isRightSidebarOpen={isRightSidebarOpen} 
