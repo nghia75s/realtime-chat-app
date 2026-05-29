@@ -1,4 +1,4 @@
-﻿import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 import { ENV } from "../lib/env.js";
 
 const createOtpEmailTemplate = (otpCode, type = "email verification") => {

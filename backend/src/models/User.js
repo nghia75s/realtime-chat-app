@@ -76,6 +76,14 @@ const userSchema = new mongoose.Schema(
     loginOtpExpiry: {
       type: Date,
     },
+    pinnedChats: [{
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: 'pinnedChatsModel' // Can be User or Group
+    }],
+    mutedChats: [{
+      chatId: { type: mongoose.Schema.Types.ObjectId },
+      mutedUntil: { type: Date }
+    }],
   },
   { timestamps: true } // createdAt & updatedAt
 );

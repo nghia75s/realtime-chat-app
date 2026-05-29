@@ -45,7 +45,7 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
     return authUser.permissions[item.perm as keyof typeof authUser.permissions];
   });
 
-  if (authUser?.permissions?.viewAdmin || authUser?.email === "admin@gmail.com") {
+  if (authUser?.permissions?.viewAdmin) {
     topNav.push({ id: "admin", icon: ShieldCheck, label: "Quản trị Admin", perm: "viewAdmin" })
   }
 

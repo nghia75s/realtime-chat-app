@@ -300,3 +300,54 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const pinChat = async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    const userId = req.user._id;
+
+    if (!chatId) return res.status(400).json({ message: "Chat ID là bắt buộc" });
+
+    const user = await User.findById(userId);
+    
+    // Toggle logic: If already pinned, unpin. If not pinned, pin.
+    const isPinned = user.pinnedChats.includes(chatId);
+    
+    if (isPinned) {
+      user.pinnedChats = user.pinnedChats.filter(id => id.toString() !== chatId.toString());
+    } else {
+      user.pinnedChats.push(chatId);
+    }
+
+    await user.save();
+    res.status(200).json({ pinnedChats: user.pinnedChats });
+  } catch (error) {
+    console.log("Error in pinChat controller:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const muteChat = async (req, res) => {
+  try {
+    const { chatId, mutedUntil } = req.body;
+    const userId = req.user._id;
+
+    if (!chatId) return res.status(400).json({ message: "Chat ID là bắt buộc" });
+
+    const user = await User.findById(userId);
+    
+    // Remove existing mute if any
+    user.mutedChats = user.mutedChats.filter(m => m.chatId.toString() !== chatId.toString());
+    
+    // If mutedUntil is provided and in the future (or null for infinite), add it
+    if (mutedUntil !== undefined) {
+      user.mutedChats.push({ chatId, mutedUntil });
+    }
+
+    await user.save();
+    res.status(200).json({ mutedChats: user.mutedChats });
+  } catch (error) {
+    console.log("Error in muteChat controller:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

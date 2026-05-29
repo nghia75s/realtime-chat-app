@@ -78,7 +78,7 @@ export const getMyGroups = async (req, res) => {
 
 export const sendGroupMessage = async (req, res) => {
     try {
-        const { text, image } = req.body;
+        const { text, image, replyTo } = req.body;
         const { id: groupId } = req.params;
         const senderId = req.user._id;
         if (!text && !image) {
@@ -97,11 +97,19 @@ export const sendGroupMessage = async (req, res) => {
             const uploadResponse = await cloudinary.uploader.upload(image);
             imageUrl = uploadResponse.secure_url;
         }
-        const groupMessage = new GroupMessage({ senderId, groupId, text, image: imageUrl });
+        const groupMessage = new GroupMessage({ senderId, groupId, text, image: imageUrl, replyTo });
         await groupMessage.save();
 
         // Populate sender info for the response
-        const populatedMessage = await GroupMessage.findById(groupMessage._id).populate("senderId", "fullname profilePicture");
+        let populatedMessage = await GroupMessage.findById(groupMessage._id).populate("senderId", "fullname profilePicture");
+        
+        if (replyTo) {
+            populatedMessage = await populatedMessage.populate({
+                path: "replyTo",
+                select: "text image senderId",
+                populate: { path: "senderId", select: "fullname" }
+            });
+        }
 
         // Emit the new group message to all group members except the sender
         group.members.forEach(memberId => {
@@ -129,7 +137,16 @@ export const getGroupMessages = async (req, res) => {
         if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
             return res.status(403).json({ message: "You are not a member of this group." });
         }
-        const messages = await GroupMessage.find({ groupId }).populate("senderId", "fullname profilePicture").sort({ createdAt: 1 });
+        const messages = await GroupMessage.find({ 
+            groupId, 
+            deletedBy: { $ne: userId } 
+        }).populate("senderId", "fullname profilePicture")
+          .populate({
+            path: "replyTo",
+            select: "text image senderId",
+            populate: { path: "senderId", select: "fullname" }
+          })
+          .sort({ createdAt: 1 });
 
         // Đánh dấu đã đọc: thêm userId vào readBy của các tin chưa đọc (không phải do mình gửi)
         await GroupMessage.updateMany(
@@ -258,6 +275,20 @@ export const addMember = async (req, res) => {
             .populate("members", "-password")
             .populate("createdBy", "-password");
 
+        // --- Create & Emit System Message ---
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text: `${req.user.fullname} đã thêm ${userToAdd.fullname} vào nhóm.`,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+
         res.status(200).json(updatedGroup);
     } catch (error) {
         console.log("Error in addMember controller: ", error.message);
@@ -295,6 +326,9 @@ export const removeMember = async (req, res) => {
             return res.status(400).json({ message: "Cannot remove the last member from the group." });
         }
 
+        // Grab the user details to use in the system message
+        const userRemoved = await User.findById(userId);
+
         group.members = group.members.filter(memberId => memberId.toString() !== userId);
         await group.save();
 
@@ -302,9 +336,77 @@ export const removeMember = async (req, res) => {
             .populate("members", "-password")
             .populate("createdBy", "-password");
 
+        // --- Create & Emit System Message ---
+        const isLeaving = currentUserId.toString() === userId;
+        const text = isLeaving 
+            ? `${req.user.fullname} đã rời khỏi nhóm.` 
+            : `${req.user.fullname} đã xóa ${userRemoved.fullname} khỏi nhóm.`;
+
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        // Phát tới những người còn lại trong nhóm
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+        // Báo cho người bị kick (hoặc tự rời) để họ cập nhật (nếu cần)
+        emitToUser(userId, "newGroupMessage", populatedMessage);
+
         res.status(200).json(updatedGroup);
     } catch (error) {
         console.log("Error in removeMember controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const updateGroupSettings = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const { settings, name, groupPicture } = req.body;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            return res.status(404).json({ message: "Group not found." });
+        }
+
+        if (group.createdBy.toString() !== userId.toString()) {
+            return res.status(403).json({ message: "Only group creator can update group settings." });
+        }
+
+        const updateData = {};
+        if (settings) updateData.settings = settings;
+        if (name) updateData.name = name;
+
+        if (groupPicture) {
+            // Upload to cloudinary
+            try {
+                // Ensure cloudinary is imported at the top if not already, but wait, cloudinary is imported in auth.controller. Let me assume it's imported here or I should import it. Wait, if it's not imported in group.controller.js, it will throw an error. I must check if cloudinary is imported in group.controller.js! Let me just put the code and if it fails I'll import it. Wait, I should probably check imports first.
+                // Assuming it might not be imported, I will require it dynamically or use the standard import.
+                const cloudinary = (await import("../lib/cloudinary.js")).default;
+                const uploadResponse = await cloudinary.uploader.upload(groupPicture);
+                updateData.groupPicture = uploadResponse.secure_url;
+            } catch (uploadError) {
+                console.log("Error uploading group picture:", uploadError);
+                return res.status(500).json({ message: "Lỗi tải ảnh lên" });
+            }
+        }
+
+        const updatedGroup = await Group.findByIdAndUpdate(
+            groupId, 
+            { $set: updateData }, 
+            { new: true }
+        ).populate("members", "-password").populate("createdBy", "-password");
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in updateGroupSettings controller: ", error.message);
         res.status(500).json({ error: "Internal server error" });
     }
 };

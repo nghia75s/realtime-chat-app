@@ -3,6 +3,8 @@ import { emitToUser } from "../lib/socket.js";
 import Message from "../models/Message.js";
 import GroupMessage from "../models/GroupMessage.js";
 import User from "../models/User.js";
+import Notification from "../models/Notification.js";
+import mongoose from "mongoose";
 
 export const getAllContacts = async (req, res) => {
   try {
@@ -22,10 +24,19 @@ export const getMessagesByUserId = async (req, res) => {
     const { id: userToChatId } = req.params;
 
     const messages = await Message.find({
-      $or: [
-        { senderId: myId, receiverId: userToChatId },
-        { senderId: userToChatId, receiverId: myId },
-      ],
+      $and: [
+        {
+          $or: [
+            { senderId: myId, receiverId: userToChatId },
+            { senderId: userToChatId, receiverId: myId },
+          ],
+        },
+        { deletedBy: { $ne: myId } }
+      ]
+    }).populate({
+      path: "replyTo",
+      select: "text image senderId",
+      populate: { path: "senderId", select: "fullname" }
     });
 
     // Đánh dấu đã đọc: các tin nhắn người kia gửi cho mình mà chưa đọc
@@ -43,7 +54,7 @@ export const getMessagesByUserId = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
+    const { text, image, replyTo } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
 
@@ -70,9 +81,18 @@ export const sendMessage = async (req, res) => {
       receiverId,
       text,
       image: imageUrl,
+      replyTo,
     });
 
     await newMessage.save();
+
+    if (replyTo) {
+      await newMessage.populate({
+        path: "replyTo",
+        select: "text image senderId",
+        populate: { path: "senderId", select: "fullname" }
+      });
+    }
 
     emitToUser(receiverId, "newMessage", newMessage);
 
@@ -223,7 +243,20 @@ export const sendDocumentMessage = async (req, res) => {
     await newMessage.save();
     await newMessage.populate("senderId", "fullname profilePicture");
 
+    // Tạo thông báo lưu trữ cho người nhận (quản lý)
+    const newNotif = new Notification({
+      recipient: receiverId,
+      sender: senderId,
+      type: "document_send",
+      message: `${req.user.fullname} đã gửi một đơn mới: "${documentPayload.templateName || "Lá đơn"}"`,
+    });
+    await newNotif.save();
+    await newNotif.populate([
+      { path: "sender", select: "fullname profilePicture" }
+    ]);
+
     emitToUser(receiverId, "newMessage", newMessage);
+    emitToUser(receiverId, "newNotification", newNotif);
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -287,6 +320,18 @@ export const replyDocumentMessage = async (req, res) => {
     await textMessage.save();
     await textMessage.populate("senderId", "fullname profilePicture");
 
+    // Tạo thông báo lưu trữ cho người gửi đơn
+    const newNotif = new Notification({
+      recipient: message.senderId,
+      sender: userId,
+      type: status === "approved" ? "document_approve" : "document_reject",
+      message: notifMsg,
+    });
+    await newNotif.save();
+    await newNotif.populate([
+      { path: "sender", select: "fullname profilePicture" }
+    ]);
+
     // Gửi socket event cập nhật real-time cho cả 2 phía
     const payload = { messageId: message._id, documentReplyData: message.documentReplyData };
     emitToUser(message.senderId.toString(), "documentReplied", payload);
@@ -295,6 +340,9 @@ export const replyDocumentMessage = async (req, res) => {
     // Gửi tin nhắn text mới tới 2 người
     emitToUser(message.senderId.toString(), "newMessage", textMessage);
     emitToUser(userId.toString(), "newMessage", textMessage);
+
+    // Gửi thông báo tới người gửi đơn
+    emitToUser(message.senderId.toString(), "newNotification", newNotif);
 
     // Gửi thông báo toast cho người gửi đơn
     emitToUser(message.senderId.toString(), "docApprovalNotif", {
@@ -310,3 +358,261 @@ export const replyDocumentMessage = async (req, res) => {
   }
 };
 
+// --- New Message Features ---
+
+// PUT /api/messages/:id/recall
+export const recallMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(id);
+    if (!message) return res.status(404).json({ message: "Message not found" });
+
+    // Only sender can recall
+    if (message.senderId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "You can only recall your own messages" });
+    }
+
+    message.isRecalled = true;
+    await message.save();
+
+    // Emit to both sender and receiver
+    const payload = { messageId: message._id, isRecalled: true };
+    emitToUser(message.senderId.toString(), "messageRecalled", payload);
+    emitToUser(message.receiverId.toString(), "messageRecalled", payload);
+
+    res.status(200).json(message);
+  } catch (error) {
+    console.error("Error in recallMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// PUT /api/messages/:id/delete
+export const deleteMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(id);
+    if (!message) return res.status(404).json({ message: "Message not found" });
+
+    if (!message.deletedBy.includes(userId)) {
+      message.deletedBy.push(userId);
+      await message.save();
+    }
+
+    res.status(200).json({ message: "Message deleted for you", messageId: id });
+  } catch (error) {
+    console.error("Error in deleteMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// POST /api/messages/forward
+export const forwardMessage = async (req, res) => {
+  try {
+    const { messageId, receiverIds, note } = req.body; // receiverIds is array of user/group IDs
+    const senderId = req.user._id;
+
+    if (!messageId || !receiverIds || !Array.isArray(receiverIds)) {
+      return res.status(400).json({ message: "Invalid payload" });
+    }
+
+    const originalMsg = await Message.findById(messageId) || await GroupMessage.findById(messageId);
+    if (!originalMsg) return res.status(404).json({ message: "Original message not found" });
+
+    const newMessages = [];
+    for (const receiverId of receiverIds) {
+      if (senderId.equals(receiverId)) continue;
+      
+      const receiverExists = await User.exists({ _id: receiverId });
+      if (receiverExists) {
+        // 1. Chuyển tiếp tin nhắn gốc
+        const newMsg = new Message({
+          senderId,
+          receiverId,
+          text: originalMsg.text,
+          image: originalMsg.image,
+          isForwarded: true,
+        });
+        await newMsg.save();
+        const populatedMsg = await Message.findById(newMsg._id).populate("senderId", "fullname profilePicture");
+        emitToUser(receiverId, "newMessage", populatedMsg);
+        newMessages.push(populatedMsg);
+
+        // 2. Gửi thêm tin nhắn đính kèm nếu có
+        if (note && note.trim()) {
+          const noteMsg = new Message({
+            senderId,
+            receiverId,
+            text: note.trim(),
+          });
+          await noteMsg.save();
+          const populatedNote = await Message.findById(noteMsg._id).populate("senderId", "fullname profilePicture");
+          emitToUser(receiverId, "newMessage", populatedNote);
+          newMessages.push(populatedNote);
+        }
+      } else {
+        // Assume it might be a group ID
+        const group = await mongoose.model('Group').findById(receiverId);
+        if (group) {
+          // 1. Chuyển tiếp tin nhắn gốc vào nhóm
+          const newMsg = new GroupMessage({
+            senderId,
+            groupId: receiverId,
+            text: originalMsg.text,
+            image: originalMsg.image,
+            isForwarded: true,
+          });
+          await newMsg.save();
+          const populatedMsg = await GroupMessage.findById(newMsg._id).populate("senderId", "fullname profilePicture");
+          
+          group.members.forEach((memberId) => {
+            const memberIdStr = memberId.toString();
+            if (memberIdStr !== senderId.toString()) {
+              emitToUser(memberIdStr, "newGroupMessage", populatedMsg);
+            }
+          });
+          newMessages.push(populatedMsg);
+
+          // 2. Gửi thêm tin nhắn đính kèm vào nhóm nếu có
+          if (note && note.trim()) {
+            const noteMsg = new GroupMessage({
+              senderId,
+              groupId: receiverId,
+              text: note.trim(),
+            });
+            await noteMsg.save();
+            const populatedNote = await GroupMessage.findById(noteMsg._id).populate("senderId", "fullname profilePicture");
+            
+            group.members.forEach((memberId) => {
+              const memberIdStr = memberId.toString();
+              if (memberIdStr !== senderId.toString()) {
+                emitToUser(memberIdStr, "newGroupMessage", populatedNote);
+              }
+            });
+            newMessages.push(populatedNote);
+          }
+        }
+      }
+    }
+
+    res.status(200).json(newMessages);
+  } catch (error) {
+    console.error("Error in forwardMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// POST /api/messages/pin/:messageId
+export const pinMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    // Check both Message and GroupMessage
+    let message = await Message.findById(messageId);
+    let isGroup = false;
+    
+    if (!message) {
+      message = await GroupMessage.findById(messageId);
+      isGroup = true;
+    }
+
+    if (!message) return res.status(404).json({ message: "Message not found" });
+
+    message.isPinned = !message.isPinned;
+    if (message.isPinned) {
+      message.pinnedBy = userId;
+    } else {
+      message.pinnedBy = null;
+    }
+    
+    await message.save();
+    
+    const populatedMessage = await message.populate("senderId", "fullname profilePicture");
+
+    // Send a system message
+    const actionText = message.isPinned ? "đã ghim" : "đã bỏ ghim";
+    let systemMsg;
+    
+    if (isGroup) {
+      systemMsg = new GroupMessage({
+        senderId: userId,
+        groupId: message.groupId,
+        messageType: "system",
+        text: `Người dùng ${req.user.fullname} ${actionText} một tin nhắn.`,
+      });
+      await systemMsg.save();
+      const populatedSystemMsg = await systemMsg.populate("senderId", "fullname profilePicture");
+      
+      // Emit to group members
+      const group = await mongoose.model("Group").findById(message.groupId);
+      if (group) {
+        group.members.forEach((memberId) => {
+          const memberIdStr = memberId.toString();
+          emitToUser(memberIdStr, "messagePinned", { messageId: message._id, isPinned: message.isPinned, message: populatedMessage });
+          emitToUser(memberIdStr, "newGroupMessage", populatedSystemMsg);
+        });
+      }
+    } else {
+      systemMsg = new Message({
+        senderId: userId,
+        receiverId: message.senderId.equals(userId) ? message.receiverId : message.senderId,
+        messageType: "system",
+        text: `Người dùng ${req.user.fullname} ${actionText} một tin nhắn.`,
+      });
+      await systemMsg.save();
+      const populatedSystemMsg = await systemMsg.populate("senderId", "fullname profilePicture");
+      
+      // Emit to both direct users
+      const otherUserId = message.senderId.equals(userId) ? message.receiverId : message.senderId;
+      emitToUser(userId.toString(), "messagePinned", { messageId: message._id, isPinned: message.isPinned, message: populatedMessage });
+      emitToUser(otherUserId.toString(), "messagePinned", { messageId: message._id, isPinned: message.isPinned, message: populatedMessage });
+      emitToUser(userId.toString(), "newMessage", populatedSystemMsg);
+      emitToUser(otherUserId.toString(), "newMessage", populatedSystemMsg);
+    }
+
+    res.status(200).json(populatedMessage);
+  } catch (error) {
+    console.error("Error in pinMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// GET /api/messages/pinned/:chatId
+export const getPinnedMessages = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user._id;
+
+    // We don't know if chatId is a user ID or group ID.
+    // Try to find group messages first
+    const groupMessages = await GroupMessage.find({ groupId: chatId, isPinned: true })
+      .populate("senderId", "fullname profilePicture")
+      .populate("pinnedBy", "fullname")
+      .sort({ updatedAt: -1 });
+
+    if (groupMessages.length > 0) {
+      return res.status(200).json(groupMessages);
+    }
+
+    // Try direct messages
+    const directMessages = await Message.find({
+      $or: [
+        { senderId: userId, receiverId: chatId, isPinned: true },
+        { senderId: chatId, receiverId: userId, isPinned: true }
+      ]
+    })
+      .populate("senderId", "fullname profilePicture")
+      .populate("pinnedBy", "fullname")
+      .sort({ updatedAt: -1 });
+
+    res.status(200).json(directMessages);
+  } catch (error) {
+    console.error("Error in getPinnedMessages:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

@@ -36,7 +36,10 @@ export interface Message {
   receiverId?: string;
   text?: string;
   image?: string;
-  messageType?: "text" | "document" | "task_assignment";
+  isRecalled?: boolean;
+  isForwarded?: boolean;
+  replyTo?: any;
+  messageType?: "text" | "document" | "task_assignment" | "system";
   documentPayload?: DocumentPayload;
   documentReplyData?: DocumentReplyData;
   taskPayload?: TaskPayload;

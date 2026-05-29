@@ -27,6 +27,8 @@ export interface AuthUser {
     viewTools?: boolean;
     viewAdmin?: boolean;
   };
+  pinnedChats?: string[];
+  mutedChats?: { chatId: string, mutedUntil: string }[];
 }
 
 interface AuthStore {
@@ -44,6 +46,8 @@ interface AuthStore {
   verifyLoginOtp: (data: any) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: any) => Promise<void>;
+  pinChat: (chatId: string) => Promise<void>;
+  muteChat: (chatId: string, mutedUntil?: string | null) => Promise<void>;
   connectSocket: () => void;
   disconnectSocket: () => void;
   roleChangeAlert: { oldRole: string, newRole: string } | null;
@@ -165,6 +169,32 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } catch (error: any) {
       const message = error?.response?.data?.message || "Profile update failed. Please try again.";
       toast.error(message);
+    }
+  },
+
+  pinChat: async (chatId: string) => {
+    try {
+      const resData = await authService.pinChat(chatId);
+      const currentAuthUser = get().authUser;
+      if (currentAuthUser) {
+        set({ authUser: { ...currentAuthUser, pinnedChats: resData.pinnedChats } });
+      }
+    } catch (error) {
+      console.log("Error pinning chat:", error);
+      toast.error("Không thể ghim hội thoại.");
+    }
+  },
+
+  muteChat: async (chatId: string, mutedUntil?: string | null) => {
+    try {
+      const resData = await authService.muteChat(chatId, mutedUntil);
+      const currentAuthUser = get().authUser;
+      if (currentAuthUser) {
+        set({ authUser: { ...currentAuthUser, mutedChats: resData.mutedChats } });
+      }
+    } catch (error) {
+      console.log("Error muting chat:", error);
+      toast.error("Không thể cấu hình thông báo.");
     }
   },
 

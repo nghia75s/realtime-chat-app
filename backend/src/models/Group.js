@@ -25,6 +25,19 @@ const groupSchema = new mongoose.Schema(
             type: String,
             default: "",
         },
+        settings: {
+            memberPermissions: {
+                changeNameAndAvatar: { type: Boolean, default: true },
+                pinMessages: { type: Boolean, default: true },
+                createNotes: { type: Boolean, default: true },
+                createPolls: { type: Boolean, default: true },
+                sendMessages: { type: Boolean, default: true }
+            },
+            joinApprovalMode: { type: Boolean, default: false },
+            highlightAdminMessages: { type: Boolean, default: true },
+            readRecentMessages: { type: Boolean, default: true },
+            allowJoinLink: { type: Boolean, default: false }
+        }
     },
     {
         timestamps: true,

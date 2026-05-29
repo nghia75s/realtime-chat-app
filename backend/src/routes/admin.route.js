@@ -6,7 +6,6 @@ import { protectRoute } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 // Middleware: chỉ admin mới được vào
-// Nếu user có email admin@gmail.com nhưng role chưa đúng → tự upgrade 1 lần
 const requireAdmin = async (req, res, next) => {
   if (req.user?.role === "admin") return next();
 

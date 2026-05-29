@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Search, UserPlus, Users as GroupIcon, ChevronDown } from "lucide-react"
+import { Search, UserPlus, Users as GroupIcon, ChevronDown, Pin } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton"
@@ -103,8 +103,17 @@ export function ChatListSidebar() {
             ) : chats.length === 0 ? (
               <NoChatsFound />
             ) : (
-              chats.map((chat) => {
+              [...chats].sort((a, b) => {
+                const aPinned = authUser?.pinnedChats?.includes(a._id);
+                const bPinned = authUser?.pinnedChats?.includes(b._id);
+                if (aPinned && !bPinned) return -1;
+                if (!aPinned && bPinned) return 1;
+                const aTime = a.lastMessageDate ? new Date(a.lastMessageDate).getTime() : 0;
+                const bTime = b.lastMessageDate ? new Date(b.lastMessageDate).getTime() : 0;
+                return bTime - aTime;
+              }).map((chat) => {
                 const isActive = selectedUser?._id === chat._id
+                const isPinned = authUser?.pinnedChats?.includes(chat._id)
                 const timeStr = chat.lastMessageDate ? formatRelativeTime(chat.lastMessageDate) : ""
                 return (
                   <div
@@ -122,6 +131,7 @@ export function ChatListSidebar() {
                       <div className="flex justify-between items-start mb-0.5">
                         <div className="flex items-center flex-1 min-w-0 mr-2">
                           <h4 className={`font-semibold text-[15px] truncate ${unreadChats.includes(chat._id) ? "text-white" : "text-[#e1e1e1]"}`}>{chat.fullname}</h4>
+                          {isPinned && <Pin className="h-3 w-3 text-[#1877F2] fill-current ml-2 shrink-0" />}
                           {unreadChats.includes(chat._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
                         </div>
                         {timeStr && <span className="text-[12px] text-[#a1a1a1] shrink-0 mt-0.5">{timeStr}</span>}
@@ -145,8 +155,17 @@ export function ChatListSidebar() {
             ) : groups.length === 0 ? (
               <div className="px-4 py-6 text-[#717171] text-[13px] italic text-center">Bạn chưa tham gia nhóm nào</div>
             ) : (
-              groups.map((group) => {
+              [...groups].sort((a, b) => {
+                const aPinned = authUser?.pinnedChats?.includes(a._id);
+                const bPinned = authUser?.pinnedChats?.includes(b._id);
+                if (aPinned && !bPinned) return -1;
+                if (!aPinned && bPinned) return 1;
+                const aTime = a.lastMessageDate ? new Date(a.lastMessageDate).getTime() : 0;
+                const bTime = b.lastMessageDate ? new Date(b.lastMessageDate).getTime() : 0;
+                return bTime - aTime;
+              }).map((group) => {
                 const isActive = selectedUser?._id === group._id
+                const isPinned = authUser?.pinnedChats?.includes(group._id)
                 const timeStr = group.lastMessageDate ? formatRelativeTime(group.lastMessageDate) : ""
                 return (
                   <div
@@ -167,6 +186,7 @@ export function ChatListSidebar() {
                       <div className="flex justify-between items-start mb-0.5">
                         <div className="flex items-center flex-1 min-w-0 mr-2">
                           <h4 className={`font-semibold text-[15px] truncate ${unreadGroups.includes(group._id) ? "text-white" : "text-[#e1e1e1]"}`}>{group.name}</h4>
+                          {isPinned && <Pin className="h-3 w-3 text-[#1877F2] fill-current ml-2 shrink-0" />}
                           {unreadGroups.includes(group._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
                         </div>
                         {timeStr && <span className="text-[12px] text-[#a1a1a1] shrink-0 mt-0.5">{timeStr}</span>}

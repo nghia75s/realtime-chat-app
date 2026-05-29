@@ -24,10 +24,26 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isRecalled: {
+      type: Boolean,
+      default: false,
+    },
+    isForwarded: {
+      type: Boolean,
+      default: false,
+    },
+    deletedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+    },
     // --- Document Message Fields ---
     messageType: {
       type: String,
-      enum: ["text", "document", "task_assignment"],
+      enum: ["text", "document", "task_assignment", "system"],
       default: "text",
     },
     documentPayload: {
@@ -50,6 +66,14 @@ const messageSchema = new mongoose.Schema(
       deadline: Date,
       note: String,
     },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    pinnedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }
   },
   { timestamps: true }
 );

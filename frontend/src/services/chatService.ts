@@ -47,6 +47,11 @@ export const chatService = {
     return res.data;
   },
 
+  removeGroupMember: async (groupId: string, userId: string) => {
+    const res = await axiosInstance.delete(`groups/groups/${groupId}/members/${userId}`);
+    return res.data;
+  },
+
   fetchUnreadSummary: async () => {
     const res = await axiosInstance.get("messages/unread-summary");
     return res.data;
@@ -66,4 +71,34 @@ export const chatService = {
     const res = await axiosInstance.patch(`messages/${messageId}/document-reply`, { status, note });
     return res.data;
   },
+
+  recallMessage: async (messageId: string) => {
+    const res = await axiosInstance.put(`messages/${messageId}/recall`);
+    return res.data;
+  },
+
+  deleteMessage: async (messageId: string) => {
+    const res = await axiosInstance.put(`messages/${messageId}/delete`);
+    return res.data;
+  },
+
+  forwardMessage: async (messageId: string, receiverIds: string[], note?: string) => {
+    const res = await axiosInstance.post(`messages/forward`, { messageId, receiverIds, note });
+    return res.data;
+  },
+
+  pinMessage: async (messageId: string) => {
+    const res = await axiosInstance.post(`messages/pin/${messageId}`);
+    return res.data;
+  },
+
+  getPinnedMessages: async (chatId: string) => {
+    const res = await axiosInstance.get(`messages/pinned/${chatId}`);
+    return res.data;
+  },
+
+  updateGroupSettings: async (groupId: string, settings: any) => {
+    const res = await axiosInstance.put(`groups/groups/${groupId}/settings`, { settings });
+    return res.data;
+  }
 };
