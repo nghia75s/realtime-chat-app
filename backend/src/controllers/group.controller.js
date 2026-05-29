@@ -275,6 +275,20 @@ export const addMember = async (req, res) => {
             .populate("members", "-password")
             .populate("createdBy", "-password");
 
+        // --- Create & Emit System Message ---
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text: `${req.user.fullname} đã thêm ${userToAdd.fullname} vào nhóm.`,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+
         res.status(200).json(updatedGroup);
     } catch (error) {
         console.log("Error in addMember controller: ", error.message);
@@ -312,12 +326,37 @@ export const removeMember = async (req, res) => {
             return res.status(400).json({ message: "Cannot remove the last member from the group." });
         }
 
+        // Grab the user details to use in the system message
+        const userRemoved = await User.findById(userId);
+
         group.members = group.members.filter(memberId => memberId.toString() !== userId);
         await group.save();
 
         const updatedGroup = await Group.findById(groupId)
             .populate("members", "-password")
             .populate("createdBy", "-password");
+
+        // --- Create & Emit System Message ---
+        const isLeaving = currentUserId.toString() === userId;
+        const text = isLeaving 
+            ? `${req.user.fullname} đã rời khỏi nhóm.` 
+            : `${req.user.fullname} đã xóa ${userRemoved.fullname} khỏi nhóm.`;
+
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        // Phát tới những người còn lại trong nhóm
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+        // Báo cho người bị kick (hoặc tự rời) để họ cập nhật (nếu cần)
+        emitToUser(userId, "newGroupMessage", populatedMessage);
 
         res.status(200).json(updatedGroup);
     } catch (error) {

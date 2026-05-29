@@ -33,7 +33,7 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
   const allPossibleTargets = useMemo(() => {
     const list: Array<{ id: string; name: string; avatar: string }> = [];
     const addedIds = new Set<string>();
-    
+
     // Đảm bảo so sánh chính xác ID dạng chuỗi
     const currentMemberSet = new Set(currentMembers.map(id => id?.toString()));
 
@@ -45,12 +45,6 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
         list.push({ id: contactId, name: c.fullname, avatar: c.profilePicture });
       }
     });
-
-    console.log("=== THÊM THÀNH VIÊN DEBUG ===");
-    console.log("Danh sách All Contacts:", allContacts);
-    console.log("Thành viên hiện tại (currentMembers):", Array.from(currentMemberSet));
-    console.log("Danh sách có thể thêm (list):", list);
-    console.log("===============================");
 
     return list;
   }, [allContacts, currentMembers]);
@@ -209,7 +203,7 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
                         <span className="text-[#374151] text-[14.5px] font-medium truncate">{name}</span>
                       </div>
                       <button
-                         onClick={(e) => { e.stopPropagation(); toggleSelect(id); }}
+                        onClick={(e) => { e.stopPropagation(); toggleSelect(id); }}
                         className="text-[#9CA3AF] hover:text-[#4B5563] p-1 rounded-full hover:bg-white transition-colors shrink-0"
                       >
                         <X className="w-4 h-4" />
@@ -224,17 +218,17 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
 
         {/* Footer Area with Action Buttons */}
         <div className="flex-shrink-0 bg-[#F9FAFB] border-t border-[#E5E7EB] p-4 flex flex-row items-center justify-end gap-3">
-            <button onClick={onClose} className="px-5 py-2.5 bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-xl transition-all text-[14px] font-bold">
-              Hủy
-            </button>
+          <button onClick={onClose} className="px-5 py-2.5 bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-xl transition-all text-[14px] font-bold">
+            Hủy
+          </button>
 
-            <button
-              onClick={handleAddMembers}
-              disabled={selectedIds.length === 0 || isSending}
-              className="flex items-center justify-center min-w-[110px] px-6 py-2.5 bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all text-[14px] font-bold shadow-md shadow-[#1877F2]/10"
-            >
-              {isSending ? "Đang thêm..." : "Xác nhận"}
-            </button>
+          <button
+            onClick={handleAddMembers}
+            disabled={selectedIds.length === 0 || isSending}
+            className="flex items-center justify-center min-w-[110px] px-6 py-2.5 bg-[#1877F2] hover:bg-[#166FE5] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-all text-[14px] font-bold shadow-md shadow-[#1877F2]/10"
+          >
+            {isSending ? "Đang thêm..." : "Xác nhận"}
+          </button>
         </div>
       </DialogContent>
     </Dialog>

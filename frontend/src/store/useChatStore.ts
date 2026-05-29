@@ -5,12 +5,12 @@ import { useAuthStore } from "./useAuthStore";
 import type { DocumentPayload } from "@/store/useMessageBubbleStore";
 
 export interface ManagerUser {
-  _id: string;
-  fullname: string;
-  profilePicture: string;
-  role: string;
-  department?: string;
-  email: string;
+    _id: string;
+    fullname: string;
+    profilePicture: string;
+    role: string;
+    department?: string;
+    email: string;
 }
 
 interface ChatStore {
@@ -42,6 +42,7 @@ interface ChatStore {
     sendGroupMessage: (messageData: any) => Promise<void>;
     createGroup: (groupData: { name: string; members: string[]; groupPicture?: string | null; description?: string }) => Promise<any>;
     addGroupMember: (groupId: string, userId: string) => Promise<any>;
+    removeGroupMember: (groupId: string, userId: string) => Promise<any>;
     joinGroup: (groupId: string) => void;
     leaveGroup: (groupId: string) => void;
     subscribeToMessages: () => void;
@@ -136,10 +137,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         set({ isContactsLoading: true });
         try {
             const data = await chatService.getAllcontacts();
-            console.log("Danh sách tất cả Users lấy được:", data);
             set({ allContacts: Array.isArray(data) ? data : [] })
         } catch (error: any) {
-            console.error("Lỗi khi lấy contacts:", error);
             const message = error?.response?.data?.message || "Failed to fetch contacts. Please try again.";
             toast.error(message);
         } finally {
@@ -235,22 +234,40 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         }
     },
     addGroupMember: async (groupId, userId) => {
-      try {
-        const data = await chatService.addGroupMember(groupId, userId);
-        set((state) => ({
-          groups: state.groups.map((group) =>
-            group._id === data._id ? { ...data, isGroup: true } : group
-          )
-        }));
-        if (get().selectedUser?.isGroup && get().selectedUser._id === data._id) {
-          set({ selectedUser: { ...data, isGroup: true } });
+        try {
+            const data = await chatService.addGroupMember(groupId, userId);
+            set((state) => ({
+                groups: state.groups.map((group) =>
+                    group._id === data._id ? { ...data, isGroup: true } : group
+                )
+            }));
+            if (get().selectedUser?.isGroup && get().selectedUser._id === data._id) {
+                set({ selectedUser: { ...data, isGroup: true } });
+            }
+            return data;
+        } catch (error: any) {
+            const message = error?.response?.data?.message || "Failed to add member. Please try again.";
+            toast.error(message);
+            throw error;
         }
-        return data;
-      } catch (error: any) {
-        const message = error?.response?.data?.message || "Failed to add member. Please try again.";
-        toast.error(message);
-        throw error;
-      }
+    },
+    removeGroupMember: async (groupId, userId) => {
+        try {
+            const data = await chatService.removeGroupMember(groupId, userId);
+            set((state) => ({
+                groups: state.groups.map((group) =>
+                    group._id === data._id ? { ...data, isGroup: true } : group
+                )
+            }));
+            if (get().selectedUser?.isGroup && get().selectedUser._id === data._id) {
+                set({ selectedUser: { ...data, isGroup: true } });
+            }
+            return data;
+        } catch (error: any) {
+            const message = error?.response?.data?.message || "Failed to remove member. Please try again.";
+            toast.error(message);
+            throw error;
+        }
     },
     joinGroup: (groupId) => {
         const socket = useAuthStore.getState().socket;
@@ -274,10 +291,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         socket.on("newMessage", (newMessage) => {
             const currentSelectedUser = get().selectedUser;
             const authUser = useAuthStore.getState().authUser;
-            
+
             const msgSenderId = typeof newMessage.senderId === "string" ? newMessage.senderId : newMessage.senderId?._id;
             const msgReceiverId = typeof newMessage.receiverId === "string" ? newMessage.receiverId : newMessage.receiverId?._id;
-            
+
             const partnerId = msgSenderId === authUser?._id ? msgReceiverId : msgSenderId;
 
             // Nếu đang mở chat với người này, cập nhật tin nhắn
@@ -382,7 +399,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             set((state) => {
                 const currentPinned = state.pinnedMessages;
                 let newPinned = [...currentPinned];
-                
+
                 if (isPinned) {
                     if (!currentPinned.some(m => m._id === messageId)) {
                         newPinned = [message, ...currentPinned];
@@ -390,8 +407,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 } else {
                     newPinned = currentPinned.filter(m => m._id !== messageId);
                 }
-                
-                return { 
+
+                return {
                     pinnedMessages: newPinned,
                     messages: state.messages.map((m) =>
                         m._id === messageId ? { ...m, isPinned, pinnedBy: message.pinnedBy } : m
@@ -524,14 +541,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const data = await chatService.forwardMessage(messageId, receiverIds, note);
             // data is an array of newly created messages (forwarded messages and optional notes)
             const { selectedUser, messages, chats, groups } = get();
-            
+
             let updatedChats = [...chats];
             let updatedGroups = [...groups];
 
             data.forEach((newMsg: any) => {
                 const receiverId = newMsg.receiverId;
                 const groupId = newMsg.groupId;
-                
+
                 if (receiverId) {
                     const targetUser = get().allContacts.find(c => c._id === receiverId) || { _id: receiverId };
                     updatedChats = pushToTop(updatedChats, receiverId, targetUser, newMsg);
@@ -543,7 +560,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             let updatedMessages = [...messages];
             if (selectedUser) {
-                const newMsgsForCurrentChat = data.filter((m: any) => 
+                const newMsgsForCurrentChat = data.filter((m: any) =>
                     (m.receiverId === selectedUser._id || m.groupId === selectedUser._id)
                 );
                 if (newMsgsForCurrentChat.length > 0) {
@@ -551,10 +568,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 }
             }
 
-            set({ 
-                chats: updatedChats, 
-                groups: updatedGroups, 
-                messages: updatedMessages 
+            set({
+                chats: updatedChats,
+                groups: updatedGroups,
+                messages: updatedMessages
             });
 
             toast.success("Đã chuyển tiếp tin nhắn");

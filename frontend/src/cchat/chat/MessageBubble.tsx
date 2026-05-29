@@ -39,6 +39,17 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
     hour: "2-digit", minute: "2-digit",
   })
 
+  // --- SYSTEM MESSAGE RENDERER ---
+  if (msg.messageType === "system") {
+    return (
+      <div className="flex w-full items-center justify-center my-3">
+        <div className="px-4 py-1.5 rounded-full bg-[#2b2d31]/70 text-[#a1a1a1] text-[12px] text-center font-medium shadow-sm max-w-[85%] break-words border border-[#3a3b3e]/30">
+          {msg.text}
+        </div>
+      </div>
+    )
+  }
+
   const handleCopy = () => {
     if (msg.text) {
       navigator.clipboard.writeText(msg.text)

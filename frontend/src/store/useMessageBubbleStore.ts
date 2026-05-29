@@ -39,7 +39,7 @@ export interface Message {
   isRecalled?: boolean;
   isForwarded?: boolean;
   replyTo?: any;
-  messageType?: "text" | "document" | "task_assignment";
+  messageType?: "text" | "document" | "task_assignment" | "system";
   documentPayload?: DocumentPayload;
   documentReplyData?: DocumentReplyData;
   taskPayload?: TaskPayload;
