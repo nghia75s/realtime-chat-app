@@ -27,7 +27,7 @@ interface PrimarySidebarProps {
 export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
   const navigate = useNavigate()
   const { logout, authUser } = useAuthStore()
-  const { unreadChats, unreadGroups } = useChatStore()
+  const { unreadChats, unreadGroups, groupInvitations } = useChatStore()
   const totalUnread = unreadChats.length + unreadGroups.length
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
@@ -89,6 +89,11 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
                   {item.id === "chat" && totalUnread > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff4a4a] px-1 text-[11px] font-bold text-white shadow-sm ring-2 ring-[#7c3aed]">
                       {totalUnread > 99 ? "99+" : totalUnread}
+                    </span>
+                  )}
+                  {item.id === "contacts" && groupInvitations.length > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff4a4a] px-1 text-[11px] font-bold text-white shadow-sm ring-2 ring-[#7c3aed]">
+                      {groupInvitations.length > 99 ? "99+" : groupInvitations.length}
                     </span>
                   )}
                 </div>

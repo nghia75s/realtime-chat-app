@@ -100,5 +100,60 @@ export const chatService = {
   updateGroupSettings: async (groupId: string, settings: any) => {
     const res = await axiosInstance.put(`groups/groups/${groupId}/settings`, { settings });
     return res.data;
+  },
+
+  addGroupAdmin: async (groupId: string, userId: string) => {
+    const res = await axiosInstance.post(`groups/groups/${groupId}/admins`, { userId });
+    return res.data;
+  },
+
+  removeGroupAdmin: async (groupId: string, userId: string) => {
+    const res = await axiosInstance.delete(`groups/groups/${groupId}/admins/${userId}`);
+    return res.data;
+  },
+
+  transferGroupOwner: async (groupId: string, userId: string) => {
+    const res = await axiosInstance.put(`groups/groups/${groupId}/transfer-owner`, { userId });
+    return res.data;
+  },
+
+  getInviteLink: async (groupId: string) => {
+    const res = await axiosInstance.get(`groups/groups/${groupId}/invite-link`);
+    return res.data;
+  },
+
+  joinViaLink: async (inviteCode: string) => {
+    const res = await axiosInstance.post(`groups/groups/join/${inviteCode}`);
+    return res.data;
+  },
+
+  getPendingMembers: async (groupId: string) => {
+    const res = await axiosInstance.get(`groups/groups/${groupId}/pending-members`);
+    return res.data;
+  },
+
+  approveMember: async (groupId: string, userId: string) => {
+    const res = await axiosInstance.post(`groups/groups/${groupId}/approve-member/${userId}`);
+    return res.data;
+  },
+
+  rejectMember: async (groupId: string, userId: string) => {
+    const res = await axiosInstance.post(`groups/groups/${groupId}/reject-member/${userId}`);
+    return res.data;
+  },
+
+  getGroupInvitations: async () => {
+    const res = await axiosInstance.get(`groups/group-invitations`);
+    return res.data;
+  },
+
+  acceptGroupInvitation: async (groupId: string) => {
+    const res = await axiosInstance.post(`groups/groups/${groupId}/invitations/accept`);
+    return res.data;
+  },
+
+  declineGroupInvitation: async (groupId: string) => {
+    const res = await axiosInstance.post(`groups/groups/${groupId}/invitations/decline`);
+    return res.data;
   }
 };

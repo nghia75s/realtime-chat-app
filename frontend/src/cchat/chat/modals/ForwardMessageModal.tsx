@@ -111,6 +111,7 @@ export function ForwardMessageModal() {
   const sharePreviewText = useMemo(() => {
     if (!forwardMessages || forwardMessages.length === 0) return ""
     if (forwardMessages.length === 1) {
+      if (forwardMessages[0].file) return `[File] ${forwardMessages[0].file.name || "Đính kèm"}`
       return forwardMessages[0].text || "[Hình ảnh]"
     }
     return `${forwardMessages.length} tin nhắn`

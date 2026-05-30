@@ -30,6 +30,10 @@ const renderLastMessagePreview = (msg: any, isGroup: boolean, authUser: any, par
     return `${senderPrefix}[Hình ảnh]`;
   }
   
+  if (msg.file && !msg.text) {
+    return `${senderPrefix}[File] ${msg.file.name || "Đính kèm"}`;
+  }
+  
   return `${senderPrefix}${msg.text || ""}`;
 };
 

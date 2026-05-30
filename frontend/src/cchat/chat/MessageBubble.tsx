@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button"
 
 export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean }) {
-  const { msg, onImageLoad, onImageClick, senderAvatar, senderName, isGroupChat, onReply, onForward, hideHeader } = props
+  const { msg, onImageLoad, onImageClick, senderAvatar, senderName, isGroupChat, onReply, onForward, hideHeader, canPin = true, isAdminMsg = false, highlightAdminMessages = false } = props
   const { authUser } = useAuthStore()
   const { recallMessage, deleteMessage, pinMessage } = useChatStore()
   const { 
@@ -141,6 +141,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
             onRecall={handleRecall}
             onDelete={handleDelete}
             onPin={handlePin}
+            canPin={canPin}
             onDropdownChange={setIsDropdownOpen}
           />
         )}
@@ -149,7 +150,14 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
         <div className={`flex flex-col max-w-[75%] min-w-0 gap-1 ${isMe ? "items-end" : "items-start"}`}>
           {/* Tên người gửi */}
           {!isMe && isGroupChat && senderName && !hideHeader && (
-            <span className="text-[12px] font-semibold text-[#a1a1a1] ml-1 mb-0.5">{senderName}</span>
+            <div className="flex items-center gap-1.5 ml-1 mb-0.5">
+              <span className="text-[12px] font-semibold text-[#a1a1a1]">{senderName}</span>
+              {isAdminMsg && highlightAdminMessages && (
+                <span className="px-1.5 py-0.5 bg-[#0052cc]/20 text-[#67d7ff] text-[9px] font-bold rounded uppercase tracking-wider border border-[#0052cc]/30">
+                  Quản trị viên
+                </span>
+              )}
+            </div>
           )}
 
           {/* --- Trạng thái THU HỒI --- */}
@@ -166,6 +174,11 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                   className="relative overflow-hidden rounded-xl cursor-pointer hover:opacity-90 transition-opacity shadow-sm border border-[#3a3b3e]/30"
                   onClick={() => onImageClick?.(msg)}
                 >
+                  {isForwarded && !msg.text && !msg.file && (
+                    <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium tracking-wide flex items-center gap-1 z-10">
+                      <CornerUpRight className="w-3 h-3" /> Chuyển tiếp
+                    </div>
+                  )}
                   <img src={msg.image} alt="Message" className="max-h-[300px] max-w-full w-auto object-contain bg-[#1a1b1e]" onLoad={onImageLoad} />
                   {!msg.text && (
                     <span className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium tracking-wide">
@@ -180,6 +193,11 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                     <div className={`px-[16px] py-[12px] rounded-2xl shadow-sm flex flex-col w-full min-w-0 gap-2 cursor-default select-text relative
                       ${isMe ? "bg-[#0052cc] text-white" : "bg-[#2b2d31] text-[#e1e1e1]"}
                     `}>
+                      {isForwarded && !msg.text && (
+                        <div className={`flex items-center gap-1.5 text-[11.5px] font-medium mb-1 ${isMe ? "text-blue-200" : "text-[#a1a1a1]"}`}>
+                          <CornerUpRight className="w-3.5 h-3.5" /> Chuyển tiếp
+                        </div>
+                      )}
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-black/20 text-[#67d7ff] text-[10px] font-semibold tracking-[0.04em]">
                           {fileExtension}
@@ -325,6 +343,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
             onRecall={handleRecall}
             onDelete={handleDelete}
             onPin={handlePin}
+            canPin={canPin}
             onDropdownChange={setIsDropdownOpen}
           />
         )}
@@ -334,7 +353,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
 }
 
 // === Component Thanh Nút Tương Tác ===
-function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectMany, onDetails, onRecall, onDelete, onPin, onDropdownChange }: any) {
+function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectMany, onDetails, onRecall, onDelete, onPin, canPin, onDropdownChange }: any) {
   return (
     <div className={`flex items-center gap-0.5 ${isMe ? "mr-1.5" : "ml-1.5"} transition-opacity duration-150 ${show ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
       <TooltipProvider delayDuration={200}>
@@ -381,9 +400,11 @@ function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectM
             <DropdownMenuItem onClick={onForward} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
               <Forward className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Chuyển tiếp tin nhắn
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onPin} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
-              <Pin className="w-4 h-4 mr-2 text-[#a1a1a1]" /> {msg.isPinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
-            </DropdownMenuItem>
+            {canPin && (
+              <DropdownMenuItem onClick={onPin} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
+                <Pin className="w-4 h-4 mr-2 text-[#a1a1a1]" /> {msg.isPinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
+              </DropdownMenuItem>
+            )}
             {msg.text && (
               <DropdownMenuItem onClick={onCopy} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
                 <Copy className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Sao chép tin nhắn

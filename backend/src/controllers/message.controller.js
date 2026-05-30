@@ -457,6 +457,8 @@ export const forwardMessage = async (req, res) => {
           receiverId,
           text: originalMsg.text,
           image: originalMsg.image,
+          file: originalMsg.file,
+          messageType: originalMsg.messageType || (originalMsg.file ? "file" : "text"),
           isForwarded: true,
         });
         await newMsg.save();
@@ -486,6 +488,8 @@ export const forwardMessage = async (req, res) => {
             groupId: receiverId,
             text: originalMsg.text,
             image: originalMsg.image,
+            file: originalMsg.file,
+            messageType: originalMsg.messageType || (originalMsg.file ? "file" : "text"),
             isForwarded: true,
           });
           await newMsg.save();
@@ -541,6 +545,17 @@ export const pinMessage = async (req, res) => {
     if (!message) {
       message = await GroupMessage.findById(messageId);
       isGroup = true;
+      if (message) {
+        const group = await mongoose.model("Group").findById(message.groupId);
+        if (group) {
+          const isCreator = group.createdBy.toString() === userId.toString();
+          const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+          const canPin = group.settings?.memberPermissions?.pinMessages !== false;
+          if (!isCreator && !isAdmin && !canPin) {
+            return res.status(403).json({ message: "You don't have permission to pin messages in this group." });
+          }
+        }
+      }
     }
 
     if (!message) return res.status(404).json({ message: "Message not found" });
