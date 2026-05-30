@@ -122,7 +122,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {/* --- TAB THÔNG BÁO --- */}
+            {/* --- TAB THÔNG BÁ --- */}
             {activeTab === "notifications" && (
               <div className="flex flex-col gap-8 animate-in fade-in duration-200 w-full pt-1">
                 <div className="flex flex-col gap-3">
