@@ -78,7 +78,7 @@ export function UserDetailEdit({ user, onSave, onCancel, isLoading }: UserDetail
         {/* Avatar Section */}
         <div className="flex flex-col items-center pt-8 pb-6 px-5 border-b border-chat-border">
           <div className="relative mb-4 group cursor-pointer">
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
               title="Đổi ảnh đại diện"
               className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-chat-border hover:border-indigo-500 transition-all shadow-lg active:scale-95"

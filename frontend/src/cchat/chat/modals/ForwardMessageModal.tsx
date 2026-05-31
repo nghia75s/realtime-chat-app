@@ -120,24 +120,27 @@ export function ForwardMessageModal() {
 
   return (
     <Dialog open={isForwardModalOpen} onOpenChange={closeForwardModal}>
-      <DialogContent className="bg-white border border-[#E5E7EB] text-[#111827] !w-[500px] !max-w-[600vw] rounded-2xl p-0 overflow-hidden flex flex-col h-[650px] shadow-2xl !bg-white !text-[#111827] animate-in zoom-in-95 duration-200">
+      <DialogContent 
+        className="bg-chat-sidebar border border-chat-border text-chat-text !w-[500px] !max-w-[600vw] rounded-2xl p-0 overflow-hidden flex flex-col h-[650px] shadow-2xl animate-in zoom-in-95 duration-200"
+        showCloseButton={false}
+      >
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB] flex-shrink-0">
-          <h2 className="text-[#111827] text-lg font-bold">Chia sẻ</h2>
-          <button onClick={closeForwardModal} className="text-[#9CA3AF] hover:text-[#4B5563] transition-colors p-1.5 hover:bg-[#F3F4F6] rounded-full">
-            <X className="w-5 h-5" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-chat-border flex-shrink-0">
+          <h2 className="text-chat-text text-lg font-bold">Chia sẻ</h2>
+          <button onClick={closeForwardModal} className="text-chat-muted hover:text-chat-text transition-colors p-1.5 hover:bg-chat-hover rounded-full flex items-center justify-center">
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Search Input */}
-        <div className="px-6 py-3 bg-[#F9FAFB] border-b border-[#E5E7EB] flex-shrink-0">
+        <div className="px-6 py-3 bg-chat-main border-b border-chat-border flex-shrink-0">
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-chat-muted" />
             <input
               type="text"
               placeholder="Tìm kiếm hội thoại..."
-              className="w-full bg-white border border-[#D1D5DB] rounded-xl pl-10 pr-4 py-2 text-[14px] text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
+              className="w-full bg-chat-sidebar border border-chat-border rounded-xl pl-10 pr-4 py-2 text-[14px] text-chat-text focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-transparent transition-all placeholder:text-chat-muted"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -145,25 +148,25 @@ export function ForwardMessageModal() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center border-b border-[#E5E7EB] px-6 bg-white flex-shrink-0">
+        <div className="flex items-center border-b border-chat-border px-6 bg-chat-sidebar flex-shrink-0">
           <div className="flex gap-6 text-[14px] font-semibold">
             <button
               onClick={() => setActiveTab("recent")}
-              className={`py-3 relative transition-all ${activeTab === "recent" ? "text-[#1877F2]" : "text-[#6B7280] hover:text-[#111827]"}`}
+              className={`py-3 relative transition-all ${activeTab === "recent" ? "text-[#1877F2]" : "text-chat-muted hover:text-chat-text"}`}
             >
               Gần đây
               {activeTab === "recent" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1877F2]" />}
             </button>
             <button
               onClick={() => setActiveTab("groups")}
-              className={`py-3 relative transition-all ${activeTab === "groups" ? "text-[#1877F2]" : "text-[#6B7280] hover:text-[#111827]"}`}
+              className={`py-3 relative transition-all ${activeTab === "groups" ? "text-[#1877F2]" : "text-chat-muted hover:text-chat-text"}`}
             >
               Nhóm trò chuyện
               {activeTab === "groups" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1877F2]" />}
             </button>
             <button
               onClick={() => setActiveTab("friends")}
-              className={`py-3 relative transition-all ${activeTab === "friends" ? "text-[#1877F2]" : "text-[#6B7280] hover:text-[#111827]"}`}
+              className={`py-3 relative transition-all ${activeTab === "friends" ? "text-[#1877F2]" : "text-chat-muted hover:text-chat-text"}`}
             >
               Bạn bè
               {activeTab === "friends" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1877F2]" />}
@@ -172,10 +175,10 @@ export function ForwardMessageModal() {
         </div>
 
         {/* Dynamic Two-Column Split Layout */}
-        <div className="flex flex-1 min-h-0 bg-[#F9FAFB]">
+        <div className="flex flex-1 min-h-0 bg-chat-main">
 
           {/* Left Column: All Targets Selection */}
-          <div className={`${selectedIds.length > 0 ? "w-[60%]" : "w-full"} flex flex-col ${selectedIds.length > 0 ? "border-r border-[#E5E7EB]" : ""} h-full overflow-hidden transition-all duration-300`}>
+          <div className={`${selectedIds.length > 0 ? "w-[60%]" : "w-full"} flex flex-col ${selectedIds.length > 0 ? "border-r border-chat-border" : ""} h-full overflow-hidden transition-all duration-300`}>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-1">
               {filteredTargets.length > 0 ? (
                 filteredTargets.map(target => {
@@ -183,11 +186,11 @@ export function ForwardMessageModal() {
                   return (
                     <div
                       key={target.id}
-                      className="flex items-center gap-3.5 px-3.5 py-3 hover:bg-[#F3F4F6] rounded-xl cursor-pointer transition-colors group"
+                      className="flex items-center gap-3.5 px-3.5 py-3 hover:bg-chat-hover rounded-xl cursor-pointer transition-colors group"
                       onClick={() => toggleSelect(target.id)}
                     >
                       {/* Checkbox (Circular shape) */}
-                      <div className={`w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isChecked ? "bg-[#1877F2] border-[#1877F2]" : "border-[#D1D5DB] group-hover:border-[#9CA3AF]"
+                      <div className={`w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isChecked ? "bg-[#1877F2] border-[#1877F2]" : "border-chat-border group-hover:border-chat-muted"
                         }`}>
                         {isChecked && (
                           <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="w-3.5 h-3.5">
@@ -199,25 +202,25 @@ export function ForwardMessageModal() {
                       <img
                         src={target.avatar || (target.type === "group" ? "/group.png" : "/avatar.png")}
                         alt={target.name}
-                        className="w-10 h-10 rounded-full object-cover border border-[#E5E7EB] shrink-0"
+                        className="w-10 h-10 rounded-full object-cover border border-chat-border shrink-0"
                       />
 
-                      <span className="text-[#111827] text-[15px] font-medium truncate flex-1">{target.name}</span>
+                      <span className="text-chat-text text-[15px] font-medium truncate flex-1">{target.name}</span>
                     </div>
                   );
                 })
               ) : (
-                <div className="p-8 text-center text-[#6B7280] text-[14px]">Không tìm thấy kết quả nào</div>
+                <div className="p-8 text-center text-chat-muted text-[14px]">Không tìm thấy kết quả nào</div>
               )}
             </div>
           </div>
 
           {/* Right Column: Selected Targets (Slides in when selectedCount > 0) */}
           {selectedIds.length > 0 && (
-            <div className="w-[40%] flex flex-col bg-white h-full overflow-hidden animate-in slide-in-from-right-5 duration-200">
+            <div className="w-[40%] flex flex-col bg-chat-sidebar h-full overflow-hidden animate-in slide-in-from-right-5 duration-200">
               {/* Header: Selected Count + Clear All */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-[#F3F4F6] flex-shrink-0">
-                <span className="text-[13.5px] font-bold text-[#374151]">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-chat-border flex-shrink-0">
+                <span className="text-[13.5px] font-bold text-chat-text">
                   Đã chọn: <span className="text-[#1877F2]">{selectedIds.length}/100</span>
                 </span>
                 <button
@@ -229,7 +232,7 @@ export function ForwardMessageModal() {
               </div>
 
               {/* Selected Targets List */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-2.5 flex flex-col gap-1 bg-white">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-2.5 flex flex-col gap-1 bg-chat-sidebar">
                 {selectedIds.map(id => {
                   const target = allPossibleTargets.find(t => t.id === id);
                   if (!target) return null;
@@ -239,19 +242,19 @@ export function ForwardMessageModal() {
                   return (
                     <div
                       key={id}
-                      className="flex items-center gap-3 px-3.5 py-2.5 bg-[#F9FAFB] hover:bg-[#F3F4F6] rounded-xl group transition-colors justify-between"
+                      className="flex items-center gap-3 px-3.5 py-2.5 bg-chat-main hover:bg-chat-hover rounded-xl group transition-colors justify-between"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img
                           src={avatar || "/avatar.png"}
                           alt={name}
-                          className="w-8 h-8 rounded-full object-cover border border-[#E5E7EB] shrink-0"
+                          className="w-8 h-8 rounded-full object-cover border border-chat-border shrink-0"
                         />
-                        <span className="text-[#374151] text-[14.5px] font-medium truncate">{name}</span>
+                        <span className="text-chat-text text-[14.5px] font-medium truncate">{name}</span>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleSelect(id); }}
-                        className="text-[#9CA3AF] hover:text-[#4B5563] p-1 rounded-full hover:bg-white transition-colors shrink-0"
+                        className="text-chat-muted hover:text-chat-text p-1 rounded-full hover:bg-chat-main transition-colors shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -264,16 +267,16 @@ export function ForwardMessageModal() {
         </div>
 
         {/* Footer Area with Preview Box & Message Input */}
-        <div className="flex-shrink-0 bg-[#F9FAFB] border-t border-[#E5E7EB] p-5 flex flex-col gap-4">
+        <div className="flex-shrink-0 bg-chat-sidebar border-t border-chat-border p-5 flex flex-col gap-4">
 
           {/* Messages count preview box */}
           {forwardMessages && forwardMessages.length > 0 && (
-            <div className="bg-white border border-[#E5E7EB] rounded-xl p-3.5 flex flex-col gap-1.5 text-[14px]">
-              <div className="flex items-center gap-2 text-[#6B7280] text-[12px] font-bold uppercase tracking-wider">
+            <div className="bg-chat-main border border-chat-border rounded-xl p-3.5 flex flex-col gap-1.5 text-[14px]">
+              <div className="flex items-center gap-2 text-chat-muted text-[12px] font-bold uppercase tracking-wider">
                 <MessageSquare className="w-4 h-4 text-[#1877F2]" />
                 <span>Chia sẻ tin nhắn</span>
               </div>
-              <p className="text-[#111827] font-semibold line-clamp-1 truncate opacity-90">{sharePreviewText}</p>
+              <p className="text-chat-text font-semibold line-clamp-1 truncate opacity-90">{sharePreviewText}</p>
             </div>
           )}
 
@@ -283,13 +286,13 @@ export function ForwardMessageModal() {
             placeholder="Nhập lời nhắn..."
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
-            className="w-full bg-white border border-[#D1D5DB] rounded-xl px-4 py-2.5 text-[14px] text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
+            className="w-full bg-chat-main border border-chat-border rounded-xl px-4 py-2.5 text-[14px] text-chat-text focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-transparent transition-all placeholder:text-chat-muted"
           />
 
           {/* Footer Action Buttons */}
           <div className="flex items-center justify-end gap-3 mt-1">
             <DialogClose asChild>
-              <button className="px-5 py-2.5 bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-xl transition-all text-[14px] font-bold">
+              <button className="px-5 py-2.5 bg-chat-hover hover:bg-chat-hover/80 text-chat-text rounded-xl transition-all text-[14px] font-bold">
                 Hủy
               </button>
             </DialogClose>
