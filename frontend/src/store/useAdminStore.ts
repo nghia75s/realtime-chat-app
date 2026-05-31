@@ -20,9 +20,12 @@ export interface AdminUser {
 }
 
 export interface AdminStats {
-  totalUsers: number;
-  activeUsers: number;
-  lockedUsers: number;
+  total: number;
+  active: number;
+  locked: number;
+  admins: number;
+  managers: number;
+  employees: number;
 }
 
 export interface PaginationState {

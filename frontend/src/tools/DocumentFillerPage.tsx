@@ -144,30 +144,30 @@ export default function DocumentFillerPage() {
 
   return (
     <>
-      <div className="flex h-screen bg-[#1e1f22] overflow-hidden text-white font-sans">
+      <div className="flex h-screen bg-chat-main overflow-hidden text-chat-text font-sans">
         <PrimarySidebar activeTab="tools" />
 
         {/* ─── Left: Form ─── */}
-        <div className="w-[40%] flex flex-col border-r border-[#2b2d31] bg-[#1e1f22] z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
+        <div className="w-[40%] flex flex-col border-r border-chat-border bg-chat-sidebar z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
           {/* Header */}
-          <div className="flex items-center gap-3 px-6 py-5 border-b border-[#2b2d31]">
+          <div className="flex items-center gap-3 px-6 py-5 border-b border-chat-border">
             <div className="w-10 h-10 bg-[#0052cc]/20 text-[#0052cc] rounded-xl flex items-center justify-center">
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-[18px] font-bold text-white tracking-tight">Điền đơn tự động</h1>
-              <p className="text-[13px] text-[#a1a1a1]">Tạo văn bản nhanh từ Form mẫu</p>
+              <h1 className="text-[18px] font-bold text-chat-text tracking-tight">Điền đơn tự động</h1>
+              <p className="text-[13px] text-chat-muted">Tạo văn bản nhanh từ Form mẫu</p>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 flex flex-col gap-5">
             {/* Chọn mẫu đơn */}
             <div className="flex flex-col gap-2">
-              <label className="text-[14px] font-medium text-[#e1e1e1]">Chọn mẫu đơn</label>
+              <label className="text-[14px] font-medium text-chat-text/90">Chọn mẫu đơn</label>
               <select
                 value={selectedTemplateId}
                 onChange={(e) => handleTemplateChange(e.target.value)}
-                className="w-full bg-[#131416] border border-[#2b2d31] rounded-lg px-4 py-3 text-[14px] text-white outline-none focus:border-[#0052cc] transition-colors appearance-none cursor-pointer"
+                className="w-full bg-chat-main border border-chat-border rounded-lg px-4 py-3 text-[14px] text-chat-text outline-none focus:border-[#0052cc] transition-colors appearance-none cursor-pointer"
               >
                 {Templates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
@@ -177,7 +177,7 @@ export default function DocumentFillerPage() {
 
             {/* ─── Gửi cho ai — 2 Tab ─── */}
             <div className="flex flex-col gap-2">
-              <label className="text-[14px] font-medium text-[#e1e1e1]">
+              <label className="text-[14px] font-medium text-chat-text/90">
                 Gửi cho ai <span className="text-red-500">*</span>
               </label>
 
@@ -185,7 +185,7 @@ export default function DocumentFillerPage() {
               {/* Người đã chọn + nút mở */}
               <div
                 onClick={() => setIsSelectingReceiver(true)}
-                className="w-full min-h-[46px] bg-[#131416] border border-[#2b2d31] hover:border-[#0052cc] rounded-lg p-2 cursor-pointer flex flex-wrap gap-2 items-center transition-colors"
+                className="w-full min-h-[46px] bg-chat-main border border-chat-border hover:border-[#0052cc] rounded-lg p-2 cursor-pointer flex flex-wrap gap-2 items-center transition-colors"
               >
                 {receivers.map((id) => {
                   const c = contactList.find((x: any) => x._id === id) as any
@@ -193,45 +193,45 @@ export default function DocumentFillerPage() {
                   return (
                     <div
                       key={id}
-                      className="flex items-center gap-1.5 bg-[#1e1f22] border border-[#2b2d31] rounded-full px-2 py-1"
+                      className="flex items-center gap-1.5 bg-chat-sidebar border border-chat-border rounded-full px-2 py-1"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <img src={c.profilePicture || "/avatar.png"} className="w-5 h-5 rounded-full" />
-                      <span className="text-[12px] text-[#e1e1e1]">{c.fullname}</span>
+                      <span className="text-[12px] text-chat-text/90">{c.fullname}</span>
                       <X
-                        className="w-3 h-3 text-[#a1a1a1] hover:text-white cursor-pointer ml-1"
+                        className="w-3 h-3 text-chat-muted hover:text-chat-text cursor-pointer ml-1"
                         onClick={() => toggleReceiver(id)}
                       />
                     </div>
                   )
                 })}
                 {receivers.length === 0 && (
-                  <span className="text-[13px] text-[#a1a1a1] px-2">Chọn người nhận...</span>
+                  <span className="text-[13px] text-chat-muted px-2">Chọn người nhận...</span>
                 )}
-                <div className="text-[13px] text-[#a1a1a1] flex items-center gap-2 px-2 hover:text-white transition-colors ml-auto">
+                <div className="text-[13px] text-chat-muted flex items-center gap-2 px-2 hover:text-chat-text transition-colors ml-auto">
                   <UserPlus className="w-4 h-4" /> Thêm
                 </div>
               </div>
             </div>
 
-            <div className="h-px bg-[#2b2d31] w-full" />
+            <div className="h-px bg-chat-border w-full" />
 
             {/* Dynamic form fields */}
             <div className="flex flex-col gap-5">
-              <h2 className="text-[15px] font-semibold text-white flex items-center gap-2">
+              <h2 className="text-[15px] font-semibold text-chat-text flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-[#0052cc]" />
                 Nội dung đơn
               </h2>
 
               {selectedTemplate.fields.map((field) => (
                 <div key={field.id} className="flex flex-col gap-1.5">
-                  <label className="text-[13px] font-medium text-[#a1a1a1] ml-1">{field.label}</label>
+                  <label className="text-[13px] font-medium text-chat-muted ml-1">{field.label}</label>
                   {field.type === "textarea" ? (
                     <textarea
                       value={formData[field.id] || ""}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
                       rows={3}
-                      className="w-full bg-[#131416] border border-[#2b2d31] rounded-lg px-4 py-3 text-[14px] text-white outline-none focus:border-[#0052cc] transition-colors resize-none custom-scrollbar"
+                      className="w-full bg-chat-main border border-chat-border rounded-lg px-4 py-3 text-[14px] text-chat-text outline-none focus:border-[#0052cc] transition-colors resize-none custom-scrollbar"
                       placeholder={`Nhập ${field.label.toLowerCase()}...`}
                     />
                   ) : (
@@ -239,7 +239,7 @@ export default function DocumentFillerPage() {
                       type={field.type}
                       value={formData[field.id] || ""}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
-                      className="w-full bg-[#131416] border border-[#2b2d31] rounded-lg px-4 py-3 text-[14px] text-white outline-none focus:border-[#0052cc] transition-colors [&::-webkit-calendar-picker-indicator]:filter-invert"
+                      className="w-full bg-chat-main border border-chat-border rounded-lg px-4 py-3 text-[14px] text-chat-text outline-none focus:border-[#0052cc] transition-colors [&::-webkit-calendar-picker-indicator]:filter-invert"
                       placeholder={`Nhập ${field.label.toLowerCase()}...`}
                     />
                   )}
@@ -249,7 +249,7 @@ export default function DocumentFillerPage() {
           </div>
 
           {/* Bottom actions */}
-          <div className="p-6 border-t border-[#2b2d31] bg-[#1e1f22] flex gap-3">
+          <div className="p-6 border-t border-chat-border bg-chat-sidebar flex gap-3">
             <button
               onClick={handleSendDocument}
               disabled={isSending || receivers.length === 0}

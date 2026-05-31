@@ -45,47 +45,47 @@ export function ChatListSidebar() {
   }, [getMyChatPartners, getMyGroups])
 
   return (
-    <div className="flex w-[320px] shrink-0 flex-col border-r border-[#2b2d31] bg-[#1e1f22] h-full z-10 text-[#e1e1e1]">
+    <div className="flex w-[320px] shrink-0 flex-col border-r border-chat-border bg-chat-sidebar h-full z-10 text-chat-text">
       {/* Search Header */}
-      <div className="flex flex-col px-4 pt-4 pb-2 border-b border-[#1e1f22]">
+      <div className="flex flex-col px-4 pt-4 pb-2 border-b border-chat-border">
         <div className="flex items-center gap-2 mb-3">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 h-[16px] w-[16px] -translate-y-1/2 text-[#a1a1a1]" />
+            <Search className="absolute left-2.5 top-1/2 h-[16px] w-[16px] -translate-y-1/2 text-chat-muted" />
             <input
               placeholder="Tìm kiếm"
-              className="w-full rounded-md bg-[#131416] py-[6px] pl-[30px] pr-3 text-[14px] text-[#e1e1e1] outline-none placeholder:text-[#a1a1a1] focus:ring-1 focus:ring-[#0052cc] transition-all border border-[#2b2d31]"
+              className="w-full rounded-md bg-chat-main py-[6px] pl-[30px] pr-3 text-[14px] text-chat-text outline-none placeholder:text-chat-muted focus:ring-1 focus:ring-[#0052cc] transition-all border border-chat-border"
             />
           </div>
-          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Thêm bạn bè" onClick={() => navigate("/contacts") }>
+          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-chat-muted hover:bg-chat-hover transition-colors" title="Thêm bạn bè" onClick={() => navigate("/contacts") }>
             <UserPlus className="h-[18px] w-[18px]" />
           </button>
           <button 
             onClick={() => setIsCreateGroupOpen(true)}
-            className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors" title="Tạo nhóm"
+            className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-chat-muted hover:bg-chat-hover transition-colors" title="Tạo nhóm"
           >
             <GroupIcon className="h-[18px] w-[18px]" />
           </button>
         </div>
 
         {/* Filter & Tabs */}
-        <div className="flex items-center justify-between mt-1 border-b border-[#2b2d31]">
+        <div className="flex items-center justify-between mt-1 border-b border-chat-border">
           <div className="flex gap-4">
             <button
               onClick={() => setActiveTab("personal")}
-              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors relative ${activeTab === "personal" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
+              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors relative ${activeTab === "personal" ? "text-chat-text border-[#0052cc]" : "text-chat-muted border-transparent hover:text-chat-text"}`}
             >
               Cá nhân
               {unreadChats.length > 0 && <span className="absolute top-0 -right-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_4px_rgba(239,68,68,0.8)]"></span>}
             </button>
             <button
               onClick={() => setActiveTab("group")}
-              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors relative ${activeTab === "group" ? "text-white border-[#0052cc]" : "text-[#a1a1a1] border-transparent hover:text-white"}`}
+              className={`pb-2 text-[14px] font-medium border-b-2 transition-colors relative ${activeTab === "group" ? "text-chat-text border-[#0052cc]" : "text-chat-muted border-transparent hover:text-chat-text"}`}
             >
               Nhóm
               {unreadGroups.length > 0 && <span className="absolute top-0 -right-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_4px_rgba(239,68,68,0.8)]"></span>}
             </button>
           </div>
-          <div className="flex items-center gap-1 text-[#a1a1a1] cursor-pointer hover:text-white pb-2 transition-colors">
+          <div className="flex items-center gap-1 text-chat-muted cursor-pointer hover:text-chat-text pb-2 transition-colors">
             <span className="text-[13px]">Phân loại</span>
             <ChevronDown className="h-[14px] w-[14px]" />
           </div>
@@ -118,25 +118,25 @@ export function ChatListSidebar() {
                 return (
                   <div
                     key={chat._id}
-                    className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
+                    className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-chat-active" : "hover:bg-chat-hover"}`}
                     onClick={() => setSelectedUser(chat)}
                   >
                     <div className="relative flex shrink-0">
                       <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#1e1f22] transition-colors ${
+                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-chat-sidebar transition-colors ${
                         onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-[#4e4f52]"
                       }`}></div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start mb-0.5">
+                       <div className="flex justify-between items-start mb-0.5">
                         <div className="flex items-center flex-1 min-w-0 mr-2">
-                          <h4 className={`font-semibold text-[15px] truncate ${unreadChats.includes(chat._id) ? "text-white" : "text-[#e1e1e1]"}`}>{chat.fullname}</h4>
+                          <h4 className={`font-semibold text-[15px] truncate ${unreadChats.includes(chat._id) ? "text-chat-text" : "text-chat-text/90"}`}>{chat.fullname}</h4>
                           {isPinned && <Pin className="h-3 w-3 text-[#1877F2] fill-current ml-2 shrink-0" />}
                           {unreadChats.includes(chat._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
                         </div>
-                        {timeStr && <span className="text-[12px] text-[#a1a1a1] shrink-0 mt-0.5">{timeStr}</span>}
+                        {timeStr && <span className="text-[12px] text-chat-muted shrink-0 mt-0.5">{timeStr}</span>}
                       </div>
-                      <p className="text-[13px] text-[#a1a1a1] truncate">
+                      <p className="text-[13px] text-chat-muted truncate">
                         {renderLastMessagePreview(chat.lastMessage, false, authUser, chat.fullname)}
                       </p>
                     </div>
@@ -153,7 +153,7 @@ export function ChatListSidebar() {
             {isGroupsLoading ? (
               <UsersLoadingSkeleton />
             ) : groups.length === 0 ? (
-              <div className="px-4 py-6 text-[#717171] text-[13px] italic text-center">Bạn chưa tham gia nhóm nào</div>
+              <div className="px-4 py-6 text-chat-muted text-[13px] italic text-center">Bạn chưa tham gia nhóm nào</div>
             ) : (
               [...groups].sort((a, b) => {
                 const aPinned = authUser?.pinnedChats?.includes(a._id);
@@ -170,28 +170,28 @@ export function ChatListSidebar() {
                 return (
                   <div
                     key={group._id}
-                    className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-[#1a437a]" : "hover:bg-[#2b2d31]"}`}
+                    className={`px-4 py-3 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-chat-active" : "hover:bg-chat-hover"}`}
                     onClick={() => setSelectedUser(group)}
                   >
                     <div className="relative flex shrink-0">
-                      <div className="w-[44px] h-[44px] rounded-full bg-[#2b2d31] flex items-center justify-center border border-[#4e4f52] overflow-hidden">
+                      <div className="w-[44px] h-[44px] rounded-full bg-chat-hover flex items-center justify-center border border-chat-border overflow-hidden">
                         {group.groupPicture ? (
                           <img src={group.groupPicture} alt={group.name} className="w-full h-full object-cover" />
                         ) : (
-                          <GroupIcon className="w-5 h-5 text-[#a1a1a1]" />
+                          <GroupIcon className="w-5 h-5 text-chat-muted" />
                         )}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-0.5">
                         <div className="flex items-center flex-1 min-w-0 mr-2">
-                          <h4 className={`font-semibold text-[15px] truncate ${unreadGroups.includes(group._id) ? "text-white" : "text-[#e1e1e1]"}`}>{group.name}</h4>
+                          <h4 className={`font-semibold text-[15px] truncate ${unreadGroups.includes(group._id) ? "text-chat-text" : "text-chat-text/90"}`}>{group.name}</h4>
                           {isPinned && <Pin className="h-3 w-3 text-[#1877F2] fill-current ml-2 shrink-0" />}
                           {unreadGroups.includes(group._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
                         </div>
-                        {timeStr && <span className="text-[12px] text-[#a1a1a1] shrink-0 mt-0.5">{timeStr}</span>}
+                        {timeStr && <span className="text-[12px] text-chat-muted shrink-0 mt-0.5">{timeStr}</span>}
                       </div>
-                      <p className="text-[13px] text-[#a1a1a1] truncate">
+                      <p className="text-[13px] text-chat-muted truncate">
                         {renderLastMessagePreview(group.lastMessage, true, authUser, group.name) || `${group.memberCount || 0} thành viên`}
                       </p>
                     </div>

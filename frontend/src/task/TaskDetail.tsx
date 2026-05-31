@@ -84,20 +84,20 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
   const isOverdue = new Date() > new Date(task.deadline);
 
   return (
-    <div className="flex-1 flex flex-col bg-[#131416] h-full overflow-hidden text-[#e1e1e1]">
+    <div className="flex-1 flex flex-col bg-chat-main h-full overflow-hidden text-chat-text">
 
       {/* Header */}
-      <div className="flex items-center px-4 py-3 border-b border-[#2b2d31] bg-[#1e1f22] shrink-0">
-        <button onClick={onBack} className="p-1.5 mr-2 text-[#a1a1a1] hover:text-white hover:bg-[#2b2d31] rounded-md transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-        <h2 className="text-[16px] font-semibold text-white">Chi tiết công việc</h2>
+      <div className="flex items-center px-4 py-3 border-b border-chat-border bg-chat-header shrink-0">
+        <button onClick={onBack} className="p-1.5 mr-2 text-chat-muted hover:text-chat-text hover:bg-chat-hover rounded-md transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+        <h2 className="text-[16px] font-semibold text-chat-text">Chi tiết công việc</h2>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
 
         {/* Left Column: General Info */}
-        <div className="w-1/3 min-w-[300px] border-r border-[#2b2d31] p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+        <div className="w-1/3 min-w-[300px] border-r border-chat-border p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
           <div className="flex justify-between items-start">
-            <h1 className="text-[20px] font-bold text-white leading-tight">{task.title}</h1>
+            <h1 className="text-[20px] font-bold text-chat-text leading-tight">{task.title}</h1>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -106,7 +106,7 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
               onClick={() => setShowProgressPanel(p => !p)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-semibold border transition-all duration-200 ${showProgressPanel
                 ? 'bg-[#0052cc] border-[#0052cc] text-white shadow-sm shadow-[#0052cc]/30'
-                : 'bg-[#1e1f22] border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#0052cc]/50'
+                : 'bg-chat-sidebar border-chat-border text-chat-muted hover:text-chat-text hover:border-[#0052cc]/50'
                 }`}
             >
               <BarChart2 className="w-4 h-4" />
@@ -114,41 +114,41 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
             </button>
           </div>
 
-          <div className="flex flex-col gap-4 bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31]">
-            <div className="flex items-center justify-between border-b border-[#2b2d31] pb-3">
-              <span className="text-[#a1a1a1] text-[13px]">Giao cho</span>
+          <div className="flex flex-col gap-4 bg-chat-sidebar p-4 rounded-lg border border-chat-border">
+            <div className="flex items-center justify-between border-b border-chat-border pb-3">
+              <span className="text-chat-muted text-[13px]">Giao cho</span>
               <div
                 onClick={() => setShowAssigneesList(true)}
-                className="flex items-center gap-2 max-w-[200px] cursor-pointer hover:bg-[#2b2d31]/50 p-1.5 -mr-1.5 rounded-md transition-colors group"
+                className="flex items-center gap-2 max-w-[200px] cursor-pointer hover:bg-chat-hover p-1.5 -mr-1.5 rounded-md transition-colors group"
                 title="Xem danh sách"
               >
                 <div className="flex -space-x-2 shrink-0">
                   {task.assignees.slice(0, 4).map((assignee, i) => (
-                    <img key={i} src={assignee.user?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full border-2 border-[#1e1f22] object-cover relative" style={{ zIndex: 10 - i }} />
+                    <img key={i} src={assignee.user?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full border-2 border-chat-sidebar object-cover relative" style={{ zIndex: 10 - i }} />
                   ))}
                   {task.assignees.length > 4 && (
-                    <div className="w-6 h-6 rounded-full border-2 border-[#1e1f22] bg-[#2b2d31] text-[#e1e1e1] text-[10px] font-medium flex items-center justify-center relative" style={{ zIndex: 5 }}>
+                    <div className="w-6 h-6 rounded-full border-2 border-chat-sidebar bg-chat-hover text-chat-text/90 text-[10px] font-medium flex items-center justify-center relative" style={{ zIndex: 5 }}>
                       +{task.assignees.length - 4}
                     </div>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between border-b border-[#2b2d31] pb-3">
-              <span className="text-[#a1a1a1] text-[13px]">Người tạo</span>
+            <div className="flex items-center justify-between border-b border-chat-border pb-3">
+              <span className="text-chat-muted text-[13px]">Người tạo</span>
               <div className="flex items-center gap-2">
                 <img src={task.creator?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover" />
-                <span className="text-[14px] text-white">{task.creator?.fullname || "Unknown"}</span>
+                <span className="text-[14px] text-chat-text">{task.creator?.fullname || "Unknown"}</span>
               </div>
             </div>
-            <div className="flex items-center justify-between border-b border-[#2b2d31] pb-3">
-              <span className="text-[#a1a1a1] text-[13px]">Ngày tạo</span>
-              <span className="text-[14px] text-white font-medium">
+            <div className="flex items-center justify-between border-b border-chat-border pb-3">
+              <span className="text-chat-muted text-[13px]">Ngày tạo</span>
+              <span className="text-[14px] text-chat-text font-medium">
                 {new Date(task.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[#a1a1a1] text-[13px]">Deadline</span>
+              <span className="text-chat-muted text-[13px]">Deadline</span>
               <span className={`text-[14px] font-medium px-2 py-1 rounded flex items-center gap-1.5 ${isOverdue && task.status !== 'done'
                 ? 'text-red-400 bg-red-500/10 border border-red-500/20'
                 : 'text-[#ebaa16] bg-[#ebaa16]/10'
@@ -168,7 +168,7 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
           {/* MÔ TẢ YÊU CẦU */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-[12px] font-bold text-[#a1a1a1] tracking-wider uppercase">Mô tả yêu cầu</span>
+              <span className="text-[12px] font-bold text-chat-muted tracking-wider uppercase">Mô tả yêu cầu</span>
               {authUser?._id === task.creator?._id && !isEditing && (
                 <button onClick={() => setIsEditing(true)} className="text-[12px] text-[#0052cc] hover:underline flex items-center gap-1">
                   <Edit2 className="w-3 h-3" /> Chỉnh sửa
@@ -177,29 +177,29 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
             </div>
 
             {isEditing ? (
-              <div className="bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31] flex flex-col gap-3">
+              <div className="bg-chat-sidebar p-4 rounded-lg border border-chat-border flex flex-col gap-3">
                 <textarea
                   value={editDesc}
                   onChange={e => setEditDesc(e.target.value)}
-                  className="w-full bg-[#131416] border border-[#2b2d31] rounded-md px-3 py-2 text-[14px] text-white outline-none focus:border-[#0052cc] resize-none"
+                  className="w-full bg-chat-main border border-chat-border rounded-md px-3 py-2 text-[14px] text-chat-text outline-none focus:border-[#0052cc] resize-none"
                   rows={4}
                 />
                 <div className="flex items-center gap-2">
-                  <label className="text-[13px] text-[#e1e1e1] whitespace-nowrap">Deadline mới:</label>
+                  <label className="text-[13px] text-chat-text/90 whitespace-nowrap">Deadline mới:</label>
                   <input
                     type="datetime-local"
                     value={editDeadline}
                     onChange={e => setEditDeadline(e.target.value)}
-                    className="flex-1 bg-[#131416] border border-[#2b2d31] rounded-md px-3 py-2 text-[14px] text-white outline-none focus:border-[#0052cc]"
+                    className="flex-1 bg-chat-main border border-chat-border rounded-md px-3 py-2 text-[14px] text-chat-text outline-none focus:border-[#0052cc]"
                   />
                 </div>
                 <div className="flex justify-end gap-2 mt-2">
-                  <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-[13px] text-[#a1a1a1] hover:text-white transition-colors">Hủy</button>
+                  <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-[13px] text-chat-muted hover:text-chat-text transition-colors">Hủy</button>
                   <button onClick={handleEditSubmit} className="px-4 py-1.5 bg-[#0052cc] hover:bg-[#0052cc]/90 text-white text-[13px] font-medium rounded transition-colors">Lưu thay đổi</button>
                 </div>
               </div>
             ) : (
-              <div className="bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31] text-[14px] text-[#e1e1e1] leading-relaxed whitespace-pre-wrap">
+              <div className="bg-chat-sidebar p-4 rounded-lg border border-chat-border text-[14px] text-chat-text/90 leading-relaxed whitespace-pre-wrap">
                 {task.description}
               </div>
             )}
@@ -207,7 +207,7 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
         </div>
 
         {/* Right Column: Timeline & Actions */}
-        <div className="flex-1 flex flex-col p-6 overflow-hidden bg-[#0a0a0c]">
+        <div className="flex-1 flex flex-col p-6 overflow-hidden bg-chat-main border-l border-chat-border">
           <TaskTimeline task={task} role={role} authUser={authUser} />
 
           {/* Employee Action (Submit File/Report) stays at the bottom to submit new files */}
@@ -221,14 +221,14 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
                 </div>
               </div>
             ) : (
-              <div className="mt-4 shrink-0 bg-[#1e1f22] border border-[#2b2d31] rounded-lg p-4">
+              <div className="mt-4 shrink-0 bg-chat-sidebar border border-chat-border rounded-lg p-4">
                 {reportFile && (
-                  <div className="flex items-center justify-between bg-[#131416] border border-[#2b2d31] px-3 py-2 rounded-md mb-3">
+                  <div className="flex items-center justify-between bg-chat-main border border-chat-border px-3 py-2 rounded-md mb-3">
                     <div className="flex items-center gap-2 truncate">
                       <Paperclip className="w-4 h-4 text-[#0052cc]" />
-                      <span className="text-[13px] text-[#e1e1e1] truncate">{reportFile.name}</span>
+                      <span className="text-[13px] text-chat-text truncate">{reportFile.name}</span>
                     </div>
-                    <button onClick={() => setReportFile(null)} className="p-1 hover:bg-[#2b2d31] rounded text-[#a1a1a1] hover:text-red-500"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setReportFile(null)} className="p-1 hover:bg-chat-hover rounded text-chat-muted hover:text-red-500"><X className="w-4 h-4" /></button>
                   </div>
                 )}
                 <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-3">
@@ -236,12 +236,12 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
                     value={reportText}
                     onChange={e => setReportText(e.target.value)}
                     placeholder="Nhập ghi chú và tải file báo cáo..."
-                    className="w-full bg-transparent text-[14px] text-white outline-none resize-none placeholder:text-[#a1a1a1] custom-scrollbar"
+                    className="w-full bg-transparent text-[14px] text-chat-text outline-none resize-none placeholder:text-chat-muted custom-scrollbar"
                     rows={2}
                   />
-                  <div className="flex items-center justify-between border-t border-[#2b2d31] pt-3">
+                  <div className="flex items-center justify-between border-t border-chat-border pt-3">
                     <input type="file" ref={fileInputRef} onChange={(e) => setReportFile(e.target.files?.[0] || null)} className="hidden" />
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-[13px] text-[#a1a1a1] hover:text-white px-2 py-1 rounded hover:bg-[#2b2d31] transition-colors"><Paperclip className="w-4 h-4" /> Đính kèm file</button>
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-[13px] text-chat-muted hover:text-chat-text px-2 py-1 rounded hover:bg-chat-hover transition-colors"><Paperclip className="w-4 h-4" /> Đính kèm file</button>
                     <button type="submit" disabled={!reportText.trim() && !reportFile} className="flex items-center gap-2 text-[13px] font-medium bg-[#0052cc] hover:bg-[#0052cc]/90 text-white px-4 py-2 rounded shadow-sm disabled:opacity-50 transition-colors"><Send className="w-4 h-4" /> Nộp bản thảo</button>
                   </div>
                 </form>

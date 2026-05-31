@@ -84,16 +84,15 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
   const allSelected = [...assigneeItems, ...groupItems]
 
   const hasSelection = assignees.length > 0 || selectedGroups.length > 0
-
   return (
     <>
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="w-[540px] max-h-[90vh] bg-[#1e1f22] rounded-xl border border-[#2b2d31] shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+        <div className="w-[540px] max-h-[90vh] bg-chat-sidebar rounded-xl border border-chat-border shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
 
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#2b2d31] shrink-0">
-            <h2 className="text-[18px] font-semibold text-white">Giao việc mới</h2>
-            <button onClick={onClose} className="text-[#a1a1a1] hover:text-white p-1 rounded-md hover:bg-[#2b2d31] transition-colors"><X className="w-5 h-5" /></button>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-chat-border shrink-0">
+            <h2 className="text-[18px] font-semibold text-chat-text">Giao việc mới</h2>
+            <button onClick={onClose} className="text-chat-muted hover:text-chat-text p-1 rounded-md hover:bg-chat-hover transition-colors"><X className="w-5 h-5" /></button>
           </div>
 
           {/* Form Body */}
@@ -101,10 +100,10 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
 
             {/* Title */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-[#e1e1e1]">Tên công việc <span className="text-red-500">*</span></label>
+              <label className="text-[13px] font-medium text-chat-text/90">Tên công việc <span className="text-red-500">*</span></label>
               <input
                 required value={title} onChange={e => setTitle(e.target.value)}
-                className="w-full bg-[#131416] border border-[#2b2d31] rounded-md px-3 py-2.5 text-[14px] text-white outline-none focus:border-[#0052cc] transition-colors"
+                className="w-full bg-chat-main border border-chat-border rounded-md px-3 py-2.5 text-[14px] text-chat-text outline-none focus:border-[#0052cc] transition-colors"
                 placeholder="Ví dụ: Lên kế hoạch Marketing"
               />
             </div>
@@ -112,15 +111,15 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
             {/* Người giao + Deadline */}
             <div className="flex gap-4">
               <div className="flex flex-col gap-1.5 flex-1">
-                <label className="text-[13px] font-medium text-[#e1e1e1]">Người giao</label>
-                <input disabled value={authUser?.fullname || "Quản lý"} className="w-full bg-[#1e1f22] border border-[#2b2d31] rounded-md px-3 py-2.5 text-[14px] text-[#a1a1a1] cursor-not-allowed" />
+                <label className="text-[13px] font-medium text-chat-text/90">Người giao</label>
+                <input disabled value={authUser?.fullname || "Quản lý"} className="w-full bg-chat-sidebar border border-chat-border rounded-md px-3 py-2.5 text-[14px] text-chat-muted cursor-not-allowed" />
               </div>
               <div className="flex flex-col gap-1.5 flex-1 relative">
-                <label className="text-[13px] font-medium text-[#e1e1e1]">Deadline <span className="text-red-500">*</span></label>
+                <label className="text-[13px] font-medium text-chat-text/90">Deadline <span className="text-red-500">*</span></label>
                 <input
                   required type="datetime-local" value={deadline}
                   onChange={e => handleDeadlineChange(e.target.value)}
-                  className={`w-full bg-[#131416] border ${deadlineError ? 'border-red-500' : 'border-[#2b2d31] focus:border-[#0052cc]'} rounded-md px-3 py-2.5 text-[14px] text-white outline-none transition-colors`}
+                  className={`w-full bg-chat-main border ${deadlineError ? 'border-red-500' : 'border-chat-border focus:border-[#0052cc]'} rounded-md px-3 py-2.5 text-[14px] text-chat-text outline-none transition-colors [&::-webkit-calendar-picker-indicator]:filter-invert`}
                 />
                 {deadlineError && <span className="text-[11px] text-red-500 absolute -bottom-5">{deadlineError}</span>}
               </div>
@@ -128,24 +127,24 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
 
             {/* Người nhận việc */}
             <div className="flex flex-col gap-1.5" style={{ marginTop: deadlineError ? "12px" : undefined }}>
-              <label className="text-[13px] font-medium text-[#e1e1e1]">Giao cho <span className="text-red-500">*</span></label>
+              <label className="text-[13px] font-medium text-chat-text/90">Giao cho <span className="text-red-500">*</span></label>
               <div
                 onClick={() => setIsSelectingAssignee(true)}
-                className="w-full min-h-[42px] bg-[#131416] border border-[#2b2d31] hover:border-[#0052cc] rounded-md p-2 cursor-pointer flex flex-wrap gap-2 items-center transition-colors"
+                className="w-full min-h-[42px] bg-chat-main border border-chat-border hover:border-[#0052cc] rounded-md p-2 cursor-pointer flex flex-wrap gap-2 items-center transition-colors"
               >
                 {allSelected.map(item => (
-                  <div key={item.id} className="flex items-center gap-1.5 bg-[#1e1f22] border border-[#2b2d31] rounded-full px-2 py-1" onClick={e => e.stopPropagation()}>
+                  <div key={item.id} className="flex items-center gap-1.5 bg-chat-sidebar border border-chat-border rounded-full px-2 py-1" onClick={e => e.stopPropagation()}>
                     {item.type === "group" ? (
                       <Users className="w-4 h-4 text-[#0052cc]" />
                     ) : (
                       <img src={item.avatar || "/avatar.png"} className="w-5 h-5 rounded-full object-cover" />
                     )}
-                    <span className="text-[12px] text-[#e1e1e1]">{item.label}</span>
-                    <X className="w-3 h-3 text-[#a1a1a1] hover:text-white cursor-pointer ml-1"
+                    <span className="text-[12px] text-chat-text/90">{item.label}</span>
+                    <X className="w-3 h-3 text-chat-muted hover:text-chat-text cursor-pointer ml-1"
                       onClick={() => item.type === "group" ? toggleGroup(item.id) : toggleAssignee(item.id)} />
                   </div>
                 ))}
-                <div className="text-[13px] text-[#a1a1a1] flex items-center gap-2 px-2 hover:text-white transition-colors">
+                <div className="text-[13px] text-chat-muted flex items-center gap-2 px-2 hover:text-chat-text transition-colors">
                   <Users className="w-4 h-4" /> Thêm người / nhóm
                 </div>
               </div>
@@ -154,8 +153,8 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
             {/* Per-assignee Notes */}
             {assignees.length > 0 && (
               <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-medium text-[#e1e1e1] flex items-center gap-1.5">
-                  <StickyNote className="w-4 h-4 text-[#0052cc]" /> Ghi chú riêng cho từng người <span className="text-[#a1a1a1] font-normal">(tùy chọn)</span>
+                <label className="text-[13px] font-medium text-chat-text/90 flex items-center gap-1.5">
+                  <StickyNote className="w-4 h-4 text-[#0052cc]" /> Ghi chú riêng cho từng người <span className="text-chat-muted font-normal">(tùy chọn)</span>
                 </label>
                 <div className="flex flex-col gap-2">
                   {assignees.map(id => {
@@ -163,14 +162,14 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
                     if (!contact) return null
                     const isOpen = expandedNotes.has(id)
                     return (
-                      <div key={id} className="bg-[#131416] border border-[#2b2d31] rounded-lg overflow-hidden">
-                        <button type="button" onClick={() => toggleNoteExpanded(id)} className="w-full flex items-center justify-between px-3 py-2 hover:bg-[#1e1f22] transition-colors">
+                      <div key={id} className="bg-chat-main border border-chat-border rounded-lg overflow-hidden">
+                        <button type="button" onClick={() => toggleNoteExpanded(id)} className="w-full flex items-center justify-between px-3 py-2 hover:bg-chat-sidebar transition-colors">
                           <div className="flex items-center gap-2">
                             <img src={contact.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover" />
-                            <span className="text-[13px] text-[#e1e1e1]">{contact.fullname}</span>
+                            <span className="text-[13px] text-chat-text">{contact.fullname}</span>
                             {assigneeNotes[id] && <span className="text-[11px] text-[#0052cc] bg-[#0052cc]/10 px-1.5 py-0.5 rounded">Có ghi chú</span>}
                           </div>
-                          {isOpen ? <ChevronUp className="w-4 h-4 text-[#a1a1a1]" /> : <ChevronDown className="w-4 h-4 text-[#a1a1a1]" />}
+                          {isOpen ? <ChevronUp className="w-4 h-4 text-chat-muted" /> : <ChevronDown className="w-4 h-4 text-chat-muted" />}
                         </button>
                         {isOpen && (
                           <div className="px-3 pb-3">
@@ -179,7 +178,7 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
                               onChange={e => setAssigneeNotes(prev => ({ ...prev, [id]: e.target.value }))}
                               placeholder={`Ghi chú riêng cho ${contact.fullname}...`}
                               rows={2}
-                              className="w-full bg-[#1e1f22] border border-[#2b2d31] rounded-md px-3 py-2 text-[13px] text-white outline-none focus:border-[#0052cc] resize-none transition-colors placeholder:text-[#a1a1a1]"
+                              className="w-full bg-chat-sidebar border border-chat-border rounded-md px-3 py-2 text-[13px] text-chat-text outline-none focus:border-[#0052cc] resize-none transition-colors placeholder:text-chat-muted"
                             />
                           </div>
                         )}
@@ -192,18 +191,18 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
 
             {/* Mô tả */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[13px] font-medium text-[#e1e1e1]">Mô tả công việc <span className="text-red-500">*</span></label>
+              <label className="text-[13px] font-medium text-chat-text/90">Mô tả công việc <span className="text-red-500">*</span></label>
               <textarea
                 required value={description} onChange={e => setDescription(e.target.value)}
                 rows={3}
-                className="w-full bg-[#131416] border border-[#2b2d31] rounded-md px-3 py-2.5 text-[14px] text-white outline-none focus:border-[#0052cc] transition-colors resize-none custom-scrollbar"
+                className="w-full bg-chat-main border border-chat-border rounded-md px-3 py-2.5 text-[14px] text-chat-text outline-none focus:border-[#0052cc] transition-colors resize-none custom-scrollbar"
                 placeholder="Nhập chi tiết yêu cầu..."
               />
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 border-t border-[#2b2d31] pt-5">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-[14px] font-medium text-[#a1a1a1] hover:text-white hover:bg-[#2b2d31] rounded-md transition-colors">Hủy</button>
+            <div className="flex items-center justify-end gap-3 border-t border-chat-border pt-5">
+              <button type="button" onClick={onClose} className="px-4 py-2 text-[14px] font-medium text-chat-muted hover:text-chat-text hover:bg-chat-hover rounded-md transition-colors">Hủy</button>
               <button
                 type="submit"
                 disabled={!title || !description || !deadline || !hasSelection || isCreating || !!deadlineError}
