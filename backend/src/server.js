@@ -21,7 +21,7 @@ const PORT = ENV.PORT || 3000;
 // Khởi chạy cron jobs
 initCronJobs();
 
-app.use(express.json({ limit: "5mb" })); // req.body
+app.use(express.json({ limit: "25mb" })); // req.body - increased for file attachment uploads
 app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
 app.use(cookieParser());
 

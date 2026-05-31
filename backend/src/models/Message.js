@@ -20,6 +20,14 @@ const messageSchema = new mongoose.Schema(
     image: {
       type: String,
     },
+    file: {
+      type: new mongoose.Schema({
+        name: String,
+        type: String,
+        url: String,
+        size: Number,
+      }, { _id: false }),
+    },
     read: {
       type: Boolean,
       default: false,
@@ -43,7 +51,7 @@ const messageSchema = new mongoose.Schema(
     // --- Document Message Fields ---
     messageType: {
       type: String,
-      enum: ["text", "document", "task_assignment", "system"],
+      enum: ["text", "file", "document", "task_assignment", "system"],
       default: "text",
     },
     documentPayload: {

@@ -65,15 +65,15 @@ export default function UserDetailPanel({ user, onClose, onUserUpdated }: UserDe
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-[360px] bg-[#1e1f22] border-l border-[#2b2d31] z-50 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+      <div className="fixed right-0 top-0 h-full w-[360px] bg-chat-sidebar border-l border-chat-border z-50 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2b2d31] shrink-0">
-          <h3 className="text-[15px] font-semibold text-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-chat-border shrink-0">
+          <h3 className="text-[15px] font-semibold text-chat-text">
             {isEditing ? "Chỉnh sửa thông tin" : "Chi tiết nhân sự"}
           </h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-[#2b2d31] text-[#a1a1a1] hover:text-white transition-colors"
+            className="p-1.5 rounded-full hover:bg-chat-hover text-chat-muted hover:text-chat-text transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -91,16 +91,16 @@ export default function UserDetailPanel({ user, onClose, onUserUpdated }: UserDe
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               {/* Avatar & Name Section */}
-              <div className="flex flex-col items-center pt-8 pb-6 px-5 border-b border-[#2b2d31]">
+              <div className="flex flex-col items-center pt-8 pb-6 px-5 border-b border-chat-border">
                 <div className="relative mb-4">
                   <img
                     src={user.profilePicture || "/avatar.png"}
                     alt={user.fullname}
-                    className="w-20 h-20 rounded-full object-cover border-2 border-[#2b2d31]"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-chat-border"
                   />
-                  <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#1e1f22] ${user.isActive ? "bg-emerald-500" : "bg-[#4e4f52]"}`} />
+                  <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-chat-sidebar ${user.isActive ? "bg-emerald-500" : "bg-[#4e4f52]"}`} />
                 </div>
-                <h2 className="text-[18px] font-bold text-white mb-1">{user.fullname}</h2>
+                <h2 className="text-[18px] font-bold text-chat-text mb-1">{user.fullname}</h2>
                 <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${ROLE_COLORS[user.role]}`}>
                   {ROLE_LABELS[user.role]}
                 </span>
@@ -111,7 +111,7 @@ export default function UserDetailPanel({ user, onClose, onUserUpdated }: UserDe
             </div>
 
             {/* Footer Actions (Only visible in Read mode) */}
-            <div className="p-5 border-t border-[#2b2d31] shrink-0 flex flex-col gap-2">
+            <div className="p-5 border-t border-chat-border shrink-0 flex flex-col gap-2">
               <button
                 onClick={() => setIsEditing(true)}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 shadow"
@@ -121,15 +121,15 @@ export default function UserDetailPanel({ user, onClose, onUserUpdated }: UserDe
 
               {/* Block / Unblock Section */}
               {showReasonInput && user.isActive ? (
-                <div className="mt-2 p-3 bg-[#131416] border border-[#2b2d31] rounded-lg animate-in fade-in slide-in-from-bottom-2">
-                  <label className="text-[11px] text-[#a1a1a1] mb-1.5 block">Lý do khoá tài khoản *</label>
+                <div className="mt-2 p-3 bg-chat-main border border-chat-border rounded-lg animate-in fade-in slide-in-from-bottom-2">
+                  <label className="text-[11px] text-chat-muted mb-1.5 block">Lý do khoá tài khoản *</label>
                   <input
                     type="text"
                     autoFocus
                     value={lockReason}
                     onChange={(e) => setLockReason(e.target.value)}
                     placeholder="Ví dụ: Vi phạm quy tắc..."
-                    className="w-full bg-[#1e1f22] border border-[#2b2d31] rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#4e4f52] focus:outline-none focus:border-red-500 transition-colors"
+                    className="w-full bg-chat-sidebar border border-chat-border rounded-lg px-3 py-2 text-xs text-chat-text placeholder:text-chat-muted focus:outline-none focus:border-red-500 transition-colors"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleToggleStatus();
                       if (e.key === "Escape") setShowReasonInput(false);
@@ -138,7 +138,7 @@ export default function UserDetailPanel({ user, onClose, onUserUpdated }: UserDe
                   <div className="flex gap-2 mt-3">
                     <button
                       onClick={() => setShowReasonInput(false)}
-                      className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-[#2b2d31] text-[#a1a1a1] hover:text-white transition-colors"
+                      className="flex-1 py-1.5 rounded-lg text-xs font-semibold bg-chat-hover text-chat-muted hover:text-chat-text transition-colors"
                     >
                       Huỷ
                     </button>

@@ -39,7 +39,7 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#131416] text-[#e1e1e1] font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-chat-main text-chat-text font-sans">
       <PrimarySidebar activeTab="todo" />
 
       <div className="flex-1 flex flex-col overflow-hidden relative">

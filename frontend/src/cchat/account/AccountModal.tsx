@@ -20,7 +20,7 @@ export function AccountModal({ isOpen, onClose }: AccountModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent
-        className="max-w-[400px] p-0 overflow-hidden bg-white rounded-xl flex flex-col gap-0 shadow-xl border-0 !outline-none"
+        className="max-w-[400px] p-0 overflow-hidden bg-chat-sidebar text-chat-text rounded-xl flex flex-col gap-0 shadow-xl border border-chat-border !outline-none"
         aria-describedby={undefined}
         showCloseButton={false}
       >

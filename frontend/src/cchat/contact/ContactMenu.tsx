@@ -15,21 +15,21 @@ export function ContactMenu({ activeMenu, onSelectMenu }: ContactMenuProps) {
   ] as const;
 
   return (
-    <div className="flex w-[340px] shrink-0 flex-col border-r border-[#2b2d31] bg-[#1e1f22] h-full z-10">
+    <div className="flex w-[340px] shrink-0 flex-col border-r border-chat-border bg-chat-sidebar h-full z-10 text-chat-text">
       {/* Search Header */}
       <div className="flex flex-col px-4 pt-5 pb-3">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#a1a1a1]" />
+            <Search className="absolute left-2.5 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-chat-muted" />
             <input
               placeholder="Tìm kiếm"
-              className="w-full rounded-md bg-[#131416] py-[6px] pl-[30px] pr-3 text-[14px] text-white outline-none placeholder:text-[#a1a1a1] transition-all border border-[#2b2d31] focus:border-[#0052cc]"
+              className="w-full rounded-md bg-chat-main py-[6px] pl-[30px] pr-3 text-[14px] text-chat-text outline-none placeholder:text-chat-muted transition-all border border-chat-border focus:border-[#0052cc]"
             />
           </div>
-          <button className="flex justify-center items-center h-[32px] w-[32px] shrink-0 rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors">
+          <button className="flex justify-center items-center h-[32px] w-[32px] shrink-0 rounded-md text-chat-muted hover:bg-chat-hover transition-colors">
             <UserPlus className="h-[18px] w-[18px]" />
           </button>
-          <button className="flex justify-center items-center h-[32px] w-[32px] shrink-0 rounded-md text-[#a1a1a1] hover:bg-[#2b2d31] transition-colors">
+          <button className="flex justify-center items-center h-[32px] w-[32px] shrink-0 rounded-md text-chat-muted hover:bg-chat-hover transition-colors">
             <Users className="h-[18px] w-[18px]" />
           </button>
         </div>
@@ -44,11 +44,11 @@ export function ContactMenu({ activeMenu, onSelectMenu }: ContactMenuProps) {
               onClick={() => onSelectMenu(item.id)}
               key={item.id}
               className={`flex items-center gap-3 px-3 py-3.5 rounded-md transition-colors ${isActive
-                ? "bg-[#1a2c4e] text-white font-medium"
-                : "text-[#e1e1e1] hover:bg-[#2b2d31] font-normal"
+                ? "bg-chat-active text-chat-text font-medium"
+                : "text-chat-text/90 hover:bg-chat-hover font-normal"
                 }`}
             >
-              <item.icon className={`h-[20px] w-[20px] ${isActive ? "text-[#0052cc]" : "text-[#a1a1a1]"}`} strokeWidth={isActive ? 2 : 1.5} />
+              <item.icon className={`h-[20px] w-[20px] ${isActive ? "text-[#0052cc]" : "text-chat-muted"}`} strokeWidth={isActive ? 2 : 1.5} />
               <span className="text-[15px]">{item.label}</span>
             </button>
           )
