@@ -12,10 +12,13 @@ import DocumentFillerPage from "./tools/DocumentFillerPage"
 import AdminPage from "./admin/AdminPage"
 import DocumentPage from "./cloud/DocumentPage"
 import GlobalAlerts from "./components/ui/GlobalAlerts"
+import { useThemeStore } from "./store/useThemeStore"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
   const { fetchUnreadSummary } = useChatStore();
+  // Khởi tạo theme từ localStorage ngay khi App mount
+  useThemeStore();
 
   useEffect(() => {
     checkAuth();
