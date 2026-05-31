@@ -185,4 +185,9 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: #6b6d70;
   }
+
+  .sidebar-dropdown-item:focus *,
+  .sidebar-dropdown-item:hover * {
+    color: var(--chat-text-main) !important;
+  }
 }
