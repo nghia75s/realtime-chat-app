@@ -12,6 +12,8 @@ import { DocumentViewerModal } from "./DocumentViewerModal"
 import { MessageDetailsModal } from "./modals/MessageDetailsModal"
 import { ForwardMessageModal } from "./modals/ForwardMessageModal"
 import { PinnedMessageBar } from "./PinnedMessageBar"
+import { NoteMessageCard } from "./NoteMessageCard"
+import { PollMessageCard } from "./PollMessageCard"
 import { toast } from "react-hot-toast"
 import { EmojiPickerPanel } from "@/components/ui/EmojiPickerPanel"
 import { formatMessageDateDivider } from "@/lib/formatTime"
@@ -57,10 +59,18 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     unsubscribeFromMessages,
     messages,
     isMessagesLoading,
-    getPinnedMessages
+    getPinnedMessages,
+    pinMessage
   } = useChatStore()
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null)
+    window.addEventListener("click", handleClick)
+    return () => window.removeEventListener("click", handleClick)
+  }, [])
+
   const { onlineUsers, authUser } = useAuthStore()
   
+  // 1. Fetch messages và pinned messages khi mount / chuyển chat
   const { 
     isSelectionMode, 
     selectedMessageIds, 
@@ -72,6 +82,16 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   // Dữ liệu Mock: Nếu đối tượng có thuộc tính isGroup thì coi như là Nhóm
   const isGroup = selectedUser?.isGroup || false
   const isOnline = selectedUser ? onlineUsers.includes(selectedUser._id) : false
+
+  const creatorId = typeof selectedUser?.createdBy === "string" ? selectedUser.createdBy : selectedUser?.createdBy?._id;
+  const isCreator = authUser?._id === creatorId;
+  const isAdmin = selectedUser?.admins?.some((adminId: any) => {
+    const id = typeof adminId === "string" ? adminId : adminId._id;
+    return id === authUser?._id;
+  });
+  const isManager = isCreator || isAdmin;
+  const canSendMessage = isGroup ? (isManager || selectedUser?.settings?.memberPermissions?.sendMessages !== false) : true;
+  const canPin = isGroup ? (isManager || selectedUser?.settings?.memberPermissions?.pinMessages !== false) : true;
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const attachmentInputRef = useRef<HTMLInputElement>(null)
@@ -87,6 +107,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const [documentViewer, setDocumentViewer] = useState<{ htmlContent: string; templateName: string } | null>(null)
   const [imageModalIndex, setImageModalIndex] = useState<number | null>(null)
   const [imageZoom, setImageZoom] = useState<number>(1)
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, msg: any } | null>(null)
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null)
@@ -193,19 +214,20 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   }, [imageModalIndex])
 
   // Chat specific logic
+  const selectedUserId = selectedUser?._id;
   useEffect(() => {
     setReplyingTo(null)
 
-    if (selectedUser) {
+    if (selectedUserId) {
       setIsScrolled(false);
-      getPinnedMessages(selectedUser._id);
+      getPinnedMessages(selectedUserId);
       
       if (isGroup) {
-        getGroupMessageByUserId(selectedUser._id);
-        joinGroup(selectedUser._id);
-        joinedGroupIdRef.current = selectedUser._id;
+        getGroupMessageByUserId(selectedUserId);
+        joinGroup(selectedUserId);
+        joinedGroupIdRef.current = selectedUserId;
       } else {
-        getMessagesByUserId(selectedUser._id);
+        getMessagesByUserId(selectedUserId);
       }
     }
 
@@ -215,7 +237,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
         joinedGroupIdRef.current = null;
       }
     };
-  }, [selectedUser, isGroup, getMessagesByUserId, getGroupMessageByUserId, joinGroup, leaveGroup, getPinnedMessages])
+  }, [selectedUserId, isGroup, getMessagesByUserId, getGroupMessageByUserId, joinGroup, leaveGroup, getPinnedMessages])
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -332,6 +354,19 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     if (attachmentInputRef.current) attachmentInputRef.current.value = "";
   }
 
+  const handleScrollToMessage = (msgId: string) => {
+    const el = document.getElementById(`message-${msgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("bg-[#2b2d31]/50", "transition-colors", "duration-500", "rounded-lg");
+      setTimeout(() => {
+        el.classList.remove("bg-[#2b2d31]/50");
+      }, 2000);
+    }
+  };
+
+  if (!selectedUser) return null;
+
   return (
     <div className="flex flex-1 flex-col min-w-0 bg-chat-main h-full overflow-hidden text-chat-text">
       {/* Header */}
@@ -374,7 +409,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
         </div>
       </div>
 
-      <PinnedMessageBar />
+      <PinnedMessageBar onMessageClick={handleScrollToMessage} />
 
       {/* Message History */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 relative">
@@ -425,14 +460,16 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                 return (
                   <React.Fragment key={msg._id}>
                     {dateDivider}
-                    <DocumentMessageCard
-                      msg={msg}
-                      onViewFull={(html, name) => setDocumentViewer({ htmlContent: html, templateName: name })}
-                      senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
-                      senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
-                      isGroupChat={isGroup}
-                      hideHeader={hideHeader}
-                    />
+                    <div id={`message-${msg._id}`}>
+                      <DocumentMessageCard
+                        msg={msg}
+                        onViewFull={(html, name) => setDocumentViewer({ htmlContent: html, templateName: name })}
+                        senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
+                        senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
+                        isGroupChat={isGroup}
+                        hideHeader={hideHeader}
+                      />
+                    </div>
                   </React.Fragment>
                 )
               }
@@ -442,31 +479,85 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                 return (
                   <React.Fragment key={msg._id}>
                     {dateDivider}
-                    <TaskMessageCard
-                      msg={msg}
-                      senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
-                      senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
-                      isGroupChat={isGroup}
-                      hideHeader={hideHeader}
-                    />
+                    <div id={`message-${msg._id}`}>
+                      <TaskMessageCard
+                        msg={msg}
+                        senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
+                        senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
+                        isGroupChat={isGroup}
+                        hideHeader={hideHeader}
+                      />
+                    </div>
                   </React.Fragment>
                 )
               }
 
+              // Tin nhắn ghi chú
+              if (msg.messageType === "note") {
+                return (
+                  <React.Fragment key={msg._id}>
+                    {dateDivider}
+                    <div id={`message-${msg._id}`} className="flex justify-center w-full mt-4 mb-2">
+                      <div 
+                        className="w-[400px] max-w-[85%]"
+                        onContextMenu={(e) => {
+                          if (!canPin) return;
+                          e.preventDefault()
+                          setContextMenu({ x: e.clientX, y: e.clientY, msg })
+                        }}
+                      >
+                        <NoteMessageCard message={msg} />
+                      </div>
+                    </div>
+                  </React.Fragment>
+                )
+              }
+
+              // Tin nhắn bình chọn
+              if (msg.messageType === "poll") {
+                return (
+                  <React.Fragment key={msg._id}>
+                    {dateDivider}
+                    <div id={`message-${msg._id}`} className="flex justify-center w-full mt-4 mb-2">
+                      <div 
+                        className="w-[400px] max-w-[85%]"
+                        onContextMenu={(e) => {
+                          if (!canPin) return;
+                          e.preventDefault()
+                          setContextMenu({ x: e.clientX, y: e.clientY, msg })
+                        }}
+                      >
+                        <PollMessageCard message={msg} />
+                      </div>
+                    </div>
+                  </React.Fragment>
+                )
+              }
+
+              // Quyền tương tác
+              const msgSenderId = typeof msg.senderId === "string" ? msg.senderId : msg.senderId?._id;
+              const isAdminMsg = isGroup ? (msgSenderId === creatorId || selectedUser?.admins?.some((a: any) => (typeof a === "string" ? a : a._id) === msgSenderId)) : false;
+              const highlightAdminMessages = selectedUser?.settings?.highlightAdminMessages !== false;
+
               return (
                 <React.Fragment key={msg._id}>
                   {dateDivider}
-                  <MessageBubble
-                    msg={msg}
-                    onImageLoad={scrollToBottom}
-                    onImageClick={openImageModal}
-                    senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
-                    senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
-                    isGroupChat={isGroup}
-                    hideHeader={hideHeader}
-                    onReply={handleReply}
-                    onForward={handleForward}
-                  />
+                  <div id={`message-${msg._id}`}>
+                    <MessageBubble
+                      msg={msg}
+                      onImageLoad={scrollToBottom}
+                      onImageClick={openImageModal}
+                      senderAvatar={isGroup ? (msg.senderId?.profilePicture || "/avatar.png") : (selectedUser?.profilePicture || "/avatar.png")}
+                      senderName={isGroup ? msg.senderId?.fullname : selectedUser?.fullname}
+                      isGroupChat={isGroup}
+                      hideHeader={hideHeader}
+                      onReply={handleReply}
+                      onForward={handleForward}
+                      canPin={canPin}
+                      isAdminMsg={isAdminMsg}
+                      highlightAdminMessages={highlightAdminMessages}
+                    />
+                  </div>
                 </React.Fragment>
               )
             })
@@ -584,24 +675,26 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           </div>
         </div>
       ) : (
-        <div className="bg-chat-header flex flex-col shrink-0 min-w-0">
-          {/* Top Toolbar */}
-          <div className="flex items-center px-2 py-2 gap-1 h-[40px]">
-            <button disabled={isSending} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><Smile className="w-[18px] h-[18px]" /></button>
+        <div className="bg-[#1e1f22] flex flex-col shrink-0 min-w-0">
+          {canSendMessage ? (
+            <>
+              {/* Top Toolbar */}
+              <div className="flex items-center px-2 py-2 gap-1 h-[40px]">
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Smile className="w-[18px] h-[18px]" /></button>
 
-            <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageChange} className="hidden" />
-            <input type="file" ref={attachmentInputRef} onChange={handleFileChange} className="hidden" />
-            <button disabled={isSending} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50">
+            <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageChange} className="hidden" disabled={!canSendMessage} />
+            <input type="file" ref={attachmentInputRef} onChange={handleFileChange} className="hidden" disabled={!canSendMessage} />
+            <button disabled={isSending || !canSendMessage} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
               <ImageIcon className="w-[18px] h-[18px]" />
             </button>
 
-            <button disabled={isSending} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50">
+            <button disabled={isSending || !canSendMessage} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
               <Paperclip className="w-[18px] h-[18px]" />
             </button>
-            <button disabled={isSending} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" /></button>
+            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" /></button>
+            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" /></button>
+            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" /></button>
+            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" /></button>
           </div>
 
           {/* Reply Preview Bar */}
@@ -694,9 +787,10 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                     setTimeout(() => handleSendMessage(e), 0)
                   }
                 }}
-                placeholder={`Nhập @, tin nhắn tới ${isGroup ? selectedUser.name : selectedUser.fullname}`}
-                className="flex-1 bg-transparent text-[15px] text-chat-text px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-chat-muted"
+                placeholder={!canSendMessage ? "Chỉ quản trị viên mới được gửi tin nhắn" : `Nhập @, tin nhắn tới ${isGroup ? selectedUser.name : selectedUser.fullname}`}
+                className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1] disabled:opacity-50 disabled:cursor-not-allowed"
                 rows={1}
+                disabled={!canSendMessage}
               />
               <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
                 {/* Emoji Button + Picker */}
@@ -723,19 +817,25 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                 </div>
                 <button
                   type="button"
-                  disabled={isSending}
+                  disabled={isSending || !canSendMessage}
                   onClick={handleSendLike}
                   title="Gửi like"
-                  className="p-1.5 text-[#ebaa16] hover:bg-chat-hover rounded-md transition-colors disabled:opacity-50"
+                  className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ThumbsUp className="w-5 h-5" />
                 </button>
-                <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending} className="p-1.5 text-[#0052cc] hover:bg-chat-hover rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent">
+                <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage} className="p-1.5 text-[#0052cc] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed">
                   <Send className="w-5 h-5" />
                 </button>
               </div>
             </form>
           </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-center py-6 border-t border-[#2b2d31]">
+              <span className="text-[14px] text-[#a1a1a1]">Chỉ trưởng/phó nhóm mới có quyền gửi tin nhắn vào nhóm này.</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -881,6 +981,30 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Custom Context Menu */}
+      {contextMenu && (
+        <div 
+          className="fixed z-50 bg-[#1e1f22] border border-[#3a3b3e] rounded-xl py-1.5 w-56 shadow-2xl overflow-hidden"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            className="w-full text-left px-3 py-2.5 text-sm text-[#e1e1e1] hover:bg-[#2b2d31] flex items-center gap-3 transition-colors"
+            onClick={async () => {
+              try {
+                await pinMessage(contextMenu.msg._id);
+                setContextMenu(null);
+              } catch (error) {
+                console.error(error);
+              }
+            }}
+          >
+            <Pin className="w-4 h-4 text-[#a1a1a1]" />
+            {contextMenu.msg.isPinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
+          </button>
         </div>
       )}
     </div>

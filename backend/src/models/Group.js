@@ -21,6 +21,34 @@ const groupSchema = new mongoose.Schema(
             ref: "User",
             required: true,
         },
+        admins: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+        ],
+        pendingMembers: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+        ],
+        invitedMembers: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+        ],
+        inviteLinkCode: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
+        joinDates: {
+            type: Map,
+            of: Date,
+            default: {},
+        },
         groupPicture: {
             type: String,
             default: "",

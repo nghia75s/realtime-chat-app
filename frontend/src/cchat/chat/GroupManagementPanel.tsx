@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { ChevronLeft, LogOut, Check, Ban, Crown } from "lucide-react"
+import { ChevronLeft, LogOut, Check, Ban, Crown, Link as LinkIcon } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
+import { useAuthStore } from "@/store/useAuthStore"
 import { toast } from "react-hot-toast"
 
 interface GroupManagementPanelProps {
@@ -10,6 +11,10 @@ interface GroupManagementPanelProps {
 
 export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps) {
   const { updateGroupSettings } = useChatStore()
+  const { authUser } = useAuthStore()
+  
+  const creatorId = typeof chat.createdBy === "string" ? chat.createdBy : chat.createdBy?._id
+  const isCreator = authUser?._id === creatorId
   
   // Lấy cài đặt mặc định hoặc từ dữ liệu nhóm
   const defaultSettings = {
@@ -145,6 +150,25 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
 
           {/* Links */}
           <div className="flex flex-col py-2 border-b border-[#2b2d31]">
+            {settings.allowJoinLink && (
+              <div 
+                className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#2b2d31] transition-colors cursor-pointer group"
+                onClick={async () => {
+                  try {
+                    const res = await useChatStore.getState().getInviteLink(chat._id);
+                    // Mocking front-end join URL
+                    const link = `${window.location.origin}/join/${res.inviteLinkCode}`;
+                    navigator.clipboard.writeText(link);
+                    toast.success("Đã sao chép link tham gia nhóm!");
+                  } catch (e) {
+                    // handled
+                  }
+                }}
+              >
+                <LinkIcon className="w-5 h-5 text-[#a1a1a1] group-hover:text-white" />
+                <span className="text-[15px] text-[#e1e1e1]">Sao chép link tham gia</span>
+              </div>
+            )}
             <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#2b2d31] transition-colors cursor-pointer group">
               <Ban className="w-5 h-5 text-[#a1a1a1] group-hover:text-white" />
               <span className="text-[15px] text-[#e1e1e1]">Chặn khỏi nhóm</span>
@@ -156,12 +180,14 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
           </div>
 
           {/* Dissolve Group */}
-          <div className="px-4 py-6 flex justify-center">
-             <button className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-[#ef4444]/10 hover:bg-[#ef4444]/20 text-[#ef4444] rounded-xl transition-colors font-medium">
-                <LogOut className="w-5 h-5" />
-                Giải tán nhóm
-             </button>
-          </div>
+          {isCreator && (
+            <div className="px-4 py-6 flex justify-center">
+               <button className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-[#ef4444]/10 hover:bg-[#ef4444]/20 text-[#ef4444] rounded-xl transition-colors font-medium">
+                  <LogOut className="w-5 h-5" />
+                  Giải tán nhóm
+               </button>
+            </div>
+          )}
 
         </div>
       </div>

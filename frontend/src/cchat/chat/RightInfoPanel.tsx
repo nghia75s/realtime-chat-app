@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { Bell, ShieldAlert, ChevronRight, Image as ImageIcon, FileText, Link as LinkIcon, Pin, Users, LogOut, Crown, PenBox, Calendar, Settings, AlertTriangle, Trash2 } from "lucide-react"
+import { Bell, ShieldAlert, ChevronRight, FileText, Pin, Users, LogOut, PenBox, Settings, AlertTriangle, Trash2 } from "lucide-react"
 import { ArchivePanel } from "./ArchivePanel"
 import { GroupManagementPanel } from "./GroupManagementPanel"
 import { MembersPanel } from "./MembersPanel"
+import { GroupBoardPanel } from "../chat/GroupBoardPanel"
 import { AddGroupMemberModal } from "./modals/AddGroupMemberModal"
 import { EditGroupModal } from "./modals/EditGroupModal"
 import { MuteNotificationModal } from "./modals/MuteNotificationModal"
@@ -14,9 +15,8 @@ import {
 import { useAuthStore } from "@/store/useAuthStore"
 
 export function RightInfoPanel({ chat }: { chat: any }) {
-  const [view, setView] = useState<"info" | "archive" | "management" | "members">("info")
+  const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board">("info")
   const [archiveTab, setArchiveTab] = useState<"media" | "file" | "link">("media")
-  const [isMembersOpen, setIsMembersOpen] = useState(true)
   const [isBoardOpen, setIsBoardOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false)
@@ -35,6 +35,12 @@ export function RightInfoPanel({ chat }: { chat: any }) {
   const members = chat.members || []
   const creatorId = typeof chat.createdBy === "string" ? chat.createdBy : chat.createdBy?._id
   const memberIds = members.map((member: any) => typeof member === "string" ? member : member._id)
+  const adminIds = (chat.admins || []).map((admin: any) => typeof admin === "string" ? admin : admin._id)
+
+  const isCreator = authUser?._id === creatorId
+  const isAdmin = adminIds.includes(authUser?._id)
+  const isManager = isCreator || isAdmin
+  const canEditInfo = isManager || (chat.settings?.memberPermissions?.changeNameAndAvatar !== false)
 
   const isPinned = authUser?.pinnedChats?.includes(chat._id)
 
@@ -68,6 +74,10 @@ export function RightInfoPanel({ chat }: { chat: any }) {
     )
   }
 
+  if (view === "board") {
+    return <GroupBoardPanel chat={chat} onBack={() => setView("info")} />
+  }
+
   return (
     <div className="flex w-[340px] shrink-0 flex-col bg-chat-sidebar border-l border-chat-border h-full overflow-hidden text-chat-text">
       {/* Header */}
@@ -82,9 +92,9 @@ export function RightInfoPanel({ chat }: { chat: any }) {
           <div className="flex flex-col items-center pt-5 pb-4 px-4 border-b border-chat-border">
             <img src={isGroup ? (chat.groupPicture || "/group.png") : (chat.profilePicture || "/avatar.png")} className="h-[64px] w-[64px] mb-3 rounded-full object-cover border border-chat-border" alt="Avatar" />
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-[18px] font-semibold text-chat-text text-center cursor-pointer hover:underline">{isGroup ? chat.name : chat.fullname}</h2>
-              {isGroup && (
-                <button onClick={() => setIsEditGroupOpen(true)} className="text-chat-muted hover:text-chat-text transition-colors bg-chat-hover rounded-full p-1 cursor-pointer">
+              <h2 className="text-[18px] font-semibold text-white text-center cursor-pointer hover:underline">{isGroup ? chat.name : chat.fullname}</h2>
+              {isGroup && canEditInfo && (
+                <button onClick={() => setIsEditGroupOpen(true)} className="text-[#a1a1a1] hover:text-white transition-colors bg-[#2b2d31] rounded-full p-1 cursor-pointer">
                   <PenBox className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -106,7 +116,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
                 <span className="text-[12px] text-chat-text text-center leading-tight">{isPinned ? "Bỏ ghim" : "Ghim hội thoại"}</span>
               </div>
 
-              {isGroup && (
+              {isGroup && isManager && (
                 <>
                   <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-14" onClick={() => setIsAddMemberOpen(true)}>
                     <div className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-chat-hover text-chat-text transition-colors group-hover:bg-chat-active/20 group-hover:text-[#7c3aed]">
@@ -152,8 +162,8 @@ export function RightInfoPanel({ chat }: { chat: any }) {
                 </CollapsibleTrigger>
                 <CollapsibleContent className="px-2 pb-2">
                   <div className="flex flex-col mt-1">
-                    <button className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-chat-hover transition-colors rounded-md text-chat-text">
-                      <FileText className="w-4 h-4 text-chat-muted" />
+                    <button onClick={() => setView('board')} className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#2b2d31] transition-colors rounded-md text-[#e1e1e1]">
+                      <FileText className="w-4 h-4 text-[#a1a1a1]" />
                       <span className="text-[14px]">Ghi chú, ghim, bình chọn</span>
                     </button>
                   </div>

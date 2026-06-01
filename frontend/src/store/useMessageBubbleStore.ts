@@ -61,4 +61,7 @@ export interface MessageBubbleProps {
   isGroupChat?: boolean;
   onReply?: (msg: Message) => void;
   onForward?: (msg: Message) => void;
+  canPin?: boolean;
+  isAdminMsg?: boolean;
+  highlightAdminMessages?: boolean;
 }

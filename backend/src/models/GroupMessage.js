@@ -59,7 +59,7 @@ const groupMessageSchema = new mongoose.Schema(
     // --- Document Message Fields ---
     messageType: {
         type: String,
-        enum: ["text", "file", "document", "task_assignment", "system"],
+        enum: ["text", "file", "document", "task_assignment", "system", "poll", "note"],
         default: "text",
     },
     documentPayload: {
@@ -81,6 +81,23 @@ const groupMessageSchema = new mongoose.Schema(
       description: String,
       deadline: Date,
       note: String,
+    },
+    // --- Poll & Note Message Fields ---
+    notePayload: {
+        content: String
+    },
+    pollPayload: {
+        question: String,
+        options: [{
+            _id: { type: mongoose.Schema.Types.ObjectId, auto: true },
+            text: String,
+            voters: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }]
+        }],
+        deadline: Date,
+        allowMultiple: { type: Boolean, default: false },
+        allowAddOptions: { type: Boolean, default: false },
+        hideResultsBeforeVoting: { type: Boolean, default: false },
+        hideVoters: { type: Boolean, default: false }
     },
   },
   { timestamps: true }
