@@ -14,6 +14,7 @@ import { ForwardMessageModal } from "./modals/ForwardMessageModal"
 import { PinnedMessageBar } from "./PinnedMessageBar"
 import { NoteMessageCard } from "./NoteMessageCard"
 import { PollMessageCard } from "./PollMessageCard"
+import { ProfileModal } from "./modals/ProfileModal"
 import { toast } from "react-hot-toast"
 import { EmojiPickerPanel } from "@/components/ui/EmojiPickerPanel"
 import { formatMessageDateDivider } from "@/lib/formatTime"
@@ -98,6 +99,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [fileAttachment, setFileAttachment] = useState<{ file: File; data: string } | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [selectedProfile, setSelectedProfile] = useState<any | null>(null)
   const [text, setText] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -246,11 +248,24 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     }, 100);
   }
 
+  const messagesLengthRef = useRef(0);
+  const lastMessageIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (messagesEndRef.current && messages && !isMessagesLoading) {
-      scrollToBottom()
+      const currentLength = messages.length;
+      const currentLastId = currentLength > 0 ? messages[currentLength - 1]?._id : null;
+      
+      if (!isScrolled) {
+        scrollToBottom();
+      } else if (currentLength > messagesLengthRef.current || currentLastId !== lastMessageIdRef.current) {
+        scrollToBottom();
+      }
+      
+      messagesLengthRef.current = currentLength;
+      lastMessageIdRef.current = currentLastId;
     }
-  }, [messages, isMessagesLoading])
+  }, [messages, isMessagesLoading, isScrolled])
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -358,9 +373,9 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     const el = document.getElementById(`message-${msgId}`);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("bg-[#2b2d31]/50", "transition-colors", "duration-500", "rounded-lg");
+      el.classList.add("bg-chat-hover/50", "transition-colors", "duration-500", "rounded-lg");
       setTimeout(() => {
-        el.classList.remove("bg-[#2b2d31]/50");
+        el.classList.remove("bg-chat-hover/50");
       }, 2000);
     }
   };
@@ -433,7 +448,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
 
               const dateDivider = isDifferentDate ? (
                 <div className="flex justify-center my-4">
-                  <span className="bg-[#2b2d31]/80 backdrop-blur-sm text-[#a1a1a1] text-[12px] font-medium px-3 py-1 rounded-full shadow-sm">
+                  <span className="bg-chat-system-msg text-chat-muted text-[12px] font-medium px-3 py-1 rounded-full shadow-sm" style={{ background: 'var(--chat-system-msg-bg)', color: 'var(--chat-system-msg-text)' }}>
                     {formatMessageDateDivider(msgDateStr)}
                   </span>
                 </div>
@@ -445,7 +460,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   <React.Fragment key={msg._id}>
                     {dateDivider}
                     <div className="flex justify-center my-3 w-full">
-                      <span className="text-[12px] font-medium text-[#a1a1a1] bg-[#2b2d31]/50 px-4 py-1.5 rounded-full text-center max-w-[80%] break-words shadow-sm border border-[#3a3b3e]/30">
+                      <span className="text-[12px] font-medium truncate text-center max-w-[80%] break-words shadow-sm px-4 py-1.5 rounded-full border" style={{ background: 'var(--chat-system-msg-bg)', color: 'var(--chat-system-msg-text)', borderColor: 'var(--chat-border)' }}>
                         {msg.text?.includes("ghim") && <Pin className="w-3.5 h-3.5 inline-block mr-1.5 -mt-0.5 text-[#0052cc]" />}
                         {msg.text || "Thông báo hệ thống"}
                       </span>
@@ -552,6 +567,13 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                       hideHeader={hideHeader}
                       onReply={handleReply}
                       onForward={handleForward}
+                      onAvatarClick={() => { 
+                        if (isGroup) {
+                          setSelectedProfile(typeof msg.senderId === "object" ? msg.senderId : null);
+                        } else {
+                          setSelectedProfile(selectedUser);
+                        }
+                      }}
                       canPin={canPin}
                       isAdminMsg={isAdminMsg}
                       highlightAdminMessages={highlightAdminMessages}
@@ -674,26 +696,26 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           </div>
         </div>
       ) : (
-        <div className="bg-[#1e1f22] flex flex-col shrink-0 min-w-0">
+        <div className="bg-chat-input-area flex flex-col shrink-0 min-w-0" style={{ background: 'var(--chat-input-area-bg)' }}>
           {canSendMessage ? (
             <>
               {/* Top Toolbar */}
               <div className="flex items-center px-2 py-2 gap-1 h-[40px]">
-                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Smile className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><Smile className="w-[18px] h-[18px]" /></button>
 
                 <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageChange} className="hidden" disabled={!canSendMessage} />
                 <input type="file" ref={attachmentInputRef} onChange={handleFileChange} className="hidden" disabled={!canSendMessage} />
-                <button disabled={isSending || !canSendMessage} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
+                <button disabled={isSending || !canSendMessage} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50">
                   <ImageIcon className="w-[18px] h-[18px]" />
                 </button>
 
-                <button disabled={isSending || !canSendMessage} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
+                <button disabled={isSending || !canSendMessage} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50">
                   <Paperclip className="w-[18px] h-[18px]" />
                 </button>
-                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" /></button>
-                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" /></button>
-                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" /></button>
-                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-chat-muted hover:bg-chat-hover rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" /></button>
               </div>
 
               {/* Reply Preview Bar */}
@@ -787,7 +809,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                       }
                     }}
                     placeholder={!canSendMessage ? "Chỉ quản trị viên mới được gửi tin nhắn" : `Nhập @, tin nhắn tới ${isGroup ? selectedUser.name : selectedUser.fullname}`}
-                    className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-transparent text-[15px] text-chat-text px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-chat-muted disabled:opacity-50 disabled:cursor-not-allowed"
                     rows={1}
                     disabled={!canSendMessage}
                   />
@@ -819,11 +841,11 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                       disabled={isSending || !canSendMessage}
                       onClick={handleSendLike}
                       title="Gửi like"
-                      className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-1.5 text-[#ebaa16] hover:bg-chat-hover rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <ThumbsUp className="w-5 h-5" />
                     </button>
-                    <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage} className="p-1.5 text-[#0052cc] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed">
+                    <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage} className="p-1.5 text-[#0052cc] hover:bg-chat-hover rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed">
                       <Send className="w-5 h-5" />
                     </button>
                   </div>
@@ -831,8 +853,8 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
               </div>
             </>
           ) : (
-            <div className="flex items-center justify-center py-6 border-t border-[#2b2d31]">
-              <span className="text-[14px] text-[#a1a1a1]">Chỉ trưởng/phó nhóm mới có quyền gửi tin nhắn vào nhóm này.</span>
+            <div className="flex items-center justify-center py-6 border-t border-chat-border">
+              <span className="text-[14px] text-chat-muted">Chỉ trưởng/phó nhóm mới có quyền gửi tin nhắn vào nhóm này.</span>
             </div>
           )}
         </div>
@@ -849,6 +871,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
 
       <MessageDetailsModal />
       <ForwardMessageModal />
+      <ProfileModal selectedProfile={selectedProfile} onClose={() => setSelectedProfile(null)} />
 
       {imageModalIndex !== null && imageMessages[imageModalIndex] && (
         <div
@@ -986,12 +1009,12 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       {/* Custom Context Menu */}
       {contextMenu && (
         <div
-          className="fixed z-50 bg-[#1e1f22] border border-[#3a3b3e] rounded-xl py-1.5 w-56 shadow-2xl overflow-hidden"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
+          className="fixed z-50 rounded-xl py-1.5 w-56 shadow-2xl overflow-hidden border"
+          style={{ top: contextMenu.y, left: contextMenu.x, background: 'var(--chat-dropdown-bg)', borderColor: 'var(--chat-border)' }}
           onClick={(e) => e.stopPropagation()}
         >
           <button
-            className="w-full text-left px-3 py-2.5 text-sm text-[#e1e1e1] hover:bg-[#2b2d31] flex items-center gap-3 transition-colors"
+            className="w-full text-left px-3 py-2.5 text-sm flex items-center gap-3 transition-colors text-chat-text hover:bg-chat-hover"
             onClick={async () => {
               try {
                 await pinMessage(contextMenu.msg._id);
@@ -1001,7 +1024,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
               }
             }}
           >
-            <Pin className="w-4 h-4 text-[#a1a1a1]" />
+            <Pin className="w-4 h-4 text-chat-muted" />
             {contextMenu.msg.isPinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
           </button>
         </div>

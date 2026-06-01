@@ -99,12 +99,12 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
   }
 
   return (
-    <div className="flex w-[340px] shrink-0 flex-col bg-[#1e1f22] border-l border-[#2b2d31] h-full overflow-hidden text-[#e1e1e1]">
+    <div className="flex w-[340px] shrink-0 flex-col border-l border-chat-border h-full overflow-hidden text-chat-text" style={{ background: 'var(--chat-bg-sidebar)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#2b2d31] px-4 py-[14px] shrink-0 font-medium text-[16px] text-white shadow-sm z-10 bg-[#1e1f22]">
+      <div className="flex items-center justify-between border-b border-chat-border px-4 py-[14px] shrink-0 font-medium text-[16px] text-chat-text shadow-sm z-10" style={{ background: 'var(--chat-bg-sidebar)' }}>
         <button 
           onClick={onBack}
-          className="p-1 -ml-1 hover:bg-[#2b2d31] rounded text-[#a1a1a1] transition-colors shrink-0"
+          className="p-1 -ml-1 hover:bg-chat-hover rounded text-chat-muted transition-colors shrink-0"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -112,13 +112,13 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
         <div className="w-7"></div> {/* Spacer to center the text */}
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar bg-[#1e1f22]">
+      <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar" style={{ background: 'var(--chat-bg-sidebar)' }}>
         {/* Thêm thành viên button */}
         {currentUserIsManager && (
           <div className="p-4">
             <button 
               onClick={onAddMember}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-[#2b2d31] hover:bg-[#3f4147] transition-colors py-2.5 text-[14px] font-semibold text-[#e1e1e1]"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-chat-hover hover:bg-chat-active/30 transition-colors py-2.5 text-[14px] font-semibold text-chat-text"
             >
               <UserPlus className="h-4 w-4" />
               Thêm thành viên
@@ -127,15 +127,15 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
         )}
 
         {currentUserIsManager && chat.settings?.joinApprovalMode && (
-          <div className="flex border-b border-[#2b2d31]">
+          <div className="flex border-b border-chat-border">
             <button
-              className={`flex-1 py-3 text-[13px] font-semibold transition-colors ${panelTab === "members" ? "text-white border-b-2 border-[#1877F2]" : "text-[#a1a1a1] hover:text-white"}`}
+              className={`flex-1 py-3 text-[13px] font-semibold transition-colors ${panelTab === "members" ? "text-chat-text border-b-2 border-[#1877F2]" : "text-chat-muted hover:text-chat-text"}`}
               onClick={() => setPanelTab("members")}
             >
               Thành viên
             </button>
             <button
-              className={`flex-1 py-3 text-[13px] font-semibold transition-colors ${panelTab === "pending" ? "text-white border-b-2 border-[#1877F2]" : "text-[#a1a1a1] hover:text-white"}`}
+              className={`flex-1 py-3 text-[13px] font-semibold transition-colors ${panelTab === "pending" ? "text-chat-text border-b-2 border-[#1877F2]" : "text-chat-muted hover:text-chat-text"}`}
               onClick={() => setPanelTab("pending")}
             >
               Chờ duyệt {pendingMembersList.length > 0 && <span className="ml-1 bg-red-500 text-white px-1.5 rounded-full text-[10px]">{pendingMembersList.length}</span>}
@@ -147,8 +147,8 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
         {panelTab === "members" ? (
           <>
             <div className={`flex items-center justify-between px-4 pb-2 pt-4`}>
-              <span className="text-[14px] font-bold text-[#e1e1e1]">Danh sách ({members.length})</span>
-              <button className="text-[#a1a1a1] hover:text-white transition-colors">
+              <span className="text-[14px] font-bold text-chat-text">Danh sách ({members.length})</span>
+              <button className="text-chat-muted hover:text-chat-text transition-colors">
                  <MoreHorizontal className="h-5 w-5" />
               </button>
             </div>
@@ -179,40 +179,40 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
             }
 
             return (
-              <div key={memberId} className="flex items-center justify-between px-4 py-2 hover:bg-[#2b2d31] transition-colors group">
+              <div key={memberId} className="flex items-center justify-between px-4 py-2 hover:bg-chat-hover transition-colors group">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div className="relative">
-                    <img src={memberPic} className="w-10 h-10 rounded-full object-cover border border-[#2b2d31]" alt="" />
+                    <img src={memberPic} className="w-10 h-10 rounded-full object-cover border border-chat-border" alt="" />
                     {isTargetCreator && (
-                      <div className="absolute -bottom-1 -right-1 bg-[#ebaa16] text-[#1e1f22] p-0.5 rounded-full border-2 border-[#1e1f22]" title="Trưởng nhóm">
+                      <div className="absolute -bottom-1 -right-1 bg-[#ebaa16] text-[#1e1f22] p-0.5 rounded-full border-2 border-chat-sidebar" title="Trưởng nhóm">
                         <Crown className="w-2.5 h-2.5" strokeWidth={3} />
                       </div>
                     )}
                     {isTargetAdmin && !isTargetCreator && (
-                      <div className="absolute -bottom-1 -right-1 bg-[#1877F2] text-[#1e1f22] p-0.5 rounded-full border-2 border-[#1e1f22]" title="Phó nhóm">
+                      <div className="absolute -bottom-1 -right-1 bg-[#1877F2] text-white p-0.5 rounded-full border-2 border-chat-sidebar" title="Phó nhóm">
                         <ShieldAlert className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col">
-                    <span className="text-[14px] font-medium truncate text-[#e1e1e1]">{memberName}</span>
-                    {isTargetCreator && <span className="text-[12px] text-[#a1a1a1]">Trưởng nhóm</span>}
-                    {isTargetAdmin && !isTargetCreator && <span className="text-[12px] text-[#a1a1a1]">Phó nhóm</span>}
+                    <span className="text-[14px] font-medium truncate text-chat-text">{memberName}</span>
+                    {isTargetCreator && <span className="text-[12px] text-chat-muted">Trưởng nhóm</span>}
+                    {isTargetAdmin && !isTargetCreator && <span className="text-[12px] text-chat-muted">Phó nhóm</span>}
                   </div>
                 </div>
 
                 {canShowDropdown && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-[#3f4147] rounded-md text-[#a1a1a1] transition-all focus:opacity-100 data-[state=open]:opacity-100">
+                      <button className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-chat-hover rounded-md text-chat-muted transition-all focus:opacity-100 data-[state=open]:opacity-100">
                         <MoreHorizontal className="h-4 w-4" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 bg-[#2b2d31] border-[#3f4147] text-[#e1e1e1] shadow-md">
+                    <DropdownMenuContent align="end" className="w-48 border shadow-md" style={{ background: 'var(--chat-dropdown-bg)', borderColor: 'var(--chat-border)', color: 'var(--chat-text-main)' }}>
                       {isMe ? (
                         <DropdownMenuItem 
                           onClick={handleLeaveGroup}
-                          className="cursor-pointer hover:bg-[#3f4147] focus:bg-[#3f4147] text-red-400 focus:text-red-400"
+                          className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover text-red-400 focus:text-red-400"
                         >
                           Rời nhóm
                         </DropdownMenuItem>
@@ -221,18 +221,18 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
                           {currentUserIsCreator && (
                             <>
                               {!isTargetAdmin ? (
-                                <DropdownMenuItem onClick={() => handleAddAdmin(memberId)} className="cursor-pointer hover:bg-[#3f4147] focus:bg-[#3f4147]">
+                                <DropdownMenuItem onClick={() => handleAddAdmin(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover">
                                   Chỉ định phó nhóm
                                 </DropdownMenuItem>
                               ) : (
-                                <DropdownMenuItem onClick={() => handleRemoveAdmin(memberId)} className="cursor-pointer hover:bg-[#3f4147] focus:bg-[#3f4147] text-[#ebaa16] focus:text-[#ebaa16]">
+                                <DropdownMenuItem onClick={() => handleRemoveAdmin(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover text-[#ebaa16] focus:text-[#ebaa16]">
                                   Thu hồi phó nhóm
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem onClick={() => handleTransferOwner(memberId)} className="cursor-pointer hover:bg-[#3f4147] focus:bg-[#3f4147]">
+                              <DropdownMenuItem onClick={() => handleTransferOwner(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover">
                                 Chuyển quyền trưởng nhóm
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator className="bg-[#3f4147]" />
+                              <DropdownMenuSeparator className="bg-chat-border" />
                             </>
                           )}
                           

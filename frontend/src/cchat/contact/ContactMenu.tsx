@@ -51,7 +51,7 @@ export function ContactMenu({ activeMenu, onSelectMenu }: ContactMenuProps) {
                 : "text-chat-text/90 hover:bg-chat-hover font-normal"
                 }`}
             >
-              <item.icon className={`h-[20px] w-[20px] ${isActive ? "text-[#0052cc]" : "text-chat-muted"}`} strokeWidth={isActive ? 2 : 1.5} />
+              <item.icon className={`h-[20px] w-[20px] ${isActive ? "text-[#0052cc]" : "text-[#a1a1a1]"}`} strokeWidth={isActive ? 2 : 1.5} />
               <span className="flex-1 text-left text-[15px]">{item.label}</span>
               {item.id === "group_invites" && groupInvitations.length > 0 && (
                 <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#ff4a4a] px-1 text-[11px] font-bold text-white shadow-sm">

@@ -211,7 +211,7 @@ export function ChatListSidebar() {
                       <div className="relative flex shrink-0">
                         <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
                         <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-chat-sidebar transition-colors ${
-                          onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-[#4e4f52]"
+                          onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-chat-border"
                         }`}></div>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -232,11 +232,8 @@ export function ChatListSidebar() {
                             <div className={`${openMenuId === chat._id ? "block" : "hidden group-hover:block"}`} onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu onOpenChange={(open) => setOpenMenuId(open ? chat._id : null)}>
                                 <DropdownMenuTrigger asChild>
-                                  <button className="relative flex items-center justify-center w-7 h-7 rounded bg-chat-hover text-chat-muted hover:bg-chat-active hover:text-chat-text transition-colors group/tooltip">
+                                  <button className="relative flex items-center justify-center w-7 h-7 rounded bg-chat-hover text-chat-muted hover:bg-chat-active hover:text-chat-text transition-colors">
                                     <MoreHorizontal className="h-4 w-4" />
-                                    <span className="absolute right-0 top-8 hidden group-hover/tooltip:block bg-[#1a1a1c] text-white text-[11px] px-2 py-0.5 rounded whitespace-nowrap z-[100] shadow-md border border-[#5f5f5f]">
-                                      Thêm
-                                    </span>
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-48 bg-chat-sidebar border border-chat-border text-chat-text rounded-md shadow-lg py-1 z-[100]">
@@ -342,11 +339,8 @@ export function ChatListSidebar() {
                             <div className={`${openMenuId === group._id ? "block" : "hidden group-hover:block"}`} onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu onOpenChange={(open) => setOpenMenuId(open ? group._id : null)}>
                                 <DropdownMenuTrigger asChild>
-                                  <button className="relative flex items-center justify-center w-7 h-7 rounded bg-chat-hover text-chat-muted hover:bg-chat-active hover:text-chat-text transition-colors group/tooltip">
+                                  <button className="relative flex items-center justify-center w-7 h-7 rounded bg-chat-hover text-chat-muted hover:bg-chat-active hover:text-chat-text transition-colors">
                                     <MoreHorizontal className="h-4 w-4" />
-                                    <span className="absolute right-0 top-8 hidden group-hover/tooltip:block bg-[#1a1a1c] text-white text-[11px] px-2 py-0.5 rounded whitespace-nowrap z-[100] shadow-md border border-[#5f5f5f]">
-                                      Thêm
-                                    </span>
                                   </button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-48 bg-chat-sidebar border border-chat-border text-chat-text rounded-md shadow-lg py-1 z-[100]">

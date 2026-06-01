@@ -16,8 +16,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean }) {
-  const { msg, onImageLoad, onImageClick, senderAvatar, senderName, isGroupChat, onReply, onForward, hideHeader, canPin = true, isAdminMsg = false, highlightAdminMessages = false } = props
+export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean, onAvatarClick?: (user: any) => void }) {
+  const { msg, onImageLoad, onImageClick, onAvatarClick, senderAvatar, senderName, isGroupChat, onReply, onForward, hideHeader, canPin = true, isAdminMsg = false, highlightAdminMessages = false } = props
   const { authUser } = useAuthStore()
   const { recallMessage, deleteMessage, pinMessage } = useChatStore()
   const { 
@@ -48,7 +48,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
   if (msg.messageType === "system") {
     return (
       <div className="flex w-full items-center justify-center my-3">
-        <div className="px-4 py-1.5 rounded-full bg-[#2b2d31]/70 text-[#a1a1a1] text-[12px] text-center font-medium shadow-sm max-w-[85%] break-words border border-[#3a3b3e]/30">
+        <div className="px-4 py-1.5 rounded-full text-[12px] text-center font-medium shadow-sm max-w-[85%] break-words border" style={{ background: 'var(--chat-system-msg-bg)', color: 'var(--chat-system-msg-text)', borderColor: 'var(--chat-border)' }}>
           {msg.text}
         </div>
       </div>
@@ -95,7 +95,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
 
   return (
     <div
-      className={`flex w-full items-start group transition-colors px-4 py-1 mb-1 ${isSelected ? "bg-[#2b2d31]/40" : ""} ${isSelectionMode ? "cursor-pointer hover:bg-[#2b2d31]/20" : ""}`}
+      className={`flex w-full items-start group transition-colors px-4 py-1 mb-1 ${isSelected ? "bg-chat-hover/40" : ""} ${isSelectionMode ? "cursor-pointer hover:bg-chat-hover/20" : ""}`}
       onClick={() => isSelectionMode && toggleSelect()}
       onMouseEnter={() => setShowQuickActions(true)}
       onMouseLeave={() => setShowQuickActions(false)}
@@ -121,7 +121,8 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
               <img
                 src={senderAvatar || "/avatar.png"}
                 alt={senderName || "User"}
-                className="w-8 h-8 rounded-full object-cover border border-[#3a3b3e]"
+                className="w-8 h-8 rounded-full object-cover border border-chat-border cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => onAvatarClick?.(msg.senderId)}
               />
             )}
           </div>
@@ -162,7 +163,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
 
           {/* --- Trạng thái THU HỒI --- */}
           {isRecalled ? (
-            <div className={`px-4 py-2.5 rounded-xl text-[14px] italic border ${isMe ? "border-[#3a3b3e] bg-[#2b2d31]/50 text-[#a1a1a1]" : "border-[#3a3b3e] bg-[#2b2d31]/50 text-[#a1a1a1]"}`}>
+            <div className={`px-4 py-2.5 rounded-xl text-[14px] italic border ${isMe ? "border-zinc-300 dark:border-[#3a3b3e] bg-zinc-100 dark:bg-[#2b2d31]/50 text-zinc-500 dark:text-[#a1a1a1]" : "border-zinc-300 dark:border-[#3a3b3e] bg-zinc-100 dark:bg-[#2b2d31]/50 text-zinc-500 dark:text-[#a1a1a1]"}`}>
               Tin nhắn đã được thu hồi
               <div className="text-[10px] mt-1 text-right opacity-70">{timeStr}</div>
             </div>
@@ -199,7 +200,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                         </div>
                       )}
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-black/20 text-[#67d7ff] text-[10px] font-semibold tracking-[0.04em]">
+                        <div className={`flex items-center justify-center w-10 h-10 rounded-xl text-[10px] font-semibold tracking-[0.04em] ${isMe ? "bg-black/20 text-[#67d7ff]" : "bg-[#0052cc]/10 text-[#0052cc] dark:bg-black/20 dark:text-[#67d7ff]"}`}>
                           {fileExtension}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -208,7 +209,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                               href={msg.file.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="truncate text-sm font-semibold text-blue-100 underline hover:text-white block"
+                              className={`truncate text-sm font-semibold underline block ${isMe ? 'text-blue-100 hover:text-white' : 'text-[#0052cc] dark:text-blue-100 hover:text-[#0040a0] dark:hover:text-white'}`}
                               onClick={(e) => {
                                 e.preventDefault()
                                 if (msg.file?.url) {
@@ -232,14 +233,14 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                   )}
  
       <Dialog open={Boolean(externalLink)} onOpenChange={(open) => !open && setExternalLink(null)}>
-        <DialogContent className="max-w-md bg-[#1e1f22] border border-[#2b2d31] text-[#e1e1e1]">
+        <DialogContent className="max-w-md border text-chat-text" style={{ background: 'var(--chat-dropdown-bg)', borderColor: 'var(--chat-border)' }}>
           <DialogHeader>
-            <DialogTitle className="text-lg text-white">Xác nhận liên kết</DialogTitle>
+            <DialogTitle className="text-lg text-chat-text">Xác nhận liên kết</DialogTitle>
           </DialogHeader>
           <DialogDescription className="text-sm text-[#cbd5e1]">
             Bạn sắp mở một liên kết bên ngoài. Hãy kiểm tra kỹ tên miền trước khi tiếp tục.
           </DialogDescription>
-          <div className="rounded-xl border border-[#2b2d31] bg-[#111215] p-3 my-4 break-all text-sm text-[#e2e8f0]">
+          <div className="rounded-xl border p-3 my-4 break-all text-sm text-chat-text" style={{ background: 'var(--chat-bg-input)', borderColor: 'var(--chat-border)' }}>
             {externalLink}
           </div>
           <DialogFooter className="gap-2">
@@ -359,22 +360,22 @@ function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectM
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button onClick={onReply} className="p-1.5 rounded-full hover:bg-[#2b2d31] text-[#a1a1a1] hover:text-white transition-colors">
+            <button onClick={onReply} className="p-1.5 rounded-full hover:bg-chat-hover text-chat-muted hover:text-chat-text transition-colors">
               <Reply className="w-[18px] h-[18px]" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top" className="bg-[#1e1f22] text-white border-[#3a3b3e] text-[12px] px-2 py-1">
+          <TooltipContent side="top" className="text-[12px] px-2 py-1" style={{ background: 'var(--chat-tooltip-bg)', color: 'var(--chat-tooltip-text)', borderColor: 'var(--chat-border)' }}>
             Trả lời
           </TooltipContent>
         </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <button onClick={onForward} className="p-1.5 rounded-full hover:bg-[#2b2d31] text-[#a1a1a1] hover:text-white transition-colors">
+            <button onClick={onForward} className="p-1.5 rounded-full hover:bg-chat-hover text-chat-muted hover:text-chat-text transition-colors">
               <Forward className="w-[18px] h-[18px]" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top" className="bg-[#1e1f22] text-white border-[#3a3b3e] text-[12px] px-2 py-1">
+          <TooltipContent side="top" className="text-[12px] px-2 py-1" style={{ background: 'var(--chat-tooltip-bg)', color: 'var(--chat-tooltip-text)', borderColor: 'var(--chat-border)' }}>
             Chuyển tiếp
           </TooltipContent>
         </Tooltip>
@@ -383,41 +384,41 @@ function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectM
           <Tooltip>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <button className="p-1.5 rounded-full hover:bg-[#2b2d31] text-[#a1a1a1] hover:text-white transition-colors outline-none data-[state=open]:bg-[#2b2d31] data-[state=open]:text-white">
+                <button className="p-1.5 rounded-full hover:bg-chat-hover text-chat-muted hover:text-chat-text transition-colors outline-none data-[state=open]:bg-chat-hover data-[state=open]:text-chat-text">
                   <MoreHorizontal className="w-[18px] h-[18px]" />
                 </button>
               </DropdownMenuTrigger>
             </TooltipTrigger>
-            <TooltipContent side="top" className="bg-[#1e1f22] text-white border-[#3a3b3e] text-[12px] px-2 py-1">
+            <TooltipContent side="top" className="text-[12px] px-2 py-1" style={{ background: 'var(--chat-tooltip-bg)', color: 'var(--chat-tooltip-text)', borderColor: 'var(--chat-border)' }}>
               Thêm
             </TooltipContent>
           </Tooltip>
           
-          <DropdownMenuContent align={isMe ? "end" : "start"} className="w-48 bg-[#1e1f22]/95 backdrop-blur-md border-[#3a3b3e] text-[#d1d1d1] p-1 shadow-2xl rounded-xl z-50">
-            <DropdownMenuItem onClick={onReply} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
-              <Reply className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Trả lời
+          <DropdownMenuContent align={isMe ? "end" : "start"} className="w-48 backdrop-blur-md p-1 shadow-2xl rounded-xl z-50 border" style={{ background: 'var(--chat-dropdown-bg)', borderColor: 'var(--chat-border)', color: 'var(--chat-text-main)' }}>
+            <DropdownMenuItem onClick={onReply} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover py-2 focus:text-chat-text">
+              <Reply className="w-4 h-4 mr-2 text-chat-muted" /> Trả lời
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onForward} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
-              <Forward className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Chuyển tiếp tin nhắn
+            <DropdownMenuItem onClick={onForward} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover py-2 focus:text-chat-text">
+              <Forward className="w-4 h-4 mr-2 text-chat-muted" /> Chuyển tiếp tin nhắn
             </DropdownMenuItem>
             {canPin && (
-              <DropdownMenuItem onClick={onPin} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
-                <Pin className="w-4 h-4 mr-2 text-[#a1a1a1]" /> {msg.isPinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
+              <DropdownMenuItem onClick={onPin} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover py-2 focus:text-chat-text">
+                <Pin className="w-4 h-4 mr-2 text-chat-muted" /> {msg.isPinned ? "Bỏ ghim tin nhắn" : "Ghim tin nhắn"}
               </DropdownMenuItem>
             )}
             {msg.text && (
-              <DropdownMenuItem onClick={onCopy} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
-                <Copy className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Sao chép tin nhắn
+              <DropdownMenuItem onClick={onCopy} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover py-2 focus:text-chat-text">
+                <Copy className="w-4 h-4 mr-2 text-chat-muted" /> Sao chép tin nhắn
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={onSelectMany} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
-              <CheckSquare className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Chọn nhiều
+            <DropdownMenuItem onClick={onSelectMany} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover py-2 focus:text-chat-text">
+              <CheckSquare className="w-4 h-4 mr-2 text-chat-muted" /> Chọn nhiều
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDetails} className="cursor-pointer hover:bg-[#2b2d31] focus:bg-[#2b2d31] py-2">
-              <Info className="w-4 h-4 mr-2 text-[#a1a1a1]" /> Xem chi tiết
+            <DropdownMenuItem onClick={onDetails} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover py-2 focus:text-chat-text">
+              <Info className="w-4 h-4 mr-2 text-chat-muted" /> Xem chi tiết
             </DropdownMenuItem>
             
-            <DropdownMenuSeparator className="bg-[#3a3b3e]" />
+            <DropdownMenuSeparator className="bg-chat-border" />
             
             {isMe && (
               <DropdownMenuItem onClick={onRecall} className="cursor-pointer text-red-400 hover:text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-400 py-2">

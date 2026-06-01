@@ -31,15 +31,16 @@ export function CreateNoteModal({ isOpen, onClose, groupId }: CreateNoteModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#2b2d31] border-[#1e1f22] text-[#e1e1e1] sm:max-w-[425px]">
+      <DialogContent className="border text-chat-text sm:max-w-[425px]" style={{ background: 'var(--chat-bg-sidebar)', borderColor: 'var(--chat-border)', color: 'var(--chat-text-main)' }}>
         <DialogHeader>
-          <DialogTitle className="text-white text-lg">Tạo ghi chú</DialogTitle>
+          <DialogTitle className="text-chat-text text-lg">Tạo ghi chú</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-4">
           <div className="flex flex-col gap-2">
             <textarea
-              className="min-h-[120px] bg-[#1e1f22] border-none rounded-md p-3 text-white placeholder-[#a1a1a1] resize-none focus:outline-none focus:ring-1 focus:ring-[#1877F2]"
+              className="min-h-[120px] border rounded-md p-3 text-chat-text placeholder-chat-muted resize-none focus:outline-none focus:ring-1 focus:ring-[#1877F2]"
+              style={{ background: 'var(--chat-bg-input)', borderColor: 'var(--chat-border)' }}
               placeholder="Nhập nội dung ghi chú..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -49,7 +50,8 @@ export function CreateNoteModal({ isOpen, onClose, groupId }: CreateNoteModalPro
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              className="rounded bg-[#1e1f22] border-[#2b2d31] text-[#1877F2] focus:ring-[#1877F2]"
+              className="rounded text-[#1877F2] focus:ring-[#1877F2]"
+              style={{ background: 'var(--chat-bg-input)', borderColor: 'var(--chat-border)' }}
               checked={pinToTop}
               onChange={(e) => setPinToTop(e.target.checked)}
             />
@@ -57,10 +59,10 @@ export function CreateNoteModal({ isOpen, onClose, groupId }: CreateNoteModalPro
           </label>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0 border-t-0 bg-[#2b2d31]">
+        <DialogFooter className="gap-2 sm:gap-0 border-t-0" style={{ background: 'var(--chat-bg-sidebar)' }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md bg-transparent hover:bg-[#3f4147] transition-colors text-sm font-medium"
+            className="px-4 py-2 rounded-md bg-transparent hover:bg-chat-hover transition-colors text-sm font-medium"
           >
             Hủy
           </button>
