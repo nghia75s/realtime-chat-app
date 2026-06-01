@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { Bell, ShieldAlert, ChevronRight, Image as ImageIcon, FileText, Link as LinkIcon, Pin, Users, LogOut, Crown, PenBox, Calendar, Settings, AlertTriangle, Trash2 } from "lucide-react"
+import { Bell, ShieldAlert, ChevronRight, FileText, Pin, Users, LogOut, PenBox, Settings, AlertTriangle, Trash2 } from "lucide-react"
 import { ArchivePanel } from "./ArchivePanel"
 import { GroupManagementPanel } from "./GroupManagementPanel"
 import { MembersPanel } from "./MembersPanel"
+import { GroupBoardPanel } from "../chat/GroupBoardPanel"
 import { AddGroupMemberModal } from "./modals/AddGroupMemberModal"
 import { EditGroupModal } from "./modals/EditGroupModal"
 import { MuteNotificationModal } from "./modals/MuteNotificationModal"
@@ -14,9 +15,8 @@ import {
 import { useAuthStore } from "@/store/useAuthStore"
 
 export function RightInfoPanel({ chat }: { chat: any }) {
-  const [view, setView] = useState<"info" | "archive" | "management" | "members">("info")
+  const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board">("info")
   const [archiveTab, setArchiveTab] = useState<"media" | "file" | "link">("media")
-  const [isMembersOpen, setIsMembersOpen] = useState(true)
   const [isBoardOpen, setIsBoardOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false)
@@ -72,6 +72,10 @@ export function RightInfoPanel({ chat }: { chat: any }) {
         />
       </>
     )
+  }
+
+  if (view === "board") {
+    return <GroupBoardPanel chat={chat} onBack={() => setView("info")} />
   }
 
   return (
@@ -158,7 +162,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
                 </CollapsibleTrigger>
                 <CollapsibleContent className="px-2 pb-2">
                   <div className="flex flex-col mt-1">
-                    <button className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#2b2d31] transition-colors rounded-md text-[#e1e1e1]">
+                    <button onClick={() => setView('board')} className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#2b2d31] transition-colors rounded-md text-[#e1e1e1]">
                       <FileText className="w-4 h-4 text-[#a1a1a1]" />
                       <span className="text-[14px]">Ghi chú, ghim, bình chọn</span>
                     </button>

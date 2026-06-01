@@ -70,6 +70,10 @@ interface ChatStore {
     getGroupInvitations: () => Promise<void>;
     acceptGroupInvitation: (groupId: string) => Promise<any>;
     declineGroupInvitation: (groupId: string) => Promise<any>;
+    createNote: (groupId: string, payload: any) => Promise<any>;
+    createPoll: (groupId: string, payload: any) => Promise<any>;
+    votePoll: (messageId: string, optionIds: string[]) => Promise<any>;
+    addPollOption: (messageId: string, text: string) => Promise<any>;
 }
 
 // Helper: Đẩy item lên đầu mảng dựa theo _id, fallback unshift nếu chưa có
@@ -480,6 +484,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 toast.error(message);
             }
         });
+
+        socket.off("pollUpdated");
+        socket.on("pollUpdated", ({ messageId, message }) => {
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? message : m
+                ),
+                pinnedMessages: state.pinnedMessages.map((m) =>
+                    m._id === messageId ? message : m
+                )
+            }));
+        });
     },
     unsubscribeFromMessages: () => {
         const socket = useAuthStore.getState().socket;
@@ -776,4 +792,71 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             throw error;
         }
     },
+    
+    // --- Poll & Note Features ---
+    createNote: async (groupId, payload) => {
+        try {
+            const data = await chatService.createNote(groupId, payload);
+            const { selectedUser, messages, groups } = get();
+            if (selectedUser?._id === groupId) {
+                set({ messages: [...messages, data] });
+            }
+            set({ groups: pushToTop(groups, groupId, selectedUser, data) });
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi tạo ghi chú");
+            throw error;
+        }
+    },
+
+    createPoll: async (groupId, payload) => {
+        try {
+            const data = await chatService.createPoll(groupId, payload);
+            const { selectedUser, messages, groups } = get();
+            if (selectedUser?._id === groupId) {
+                set({ messages: [...messages, data] });
+            }
+            set({ groups: pushToTop(groups, groupId, selectedUser, data) });
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi tạo bình chọn");
+            throw error;
+        }
+    },
+
+    votePoll: async (messageId, optionIds) => {
+        try {
+            const data = await chatService.votePoll(messageId, optionIds);
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? data : m
+                ),
+                pinnedMessages: state.pinnedMessages.map((m) =>
+                    m._id === messageId ? data : m
+                )
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi bình chọn");
+            throw error;
+        }
+    },
+
+    addPollOption: async (messageId, text) => {
+        try {
+            const data = await chatService.addPollOption(messageId, text);
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? data : m
+                ),
+                pinnedMessages: state.pinnedMessages.map((m) =>
+                    m._id === messageId ? data : m
+                )
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi thêm phương án");
+            throw error;
+        }
+    }
 }));

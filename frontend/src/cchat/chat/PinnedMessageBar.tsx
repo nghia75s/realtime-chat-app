@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pin, ChevronDown, ChevronUp } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
 
-export function PinnedMessageBar() {
+export function PinnedMessageBar({ onMessageClick }: { onMessageClick?: (msgId: string) => void }) {
   const { pinnedMessages, pinMessage } = useChatStore();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -17,11 +17,19 @@ export function PinnedMessageBar() {
     }
   };
 
+  const handleMessageClick = (msgId: string) => {
+    if (onMessageClick) onMessageClick(msgId);
+    setIsOpen(false);
+  };
+
   const renderMessageContent = (msg: any) => {
     if (msg.messageType === "document") return `[Đơn] ${msg.documentPayload?.templateName || "Tài liệu"}`;
     if (msg.messageType === "task_assignment") return `[Task] ${msg.taskPayload?.title || "Công việc"}`;
+    if (msg.messageType === "note") return `[Ghi chú] ${msg.notePayload?.content || msg.text || "Nội dung ghi chú"}`;
+    if (msg.messageType === "poll") return `[Bình chọn] ${msg.pollPayload?.question || "Câu hỏi bình chọn"}`;
     if (msg.image && !msg.text) return "[Hình ảnh]";
-    return msg.text;
+    if (msg.file && !msg.text) return "[File đính kèm]";
+    return msg.text || "Tin nhắn ghim";
   };
 
   const topMessage = pinnedMessages[0];
@@ -30,7 +38,13 @@ export function PinnedMessageBar() {
     <div className="relative z-10 w-full bg-[#1e1f22] border-b border-[#2b2d31]">
       <div 
         className="px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-[#2b2d31]/50 transition-colors"
-        onClick={() => pinnedMessages.length > 1 && setIsOpen(!isOpen)}
+        onClick={() => {
+          if (pinnedMessages.length === 1) {
+             if (onMessageClick) onMessageClick(topMessage._id);
+          } else {
+             setIsOpen(!isOpen);
+          }
+        }}
       >
         <div className="flex items-center gap-3 overflow-hidden flex-1">
           <div className="w-6 h-6 rounded-full bg-[#0052cc]/20 flex items-center justify-center shrink-0">
@@ -64,7 +78,11 @@ export function PinnedMessageBar() {
       {isOpen && pinnedMessages.length > 1 && (
         <div className="absolute top-full left-0 w-full bg-[#1e1f22] border-b border-[#2b2d31] shadow-xl max-h-[300px] overflow-y-auto z-50">
           {pinnedMessages.map((msg: any) => (
-            <div key={msg._id} className="flex items-center justify-between px-4 py-3 hover:bg-[#2b2d31] border-t border-[#2b2d31]/50 cursor-pointer transition-colors group">
+            <div 
+              key={msg._id} 
+              className="flex items-center justify-between px-4 py-3 hover:bg-[#2b2d31] border-t border-[#2b2d31]/50 cursor-pointer transition-colors group"
+              onClick={() => handleMessageClick(msg._id)}
+            >
               <div className="flex flex-col min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-[13px] font-medium text-[#e1e1e1]">{msg.senderId?.fullname}</span>

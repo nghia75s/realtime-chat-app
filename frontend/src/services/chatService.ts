@@ -155,5 +155,26 @@ export const chatService = {
   declineGroupInvitation: async (groupId: string) => {
     const res = await axiosInstance.post(`groups/groups/${groupId}/invitations/decline`);
     return res.data;
+  },
+
+  // --- Poll & Note Features ---
+  createNote: async (groupId: string, payload: any) => {
+    const res = await axiosInstance.post(`messages/group/${groupId}/note`, payload);
+    return res.data;
+  },
+
+  createPoll: async (groupId: string, payload: any) => {
+    const res = await axiosInstance.post(`messages/group/${groupId}/poll`, payload);
+    return res.data;
+  },
+
+  votePoll: async (messageId: string, optionIds: string[]) => {
+    const res = await axiosInstance.post(`messages/poll/${messageId}/vote`, { optionIds });
+    return res.data;
+  },
+
+  addPollOption: async (messageId: string, text: string) => {
+    const res = await axiosInstance.post(`messages/poll/${messageId}/option`, { text });
+    return res.data;
   }
 };

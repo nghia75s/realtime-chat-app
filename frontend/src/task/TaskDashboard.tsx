@@ -26,7 +26,7 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
   const stats = {
     pending: displayedTasks.filter(t => t.status === "pending").length,
     done: displayedTasks.filter(t => t.status === "done").length,
-    rejected: displayedTasks.filter(t => t.status === "rejected").length,
+    rejected: displayedTasks.filter(t => (t.status as string) === "rejected").length,
   };
 
   const chartData = [
@@ -35,7 +35,7 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
     { name: 'Cần làm lại', value: stats.rejected, color: '#ef4444' },
   ].filter(d => d.value > 0);
 
-  const getStatusBadge = (status: TaskItem['status']) => {
+  const getStatusBadge = (status: TaskItem['status'] | string) => {
     switch (status) {
       case "pending": return <span className="bg-amber-500/20 text-amber-500 px-2 py-1 rounded-[4px] text-[12px] font-semibold flex items-center gap-1 w-max"><Clock className="w-3 h-3" /> Đang chờ</span>;
       case "done": return <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-[4px] text-[12px] font-semibold flex items-center gap-1 w-max"><CheckCircle2 className="w-3 h-3" /> Hoàn thành</span>;
