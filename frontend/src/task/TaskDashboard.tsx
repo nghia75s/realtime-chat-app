@@ -49,21 +49,21 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative w-[300px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a1a1a1]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-chat-muted" />
             <input
               value={filterStr}
               onChange={(e) => setFilterStr(e.target.value)}
               placeholder="Tìm kiếm công việc..."
-              className="w-full bg-[#1e1f22] border border-[#2b2d31] rounded-md py-2 pl-[34px] pr-3 text-[14px] text-white outline-none focus:border-[#0052cc] transition-colors placeholder:text-[#a1a1a1]"
+              className="w-full bg-chat-sidebar border border-chat-border rounded-md py-2 pl-[34px] pr-3 text-[14px] text-chat-text outline-none focus:border-[#0052cc] transition-colors placeholder:text-chat-muted"
             />
           </div>
 
-          <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#1e1f22] border border-[#2b2d31] text-[14px] text-[#e1e1e1] hover:bg-[#2b2d31] transition-colors">
-            <Filter className="w-4 h-4 text-[#a1a1a1]" /> Trạng thái
+          <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-chat-sidebar border border-chat-border text-[14px] text-chat-text/90 hover:bg-chat-hover transition-colors">
+            <Filter className="w-4 h-4 text-chat-muted" /> Trạng thái
           </button>
 
-          <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#1e1f22] border border-[#2b2d31] text-[14px] text-[#e1e1e1] hover:bg-[#2b2d31] transition-colors">
-            <Calendar className="w-4 h-4 text-[#a1a1a1]" /> Thời gian
+          <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-chat-sidebar border border-chat-border text-[14px] text-chat-text/90 hover:bg-chat-hover transition-colors">
+            <Calendar className="w-4 h-4 text-chat-muted" /> Thời gian
           </button>
         </div>
 
@@ -80,16 +80,16 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
       {/* Stats Chart Section */}
       {displayedTasks.length > 0 && (
         <div className="flex gap-6 mb-6 h-[160px] shrink-0">
-          <div className="bg-[#1e1f22] border border-[#2b2d31] rounded-xl p-4 flex-1 flex items-center justify-between">
+          <div className="bg-chat-sidebar border border-chat-border rounded-xl p-4 flex-1 flex items-center justify-between">
             <div className="flex flex-col gap-2">
-              <h3 className="text-[16px] font-semibold text-white flex items-center gap-2">
+              <h3 className="text-[16px] font-semibold text-chat-text flex items-center gap-2">
                 <PieChartIcon className="w-5 h-5 text-[#0052cc]" /> Thống kê công việc
               </h3>
-              <p className="text-[14px] text-[#a1a1a1]">Tổng số công việc: <span className="font-bold text-white">{displayedTasks.length}</span></p>
+              <p className="text-[14px] text-chat-muted">Tổng số công việc: <span className="font-bold text-chat-text">{displayedTasks.length}</span></p>
               <div className="flex gap-4 mt-2">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500"></div><span className="text-[13px] text-[#e1e1e1]">{stats.pending} Đang chờ</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div><span className="text-[13px] text-[#e1e1e1]">{stats.done} Hoàn thành</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div><span className="text-[13px] text-[#e1e1e1]">{stats.rejected} Cần làm lại</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500"></div><span className="text-[13px] text-chat-text/90">{stats.pending} Đang chờ</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div><span className="text-[13px] text-chat-text/90">{stats.done} Hoàn thành</span></div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div><span className="text-[13px] text-chat-text/90">{stats.rejected} Cần làm lại</span></div>
               </div>
             </div>
 
@@ -112,13 +112,13 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
                       ))}
                     </Pie>
                     <RechartsTooltip
-                      contentStyle={{ backgroundColor: '#1e1f22', border: '1px solid #2b2d31', borderRadius: '8px', color: '#fff' }}
-                      itemStyle={{ color: '#fff' }}
+                      contentStyle={{ backgroundColor: 'var(--chat-bg-sidebar)', border: '1px solid var(--chat-border)', borderRadius: '8px', color: 'var(--chat-text-main)' }}
+                      itemStyle={{ color: 'var(--chat-text-main)' }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="w-full h-full flex items-center justify-center rounded-full border-4 border-[#2b2d31] text-[12px] text-[#a1a1a1]">
+                <div className="w-full h-full flex items-center justify-center rounded-full border-4 border-chat-border text-[12px] text-chat-muted">
                   N/A
                 </div>
               )}
@@ -134,27 +134,27 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
             <div
               key={task._id}
               onClick={() => onOpenDetail(task)}
-              className="group bg-[#1e1f22] border border-[#2b2d31] hover:border-[#0052cc]/50 hover:bg-[#202124] rounded-lg p-5 cursor-pointer transition-all flex flex-col"
+              className="group bg-chat-sidebar border border-chat-border hover:border-[#0052cc]/50 hover:bg-chat-hover rounded-lg p-5 cursor-pointer transition-all flex flex-col"
             >
               <div className="flex items-start justify-between mb-3">
-                <h3 className="text-[16px] font-semibold text-white group-hover:text-[#0052cc] transition-colors pr-2 line-clamp-2 leading-tight">
+                <h3 className="text-[16px] font-semibold text-chat-text group-hover:text-[#0052cc] transition-colors pr-2 line-clamp-2 leading-tight">
                   {task.title}
                 </h3>
                 {getStatusBadge(task.status)}
               </div>
 
-              <div className="text-[14px] text-[#a1a1a1] line-clamp-2 mb-4 flex-1">
+              <div className="text-[14px] text-chat-muted line-clamp-2 mb-4 flex-1">
                 {task.description}
               </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-[#2b2d31]">
+              <div className="flex items-center justify-between pt-4 border-t border-chat-border">
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-2">
                     {task.assignees.slice(0, 4).map((a, i) => (
-                      <img key={i} src={a.user?.profilePicture || "/avatar.png"} className="w-[28px] h-[28px] rounded-full border-2 border-[#1e1f22] relative object-cover" style={{ zIndex: 10 - i }} title={a.user?.fullname || "Unknown"} />
+                      <img key={i} src={a.user?.profilePicture || "/avatar.png"} className="w-[28px] h-[28px] rounded-full border-2 border-chat-sidebar relative object-cover" style={{ zIndex: 10 - i }} title={a.user?.fullname || "Unknown"} />
                     ))}
                     {task.assignees.length > 4 && (
-                      <div className="w-[28px] h-[28px] rounded-full border-2 border-[#1e1f22] bg-[#2b2d31] text-[#e1e1e1] text-[11px] font-medium flex items-center justify-center relative" style={{ zIndex: 5 }}>
+                      <div className="w-[28px] h-[28px] rounded-full border-2 border-chat-sidebar bg-chat-hover text-chat-text/90 text-[11px] font-medium flex items-center justify-center relative" style={{ zIndex: 5 }}>
                         +{task.assignees.length - 4}
                       </div>
                     )}
@@ -162,7 +162,7 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
                   </div>
                 </div>
                 <div className="flex flex-col gap-1 text-right shrink-0">
-                  <div className="flex items-center justify-end text-[12px] text-[#a1a1a1]">
+                  <div className="flex items-center justify-end text-[12px] text-chat-muted">
                     Tạo: {new Date(task.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                   </div>
                   <div className="flex items-center text-[12px] text-[#ebaa16] font-medium bg-[#ebaa16]/10 px-2 py-1 rounded">
@@ -173,7 +173,7 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
             </div>
           ))}
           {displayedTasks.length === 0 && (
-            <div className="col-span-full py-10 flex flex-col items-center justify-center text-[#a1a1a1]">
+            <div className="col-span-full py-10 flex flex-col items-center justify-center text-chat-muted">
               <CheckCircle2 className="w-10 h-10 mb-2 opacity-20" />
               <p>Không tìm thấy công việc nào.</p>
             </div>

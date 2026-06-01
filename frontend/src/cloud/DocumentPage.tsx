@@ -35,13 +35,13 @@ export default function DocumentPage() {
 
   if (!isGlobalAdmin && !managedDept) {
     return (
-      <div className="flex h-screen w-screen overflow-hidden bg-[#131416] text-[#e1e1e1] font-sans">
+      <div className="flex h-screen w-screen overflow-hidden bg-chat-main text-chat-text font-sans">
         <PrimarySidebar activeTab="cloud" />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center p-8 max-w-md bg-[#1e1f22] rounded-xl border border-[#2b2d31]">
-            <Folder className="w-16 h-16 text-[#a1a1a1] mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Không có quyền truy cập</h2>
-            <p className="text-[#a1a1a1]">Chỉ Trưởng phòng mới có thể quản lý tài liệu và đơn từ của nhân sự trong bộ phận.</p>
+          <div className="text-center p-8 max-w-md bg-chat-sidebar rounded-xl border border-chat-border">
+            <Folder className="w-16 h-16 text-chat-muted mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-chat-text mb-2">Không có quyền truy cập</h2>
+            <p className="text-chat-muted">Chỉ Trưởng phòng mới có thể quản lý tài liệu và đơn từ của nhân sự trong bộ phận.</p>
           </div>
         </div>
       </div>
@@ -49,23 +49,23 @@ export default function DocumentPage() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#131416] text-[#e1e1e1] font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-chat-main text-chat-text font-sans">
       <PrimarySidebar activeTab="cloud" />
 
       {/* Sidebar nhân sự */}
-      <div className="w-[300px] bg-[#1e1f22] border-r border-[#2b2d31] flex flex-col shrink-0 z-10">
-        <div className="p-4 border-b border-[#2b2d31] shrink-0">
-          <h2 className="text-lg font-bold text-white">Quản lý Tài liệu</h2>
-          <p className="text-[13px] text-[#a1a1a1] mt-0.5">{managedDept}</p>
+      <div className="w-[300px] bg-chat-sidebar border-r border-chat-border flex flex-col shrink-0 z-10">
+        <div className="p-4 border-b border-chat-border shrink-0">
+          <h2 className="text-lg font-bold text-chat-text">Quản lý Tài liệu</h2>
+          <p className="text-[13px] text-chat-muted mt-0.5">{managedDept}</p>
         </div>
 
-        <div className="p-3 border-b border-[#2b2d31]">
+        <div className="p-3 border-b border-chat-border">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a1a1a1]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-chat-muted" />
             <input
               type="text"
               placeholder="Tìm nhân viên..."
-              className="w-full bg-[#131416] border border-[#2b2d31] rounded-md pl-9 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-[#0052cc]"
+              className="w-full bg-chat-main border border-chat-border rounded-md pl-9 pr-3 py-1.5 text-sm text-chat-text focus:outline-none focus:border-[#0052cc]"
             />
           </div>
         </div>
@@ -78,13 +78,13 @@ export default function DocumentPage() {
                 setSelectedUserId(emp._id);
                 setActiveCategory(null);
               }}
-              className={`w-full flex items-center gap-3 p-3 rounded-md transition-colors ${selectedUserId === emp._id ? "bg-[#0052cc]/10 text-white" : "hover:bg-[#2b2d31]/50 text-[#e1e1e1]"
+              className={`w-full flex items-center gap-3 p-3 rounded-md transition-colors ${selectedUserId === emp._id ? "bg-chat-active text-chat-text font-semibold" : "hover:bg-chat-hover text-chat-text/90"
                 }`}
             >
               <img src={emp.profilePicture || "/avatar.png"} alt={emp.fullname} className="w-10 h-10 rounded-full object-cover shrink-0" />
               <div className="text-left flex-1 min-w-0">
                 <p className="font-medium text-sm truncate">{emp.fullname}</p>
-                <p className="text-[12px] text-[#a1a1a1] truncate">{emp.email}</p>
+                <p className="text-[12px] text-chat-muted truncate">{emp.email}</p>
               </div>
             </button>
           ))}
@@ -92,9 +92,9 @@ export default function DocumentPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-hidden flex flex-col relative bg-[#131416]">
+      <div className="flex-1 overflow-hidden flex flex-col relative bg-chat-main">
         {!selectedUser ? (
-          <div className="flex-1 flex items-center justify-center text-[#a1a1a1]">
+          <div className="flex-1 flex items-center justify-center text-chat-muted">
             <div className="text-center">
               <Folder className="w-16 h-16 mx-auto mb-4 opacity-50" />
               <p>Chọn một nhân viên bên trái để xem tài liệu & đơn từ.</p>
@@ -103,11 +103,11 @@ export default function DocumentPage() {
         ) : (
           <>
             {/* Header */}
-            <div className="h-[60px] border-b border-[#2b2d31] flex items-center px-6 shrink-0 bg-[#1e1f22]/50 backdrop-blur-md">
+            <div className="h-[60px] border-b border-chat-border flex items-center px-6 shrink-0 bg-chat-header/50 backdrop-blur-md">
               {activeCategory ? (
                 <button
                   onClick={() => setActiveCategory(null)}
-                  className="flex items-center gap-2 text-[#a1a1a1] hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-chat-muted hover:text-chat-text transition-colors"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   <span className="font-medium">Quay lại danh mục</span>
@@ -116,8 +116,8 @@ export default function DocumentPage() {
                 <div className="flex items-center gap-3">
                   <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.fullname} className="w-8 h-8 rounded-full object-cover" />
                   <div>
-                    <h2 className="font-bold text-white text-sm">{selectedUser.fullname}</h2>
-                    <p className="text-xs text-[#a1a1a1]">Kho tài liệu cá nhân</p>
+                    <h2 className="font-bold text-chat-text text-sm">{selectedUser.fullname}</h2>
+                    <p className="text-xs text-chat-muted">Kho tài liệu cá nhân</p>
                   </div>
                 </div>
               )}
@@ -128,43 +128,43 @@ export default function DocumentPage() {
               {!activeCategory ? (
                 // 4 Thư mục
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                  <button onClick={() => setActiveCategory("files")} className="bg-[#1e1f22] border border-[#2b2d31] p-6 rounded-xl hover:border-[#0052cc] hover:bg-[#0052cc]/5 transition-all text-left group">
+                  <button onClick={() => setActiveCategory("files")} className="bg-chat-sidebar border border-chat-border p-6 rounded-xl hover:border-[#0052cc] hover:bg-[#0052cc]/5 transition-all text-left group">
                     <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <Folder className="w-7 h-7 text-blue-500" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-1">Tệp tin (Files)</h3>
-                    <p className="text-sm text-[#a1a1a1]">Văn bản, tài liệu Word, Excel, PDF</p>
+                    <h3 className="text-lg font-bold text-chat-text mb-1">Tệp tin (Files)</h3>
+                    <p className="text-sm text-chat-muted">Văn bản, tài liệu Word, Excel, PDF</p>
                   </button>
 
-                  <button onClick={() => setActiveCategory("images")} className="bg-[#1e1f22] border border-[#2b2d31] p-6 rounded-xl hover:border-purple-500 hover:bg-purple-500/5 transition-all text-left group">
+                  <button onClick={() => setActiveCategory("images")} className="bg-chat-sidebar border border-chat-border p-6 rounded-xl hover:border-purple-500 hover:bg-purple-500/5 transition-all text-left group">
                     <div className="w-14 h-14 rounded-full bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <ImageIcon className="w-7 h-7 text-purple-500" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-1">Hình ảnh (Images)</h3>
-                    <p className="text-sm text-[#a1a1a1]">Ảnh mockup, banner, thiết kế</p>
+                    <h3 className="text-lg font-bold text-chat-text mb-1">Hình ảnh (Images)</h3>
+                    <p className="text-sm text-chat-muted">Ảnh mockup, banner, thiết kế</p>
                   </button>
 
-                  <button onClick={() => setActiveCategory("links")} className="bg-[#1e1f22] border border-[#2b2d31] p-6 rounded-xl hover:border-green-500 hover:bg-green-500/5 transition-all text-left group">
+                  <button onClick={() => setActiveCategory("links")} className="bg-chat-sidebar border border-chat-border p-6 rounded-xl hover:border-green-500 hover:bg-green-500/5 transition-all text-left group">
                     <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <LinkIcon className="w-7 h-7 text-green-500" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-1">Liên kết (Links)</h3>
-                    <p className="text-sm text-[#a1a1a1]">Figma, Google Drive, Github</p>
+                    <h3 className="text-lg font-bold text-chat-text mb-1">Liên kết (Links)</h3>
+                    <p className="text-sm text-chat-muted">Figma, Google Drive, Github</p>
                   </button>
 
-                  <button onClick={() => setActiveCategory("forms")} className="bg-[#1e1f22] border border-[#2b2d31] p-6 rounded-xl hover:border-orange-500 hover:bg-orange-500/5 transition-all text-left group">
+                  <button onClick={() => setActiveCategory("forms")} className="bg-chat-sidebar border border-chat-border p-6 rounded-xl hover:border-orange-500 hover:bg-orange-500/5 transition-all text-left group">
                     <div className="w-14 h-14 rounded-full bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                       <FileText className="w-7 h-7 text-orange-500" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-1">Đơn từ (Forms)</h3>
-                    <p className="text-sm text-[#a1a1a1]">Đơn xin nghỉ phép, thanh toán, v.v.</p>
+                    <h3 className="text-lg font-bold text-chat-text mb-1">Đơn từ (Forms)</h3>
+                    <p className="text-sm text-chat-muted">Đơn xin nghỉ phép, thanh toán, v.v.</p>
                   </button>
                 </div>
               ) : (
                 // Chi tiết danh sách bên trong thư mục
                 <div className="max-w-4xl mx-auto">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-white capitalize flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-chat-text capitalize flex items-center gap-3">
                       {activeCategory === "files" && <Folder className="w-6 h-6 text-blue-500" />}
                       {activeCategory === "images" && <ImageIcon className="w-6 h-6 text-purple-500" />}
                       {activeCategory === "links" && <LinkIcon className="w-6 h-6 text-green-500" />}
@@ -173,33 +173,33 @@ export default function DocumentPage() {
                     </h2>
                   </div>
 
-                  <div className="bg-[#1e1f22] border border-[#2b2d31] rounded-xl overflow-hidden shadow-sm">
+                  <div className="bg-chat-sidebar border border-chat-border rounded-xl overflow-hidden shadow-sm">
                     {userDocs.length === 0 ? (
-                      <div className="p-12 text-center text-[#a1a1a1]">
+                      <div className="p-12 text-center text-chat-muted">
                         Thư mục này hiện đang trống.
                       </div>
                     ) : (
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-[#2b2d31]/30 border-b border-[#2b2d31]">
-                            <th className="px-4 py-3 text-sm font-semibold text-[#a1a1a1]">Tên tài liệu</th>
-                            <th className="px-4 py-3 text-sm font-semibold text-[#a1a1a1] w-[150px]">Ngày tạo</th>
-                            <th className="px-4 py-3 text-sm font-semibold text-[#a1a1a1] w-[150px]">
+                          <tr className="bg-chat-hover/30 border-b border-chat-border">
+                            <th className="px-4 py-3 text-sm font-semibold text-chat-muted">Tên tài liệu</th>
+                            <th className="px-4 py-3 text-sm font-semibold text-chat-muted w-[150px]">Ngày tạo</th>
+                            <th className="px-4 py-3 text-sm font-semibold text-chat-muted w-[150px]">
                               {activeCategory === "forms" ? "Trạng thái" : "Kích thước"}
                             </th>
-                            <th className="px-4 py-3 text-sm font-semibold text-[#a1a1a1] w-[80px]"></th>
+                            <th className="px-4 py-3 text-sm font-semibold text-chat-muted w-[80px]"></th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#2b2d31]">
+                        <tbody className="divide-y divide-chat-border">
                           {userDocs.map(doc => (
-                            <tr key={doc.id} className="hover:bg-[#2b2d31]/30 transition-colors group">
+                            <tr key={doc.id} className="hover:bg-chat-hover/30 transition-colors group">
                               <td className="px-4 py-4">
                                 <div className="flex items-center gap-3">
-                                  <File className="w-5 h-5 text-[#a1a1a1]" />
-                                  <span className="font-medium text-[#e1e1e1]">{doc.name}</span>
+                                  <File className="w-5 h-5 text-chat-muted" />
+                                  <span className="font-medium text-chat-text">{doc.name}</span>
                                 </div>
                               </td>
-                              <td className="px-4 py-4 text-sm text-[#a1a1a1]">{doc.date}</td>
+                              <td className="px-4 py-4 text-sm text-chat-muted">{doc.date}</td>
                               <td className="px-4 py-4 text-sm">
                                 {activeCategory === "forms" ? (
                                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${doc.status === "approved" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
@@ -209,16 +209,16 @@ export default function DocumentPage() {
                                     {doc.status === "approved" ? "Đã duyệt" : doc.status === "rejected" ? "Từ chối" : "Đang chờ"}
                                   </span>
                                 ) : (
-                                  <span className="text-[#a1a1a1]">{doc.size || "-"}</span>
+                                  <span className="text-chat-muted">{doc.size || "-"}</span>
                                 )}
                               </td>
                               <td className="px-4 py-4 text-right">
                                 {activeCategory === "links" ? (
-                                  <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex p-2 text-[#a1a1a1] hover:text-[#0052cc] transition-colors rounded">
+                                  <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex p-2 text-chat-muted hover:text-[#0052cc] transition-colors rounded">
                                     <ExternalLink className="w-4 h-4" />
                                   </a>
                                 ) : (
-                                  <button className="p-2 text-[#a1a1a1] hover:text-[#0052cc] transition-colors rounded">
+                                  <button className="p-2 text-chat-muted hover:text-[#0052cc] transition-colors rounded">
                                     <Download className="w-4 h-4" />
                                   </button>
                                 )}

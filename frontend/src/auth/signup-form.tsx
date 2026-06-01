@@ -9,7 +9,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Eye, EyeOff, LoaderIcon } from "lucide-react"
+import { Eye, EyeOff, LoaderIcon, Check, X } from "lucide-react"
 
 import { useAuthStore } from "@/store/useAuthStore"
 
@@ -29,6 +29,47 @@ export function SignupForm({
 
   const { signup, isSigningUp, authUser } = useAuthStore();
   const navigate = useNavigate();
+
+  // Hàm kiểm tra mật khẩu đạt đủ điều kiện
+  const isPasswordStrong = (password: string): boolean => {
+    if (!password) return false;
+    // Kiểm tra: ít nhất 8 ký tự, có chữ hoa, chữ thường, và số
+    const hasMinLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    return hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
+  };
+
+  // Hàm tính độ mạnh của mật khẩu (0-4)
+  const getPasswordStrength = (password: string): { level: number; color: string } => {
+    if (!password) return { level: 0, color: "bg-gray-300" };
+    
+    let strength = 0;
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    if (hasLowerCase) strength++;
+    if (hasUpperCase) strength++;
+    if (hasNumber) strength++;
+    if (hasSpecialChar) strength++;
+
+    // Xác định màu dựa trên mức độ
+    let color = "bg-gray-300";
+    if (strength === 1) color = "bg-red-500";
+    else if (strength === 2) color = "bg-yellow-500";
+    else if (strength === 3) color = "bg-lime-400";
+    else if (strength === 4) color = "bg-green-600";
+
+    return { level: strength, color };
+  };
+
+  // Hàm kiểm tra mật khẩu khớp
+  const isPasswordMatch = (): boolean => {
+    return formData.password === formData.confirmPassword;
+  };
 
   useEffect(() => {
     if (authUser) {
@@ -110,14 +151,39 @@ export function SignupForm({
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
                       className="input pr-10"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      {formData.password && (
+                        isPasswordStrong(formData.password) ? (
+                          <Check size={18} className="text-green-500" />
+                        ) : (
+                          <X size={18} className="text-red-500" />
+                        )
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
+                  
+                  {/* Thanh độ mạnh mật khẩu nhỏ */}
+                  {formData.password && (
+                    <div className="flex gap-0.5 mt-1 justify-end">
+                      {[1, 2, 3, 4].map((step) => (
+                        <div
+                          key={step}
+                          className={`h-1 w-3 rounded-full transition-colors ${
+                            step <= getPasswordStrength(formData.password).level
+                              ? getPasswordStrength(formData.password).color
+                              : "bg-gray-300 dark:bg-gray-600"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </Field>
 
                 <Field>
@@ -130,13 +196,24 @@ export function SignupForm({
                       onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                       className="input pr-10"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      {formData.confirmPassword && (
+                        !isPasswordStrong(formData.password) ? (
+                          <X size={18} className="text-red-500" />
+                        ) : isPasswordMatch() ? (
+                          <Check size={18} className="text-green-500" />
+                        ) : (
+                          <X size={18} className="text-red-500" />
+                        )
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </Field>
 
