@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { ChevronLeft, MoreHorizontal, UserPlus, Crown, LogOut, UserMinus, ShieldAlert, Check, X } from "lucide-react"
+import { ChevronLeft, MoreHorizontal, UserPlus, Crown, ShieldAlert, Check, X } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useChatStore } from "@/store/useChatStore"
 import {
@@ -22,7 +22,7 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
   const { removeGroupMember, leaveGroup, setActiveTab, addGroupAdmin, removeGroupAdmin, transferGroupOwner, getPendingMembers, approveMember, rejectMember } = useChatStore()
   const [panelTab, setPanelTab] = useState<"members" | "pending">("members")
   const [pendingMembersList, setPendingMembersList] = useState<any[]>([])
-  
+
   if (!chat || !chat.isGroup) return null;
 
   const members = chat.members || []
@@ -102,7 +102,7 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
     <div className="flex w-[340px] shrink-0 flex-col border-l border-chat-border h-full overflow-hidden text-chat-text" style={{ background: 'var(--chat-bg-sidebar)' }}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-chat-border px-4 py-[14px] shrink-0 font-medium text-[16px] text-chat-text shadow-sm z-10" style={{ background: 'var(--chat-bg-sidebar)' }}>
-        <button 
+        <button
           onClick={onBack}
           className="p-1 -ml-1 hover:bg-chat-hover rounded text-chat-muted transition-colors shrink-0"
         >
@@ -116,7 +116,7 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
         {/* Thêm thành viên button */}
         {currentUserIsManager && (
           <div className="p-4">
-            <button 
+            <button
               onClick={onAddMember}
               className="flex w-full items-center justify-center gap-2 rounded-md bg-chat-hover hover:bg-chat-active/30 transition-colors py-2.5 text-[14px] font-semibold text-chat-text"
             >
@@ -149,109 +149,109 @@ export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
             <div className={`flex items-center justify-between px-4 pb-2 pt-4`}>
               <span className="text-[14px] font-bold text-chat-text">Danh sách ({members.length})</span>
               <button className="text-chat-muted hover:text-chat-text transition-colors">
-                 <MoreHorizontal className="h-5 w-5" />
+                <MoreHorizontal className="h-5 w-5" />
               </button>
             </div>
 
-        <div className="flex flex-col">
-          {members.map((member: any) => {
-            const memberId = typeof member === "string" ? member : member._id
-            const isTargetCreator = memberId?.toString() === creatorId?.toString()
-            const isTargetAdmin = adminIds.includes(memberId?.toString())
-            const isMe = memberId?.toString() === authUser?._id?.toString()
-            const memberPic = member.profilePicture || "/avatar.png"
-            
-            let memberName = member.fullname || memberId
-            if (isMe) {
-               memberName = "Bạn"
-            }
+            <div className="flex flex-col">
+              {members.map((member: any) => {
+                const memberId = typeof member === "string" ? member : member._id
+                const isTargetCreator = memberId?.toString() === creatorId?.toString()
+                const isTargetAdmin = adminIds.includes(memberId?.toString())
+                const isMe = memberId?.toString() === authUser?._id?.toString()
+                const memberPic = member.profilePicture || "/avatar.png"
 
-            // Determine if current user can interact with target user
-            let canShowDropdown = false;
-            if (isMe && !isTargetCreator) {
-              canShowDropdown = true; // Can leave group, but creator cannot leave unless they transfer
-            } else if (!isMe) {
-              if (currentUserIsCreator) {
-                canShowDropdown = true; // Creator can do anything to others
-              } else if (currentUserIsAdmin && !isTargetCreator && !isTargetAdmin) {
-                canShowDropdown = true; // Admin can remove normal members
-              }
-            }
+                let memberName = member.fullname || memberId
+                if (isMe) {
+                  memberName = "Bạn"
+                }
 
-            return (
-              <div key={memberId} className="flex items-center justify-between px-4 py-2 hover:bg-chat-hover transition-colors group">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="relative">
-                    <img src={memberPic} className="w-10 h-10 rounded-full object-cover border border-chat-border" alt="" />
-                    {isTargetCreator && (
-                      <div className="absolute -bottom-1 -right-1 bg-[#ebaa16] text-[#1e1f22] p-0.5 rounded-full border-2 border-chat-sidebar" title="Trưởng nhóm">
-                        <Crown className="w-2.5 h-2.5" strokeWidth={3} />
+                // Determine if current user can interact with target user
+                let canShowDropdown = false;
+                if (isMe && !isTargetCreator) {
+                  canShowDropdown = true; // Can leave group, but creator cannot leave unless they transfer
+                } else if (!isMe) {
+                  if (currentUserIsCreator) {
+                    canShowDropdown = true; // Creator can do anything to others
+                  } else if (currentUserIsAdmin && !isTargetCreator && !isTargetAdmin) {
+                    canShowDropdown = true; // Admin can remove normal members
+                  }
+                }
+
+                return (
+                  <div key={memberId} className="flex items-center justify-between px-4 py-2 hover:bg-chat-hover transition-colors group">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="relative">
+                        <img src={memberPic} className="w-10 h-10 rounded-full object-cover border border-chat-border" alt="" />
+                        {isTargetCreator && (
+                          <div className="absolute -bottom-1 -right-1 bg-[#ebaa16] text-[#1e1f22] p-0.5 rounded-full border-2 border-chat-sidebar" title="Trưởng nhóm">
+                            <Crown className="w-2.5 h-2.5" strokeWidth={3} />
+                          </div>
+                        )}
+                        {isTargetAdmin && !isTargetCreator && (
+                          <div className="absolute -bottom-1 -right-1 bg-[#1877F2] text-white p-0.5 rounded-full border-2 border-chat-sidebar" title="Phó nhóm">
+                            <ShieldAlert className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {isTargetAdmin && !isTargetCreator && (
-                      <div className="absolute -bottom-1 -right-1 bg-[#1877F2] text-white p-0.5 rounded-full border-2 border-chat-sidebar" title="Phó nhóm">
-                        <ShieldAlert className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        <span className="text-[14px] font-medium truncate text-chat-text">{memberName}</span>
+                        {isTargetCreator && <span className="text-[12px] text-chat-muted">Trưởng nhóm</span>}
+                        {isTargetAdmin && !isTargetCreator && <span className="text-[12px] text-chat-muted">Phó nhóm</span>}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 flex flex-col">
-                    <span className="text-[14px] font-medium truncate text-chat-text">{memberName}</span>
-                    {isTargetCreator && <span className="text-[12px] text-chat-muted">Trưởng nhóm</span>}
-                    {isTargetAdmin && !isTargetCreator && <span className="text-[12px] text-chat-muted">Phó nhóm</span>}
-                  </div>
-                </div>
+                    </div>
 
-                {canShowDropdown && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-chat-hover rounded-md text-chat-muted transition-all focus:opacity-100 data-[state=open]:opacity-100">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48 border shadow-md" style={{ background: 'var(--chat-dropdown-bg)', borderColor: 'var(--chat-border)', color: 'var(--chat-text-main)' }}>
-                      {isMe ? (
-                        <DropdownMenuItem 
-                          onClick={handleLeaveGroup}
-                          className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover text-red-400 focus:text-red-400"
-                        >
-                          Rời nhóm
-                        </DropdownMenuItem>
-                      ) : (
-                        <>
-                          {currentUserIsCreator && (
+                    {canShowDropdown && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-chat-hover rounded-md text-chat-muted transition-all focus:opacity-100 data-[state=open]:opacity-100">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 border shadow-md" style={{ background: 'var(--chat-dropdown-bg)', borderColor: 'var(--chat-border)', color: 'var(--chat-text-main)' }}>
+                          {isMe ? (
+                            <DropdownMenuItem
+                              onClick={handleLeaveGroup}
+                              className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover text-red-400 focus:text-red-400"
+                            >
+                              Rời nhóm
+                            </DropdownMenuItem>
+                          ) : (
                             <>
-                              {!isTargetAdmin ? (
-                                <DropdownMenuItem onClick={() => handleAddAdmin(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover">
-                                  Chỉ định phó nhóm
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem onClick={() => handleRemoveAdmin(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover text-[#ebaa16] focus:text-[#ebaa16]">
-                                  Thu hồi phó nhóm
-                                </DropdownMenuItem>
+                              {currentUserIsCreator && (
+                                <>
+                                  {!isTargetAdmin ? (
+                                    <DropdownMenuItem onClick={() => handleAddAdmin(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover">
+                                      Chỉ định phó nhóm
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => handleRemoveAdmin(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover text-[#ebaa16] focus:text-[#ebaa16]">
+                                      Thu hồi phó nhóm
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => handleTransferOwner(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover">
+                                    Chuyển quyền trưởng nhóm
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator className="bg-chat-border" />
+                                </>
                               )}
-                              <DropdownMenuItem onClick={() => handleTransferOwner(memberId)} className="cursor-pointer hover:bg-chat-hover focus:bg-chat-hover">
-                                Chuyển quyền trưởng nhóm
+
+                              <DropdownMenuItem
+                                onClick={() => handleRemoveMember(memberId)}
+                                className="cursor-pointer text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-400"
+                              >
+                                Xóa khỏi nhóm
                               </DropdownMenuItem>
-                              <DropdownMenuSeparator className="bg-chat-border" />
                             </>
                           )}
-                          
-                          <DropdownMenuItem 
-                            onClick={() => handleRemoveMember(memberId)}
-                            className="cursor-pointer text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-400"
-                          >
-                            Xóa khỏi nhóm
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-            )
-          })}
-        </div>
-        </>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </>
         ) : (
           <div className="flex flex-col pt-2">
             {pendingMembersList.length === 0 ? (

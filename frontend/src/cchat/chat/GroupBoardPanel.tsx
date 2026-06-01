@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowLeft, Pin, FileText, BarChart2, Plus } from "lucide-react";
+import { ArrowLeft, Pin, FileText, Plus } from "lucide-react";
 import { useChatStore } from "@/store/useChatStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { formatDate } from "@/lib/formatTime";
@@ -52,7 +52,7 @@ export function GroupBoardPanel({ chat, onBack }: { chat: any; onBack: () => voi
   }, [boardItems, activeTab]);
 
   const { authUser } = useAuthStore();
-  const isManager = authUser?._id === (typeof chat.createdBy === "string" ? chat.createdBy : chat.createdBy?._id) || chat.admins?.some((adminId: any) => 
+  const isManager = authUser?._id === (typeof chat.createdBy === "string" ? chat.createdBy : chat.createdBy?._id) || chat.admins?.some((adminId: any) =>
     (typeof adminId === "string" ? adminId : adminId._id) === authUser?._id
   );
   const permissions = chat.settings?.memberPermissions || {};
@@ -99,17 +99,17 @@ export function GroupBoardPanel({ chat, onBack }: { chat: any; onBack: () => voi
                     {formatDate(item.createdAt)}
                   </span>
                 </div>
-                
+
                 {/* Render specific component based on type */}
                 {item.messageType === "note" ? (
-                   <NoteMessageCard message={item} />
+                  <NoteMessageCard message={item} />
                 ) : item.messageType === "poll" ? (
-                   <PollMessageCard message={item} />
+                  <PollMessageCard message={item} />
                 ) : (
-                   <div className="text-sm text-chat-text break-words">
-                     {item.isPinned && <Pin className="w-3 h-3 inline mr-1 text-[#1877F2]" />}
-                     {item.text || "Tin nhắn đính kèm..."}
-                   </div>
+                  <div className="text-sm text-chat-text break-words">
+                    {item.isPinned && <Pin className="w-3 h-3 inline mr-1 text-[#1877F2]" />}
+                    {item.text || "Tin nhắn đính kèm..."}
+                  </div>
                 )}
               </div>
             ))}
@@ -146,7 +146,7 @@ export function GroupBoardPanel({ chat, onBack }: { chat: any; onBack: () => voi
         onClose={() => setIsCreateNoteOpen(false)}
         groupId={chat._id}
       />
-      
+
       <CreatePollModal
         isOpen={isCreatePollOpen}
         onClose={() => setIsCreatePollOpen(false)}
@@ -160,11 +160,10 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`pb-2 px-1 text-[14px] font-medium transition-colors border-b-2 whitespace-nowrap flex-1 text-center ${
-        active
+      className={`pb-2 px-1 text-[14px] font-medium transition-colors border-b-2 whitespace-nowrap flex-1 text-center ${active
           ? "border-[#0052cc] text-[#0052cc]"
           : "border-transparent text-chat-muted hover:text-chat-text"
-      }`}
+        }`}
     >
       {children}
     </button>
