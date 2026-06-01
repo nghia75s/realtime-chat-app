@@ -24,20 +24,20 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#131416] text-[#e1e1e1] font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-chat-main text-chat-text font-sans">
       <PrimarySidebar activeTab="admin" />
 
       {/* Admin Sidebar */}
-      <div className="w-[280px] bg-[#1e1f22] border-r border-[#2b2d31] flex flex-col shrink-0">
-        <div className="p-4 border-b border-[#2b2d31] shrink-0">
-          <h2 className="text-xl font-bold text-white">Quản Trị Hệ Thống</h2>
-          <p className="text-xs text-[#a1a1a1] mt-1">Quản lý tài khoản, phân quyền & phòng ban</p>
+      <div className="w-[280px] bg-chat-sidebar border-r border-chat-border flex flex-col shrink-0">
+        <div className="p-4 border-b border-chat-border shrink-0">
+          <h2 className="text-xl font-bold text-chat-text">Quản Trị Hệ Thống</h2>
+          <p className="text-xs text-chat-muted mt-1">Quản lý tài khoản, phân quyền & phòng ban</p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-1">
           <button
             onClick={() => setActiveTab("users")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${activeTab === "users" ? "bg-[#2b2d31] text-white font-medium" : "text-[#a1a1a1] hover:bg-[#2b2d31]/50 hover:text-[#e1e1e1]"
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${activeTab === "users" ? "bg-chat-hover text-chat-text font-medium" : "text-chat-muted hover:bg-chat-hover/50 hover:text-chat-text"
               }`}
           >
             <Users className="w-5 h-5" />
@@ -46,7 +46,7 @@ export default function AdminPage() {
 
           <button
             onClick={() => setActiveTab("roles")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${activeTab === "roles" ? "bg-[#2b2d31] text-white font-medium" : "text-[#a1a1a1] hover:bg-[#2b2d31]/50 hover:text-[#e1e1e1]"
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${activeTab === "roles" ? "bg-chat-hover text-chat-text font-medium" : "text-chat-muted hover:bg-chat-hover/50 hover:text-chat-text"
               }`}
           >
             <Shield className="w-5 h-5" />
@@ -55,7 +55,7 @@ export default function AdminPage() {
 
           <button
             onClick={() => setActiveTab("departments")}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${activeTab === "departments" ? "bg-[#2b2d31] text-white font-medium" : "text-[#a1a1a1] hover:bg-[#2b2d31]/50 hover:text-[#e1e1e1]"
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${activeTab === "departments" ? "bg-chat-hover text-chat-text font-medium" : "text-chat-muted hover:bg-chat-hover/50 hover:text-chat-text"
               }`}
           >
             <Building2 className="w-5 h-5" />

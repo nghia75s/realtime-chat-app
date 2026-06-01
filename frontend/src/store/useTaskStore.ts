@@ -3,7 +3,7 @@ import { taskService } from "@/services/taskService";
 import toast from "react-hot-toast";
 import { useAuthStore } from "./useAuthStore";
 
-export type TaskStatus = "pending" | "done";
+export type TaskStatus = "pending" | "done" | "rejected";
 export type AssigneeStatus = "pending" | "submitted" | "done" | "rejected";
 export type CommitType = "create" | "commit" | "approve" | "reject" | "edit";
 

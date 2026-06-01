@@ -9,7 +9,7 @@ export default function ContactsPage() {
   const [activeMenu, setActiveMenu] = useState<string>("contacts")
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#1e1f22] text-[#e1e1e1] font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-chat-main text-chat-text font-sans">
       {/* Cột 1: Global Navigation */}
       <PrimarySidebar activeTab="contacts" />
 

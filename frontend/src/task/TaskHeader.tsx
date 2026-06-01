@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from "react"
-import { Bell, Check, X } from "lucide-react"
+import { Bell, Check } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useNotificationStore } from "@/store/useNotificationStore"
 
 export function TaskHeader() {
   const { authUser } = useAuthStore()
-  const { 
-    notifications, 
-    unreadCount, 
+  const {
+    notifications,
+    unreadCount,
     isSubscribed,
-    fetchNotifications, 
-    markAsRead, 
+    fetchNotifications,
+    markAsRead,
     markAllAsRead,
     subscribeToNotifications,
     unsubscribeFromNotifications
@@ -23,7 +23,7 @@ export function TaskHeader() {
     fetchNotifications()
     subscribeToNotifications()
     return () => unsubscribeFromNotifications()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Zustand functions được memo ổn định, dùng [] tránh chạy lại vô ńí gây duplicate listener
 
   // Bug #7 retry: Nếu lần đầu socket chưa sẵn sàng (authUser thay đổi sau login),
@@ -32,7 +32,7 @@ export function TaskHeader() {
     if (!isSubscribed) {
       subscribeToNotifications()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser, isSubscribed])
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function TaskHeader() {
       <h2 className="text-[17px] font-semibold text-white">Quản lý công việc</h2>
       <div className="flex items-center gap-4 relative">
         <div ref={dropdownRef} className="relative">
-          <button 
+          <button
             onClick={() => setShowDropdown(!showDropdown)}
             className="relative p-2 text-[#a1a1a1] hover:text-white hover:bg-[#2b2d31] rounded-full transition-colors"
           >
@@ -75,8 +75,8 @@ export function TaskHeader() {
               <div className="max-h-[350px] overflow-y-auto custom-scrollbar flex flex-col">
                 {notifications.length > 0 ? (
                   notifications.map((n) => (
-                    <div 
-                      key={n._id} 
+                    <div
+                      key={n._id}
                       onClick={() => {
                         if (!n.isRead) markAsRead(n._id);
                       }}
@@ -100,10 +100,10 @@ export function TaskHeader() {
           )}
         </div>
 
-        <img 
-          src={authUser?.profilePicture || "/avatar.png"} 
-          alt="Avatar" 
-          className="w-9 h-9 rounded-full object-cover border border-[#2b2d31]" 
+        <img
+          src={authUser?.profilePicture || "/avatar.png"}
+          alt="Avatar"
+          className="w-9 h-9 rounded-full object-cover border border-[#2b2d31]"
         />
       </div>
     </div>

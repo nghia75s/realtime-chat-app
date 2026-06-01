@@ -20,24 +20,24 @@ import { formatMessageDateDivider } from "@/lib/formatTime"
 
 // Emoticon shortcode → Emoji
 const EMOTICON_MAP: Record<string, string> = {
-  ":)":  "😊", ":-)":  "😊",
-  ":D":  "😄", ":-D":  "😄",
-  "xD":  "😆", "XD":   "😆",
-  ":P":  "😛", ":-P":  "😛",
-  ";)":  "😉", ";-)":  "😉",
-  ":(": "😢", ":-(":  "😢",
+  ":)": "😊", ":-)": "😊",
+  ":D": "😄", ":-D": "😄",
+  "xD": "😆", "XD": "😆",
+  ":P": "😛", ":-P": "😛",
+  ";)": "😉", ";-)": "😉",
+  ":(": "😢", ":-(": "😢",
   ":'(": "😭",
   ">:(": "😠", ">:-(": "😠",
-  ":o":  "😮", ":O":   "😮",
-  "B)":  "😎",
-  "<3":  "❤️", "</3":  "💔",
+  ":o": "😮", ":O": "😮",
+  "B)": "😎",
+  "<3": "❤️", "</3": "💔",
   "(y)": "👍", "(n)": "👎",
-  ":*":  "😘", ":-*":  "😘",
-  "O:)": "😇", ":3":   "😺",
+  ":*": "😘", ":-*": "😘",
+  "O:)": "😇", ":3": "😺",
 }
 const EMOTICON_RE = new RegExp(
-  Object.keys(EMOTICON_MAP).sort((a,b)=>b.length-a.length)
-    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'), 'g'
+  Object.keys(EMOTICON_MAP).sort((a, b) => b.length - a.length)
+    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g'
 )
 const convertEmoticons = (t: string) => t.replace(EMOTICON_RE, m => EMOTICON_MAP[m] ?? m)
 
@@ -69,14 +69,14 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   }, [])
 
   const { onlineUsers, authUser } = useAuthStore()
-  
+
   // 1. Fetch messages và pinned messages khi mount / chuyển chat
-  const { 
-    isSelectionMode, 
-    selectedMessageIds, 
+  const {
+    isSelectionMode,
+    selectedMessageIds,
     selectedMessagesData,
-    clearSelection, 
-    openForwardModal 
+    clearSelection,
+    openForwardModal
   } = useMessageActionStore()
 
   // Dữ liệu Mock: Nếu đối tượng có thuộc tính isGroup thì coi như là Nhóm
@@ -221,7 +221,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     if (selectedUserId) {
       setIsScrolled(false);
       getPinnedMessages(selectedUserId);
-      
+
       if (isGroup) {
         getGroupMessageByUserId(selectedUserId);
         joinGroup(selectedUserId);
@@ -260,11 +260,11 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     const replyToId = replyingTo?._id;
     const filePayload = fileAttachment
       ? {
-          name: fileAttachment.file.name,
-          type: fileAttachment.file.type,
-          size: fileAttachment.file.size,
-          data: fileAttachment.data,
-        }
+        name: fileAttachment.file.name,
+        type: fileAttachment.file.type,
+        size: fileAttachment.file.size,
+        data: fileAttachment.data,
+      }
       : undefined;
 
     setIsSending(true);
@@ -368,42 +368,41 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
   if (!selectedUser) return null;
 
   return (
-    <div className="flex flex-1 flex-col min-w-0 bg-[#131416] h-full overflow-hidden">
+    <div className="flex flex-1 flex-col min-w-0 bg-chat-main h-full overflow-hidden text-chat-text">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#1e1f22] border-b border-[#2b2d31] shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 bg-chat-header border-b border-chat-border shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative">
             <img src={isGroup ? (selectedUser.groupPicture || "/group.png") : (selectedUser.profilePicture || "/avatar.png")} alt={selectedUser.fullname} className="w-10 h-10 rounded-full object-cover" />
             {!isGroup && (
-              <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#1e1f22] transition-colors ${
-                isOnline ? "bg-green-500" : "bg-[#4e4f52]"
-              }`} />
+              <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-chat-header transition-colors ${isOnline ? "bg-green-500" : "bg-[#4e4f52]"
+                }`} />
             )}
           </div>
           <div>
-            <h3 className="font-semibold text-white text-[16px] leading-tight">
+            <h3 className="font-semibold text-chat-text text-[16px] leading-tight">
               {isGroup ? selectedUser?.name : selectedUser?.fullname}
             </h3>
             {isGroup ? (
-              <p className="text-[12px] font-medium text-[#a1a1a1]">
+              <p className="text-[12px] font-medium text-chat-muted">
                 {selectedUser.memberCount} thành viên
               </p>
             ) : (
-              <p className={`text-[12px] font-medium ${isOnline ? "text-green-500" : "text-[#a1a1a1]"}`}>
+              <p className={`text-[12px] font-medium ${isOnline ? "text-green-500" : "text-chat-muted"}`}>
                 {isOnline ? "Đang hoạt động" : "Ngoại tuyến"}
               </p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-2 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md transition-colors" title="Cuộc gọi thoại">
+          <button className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Cuộc gọi thoại">
             <Phone className="w-5 h-5" />
           </button>
-          <button className="p-2 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md transition-colors" title="Cuộc gọi video">
+          <button className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Cuộc gọi video">
             <Video className="w-5 h-5" />
           </button>
-          <div className="w-[1px] h-6 bg-[#2b2d31] mx-1"></div>
-          <button onClick={onToggleRightSidebar} className="p-2 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md transition-colors" title="Thông tin hội thoại">
+          <div className="w-[1px] h-6 bg-chat-border mx-1"></div>
+          <button onClick={onToggleRightSidebar} className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Thông tin hội thoại">
             {isRightSidebarOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
           </button>
         </div>
@@ -414,7 +413,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       {/* Message History */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 relative">
         {(isMessagesLoading || !isScrolled) && (
-          <div className="absolute inset-0 z-10 bg-[#131416] p-6">
+          <div className="absolute inset-0 z-10 bg-chat-main p-6">
             <MessageLoadingSkeleton />
           </div>
         )}
@@ -423,14 +422,14 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           {messages && messages.length > 0 ? (
             messages.map((msg: any, index: number) => {
               const prevMsg = messages[index - 1];
-              
+
               const msgDateStr = msg.createdAt;
               const prevDateStr = prevMsg?.createdAt;
               const isDifferentDate = !prevDateStr || formatMessageDateDivider(msgDateStr) !== formatMessageDateDivider(prevDateStr);
 
-              const hideHeader = prevMsg && 
-                                 (prevMsg.senderId?._id || prevMsg.senderId) === (msg.senderId?._id || msg.senderId) && 
-                                 !isDifferentDate;
+              const hideHeader = prevMsg &&
+                (prevMsg.senderId?._id || prevMsg.senderId) === (msg.senderId?._id || msg.senderId) &&
+                !isDifferentDate;
 
               const dateDivider = isDifferentDate ? (
                 <div className="flex justify-center my-4">
@@ -498,7 +497,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   <React.Fragment key={msg._id}>
                     {dateDivider}
                     <div id={`message-${msg._id}`} className="flex justify-center w-full mt-4 mb-2">
-                      <div 
+                      <div
                         className="w-[400px] max-w-[85%]"
                         onContextMenu={(e) => {
                           if (!canPin) return;
@@ -519,7 +518,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   <React.Fragment key={msg._id}>
                     {dateDivider}
                     <div id={`message-${msg._id}`} className="flex justify-center w-full mt-4 mb-2">
-                      <div 
+                      <div
                         className="w-[400px] max-w-[85%]"
                         onContextMenu={(e) => {
                           if (!canPin) return;
@@ -569,19 +568,19 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       </div>
 
       {isSelectionMode ? (
-        <div className="bg-[#1e1f22] border-t border-[#2b2d31] py-3.5 px-6 flex items-center justify-between shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.3)] z-10 animate-in slide-in-from-bottom duration-200">
+        <div className="bg-chat-header border-t border-chat-border py-3.5 px-6 flex items-center justify-between shrink-0 shadow-[0_-4px_16px_rgba(0,0,0,0.3)] z-10 animate-in slide-in-from-bottom duration-200">
           <div className="flex items-center gap-1">
             <span className="text-[#0052cc] text-[15px] font-bold bg-[#0052cc]/10 w-7 h-7 flex items-center justify-center rounded-md">
               {selectedMessageIds.length}
             </span>
-            <span className="text-[#e1e1e1] text-[14px] font-semibold ml-2">Đã chọn</span>
+            <span className="text-chat-text text-[14px] font-semibold ml-2">Đã chọn</span>
           </div>
-          
+
           <div className="flex items-center gap-2.5">
             {/* Sao chép */}
-            <button 
+            <button
               type="button"
-              className="flex items-center gap-2 px-4 py-2 border border-[#3a3b3e] bg-[#2b2d31] hover:bg-[#3a3b3e] text-[#e1e1e1] transition-colors rounded-full text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 border border-chat-border bg-chat-hover text-chat-text transition-colors rounded-full text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={selectedMessageIds.length === 0}
               onClick={() => {
                 const textToCopy = selectedMessagesData
@@ -601,9 +600,9 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
             </button>
 
             {/* Chia sẻ (Chuyển tiếp) */}
-            <button 
+            <button
               type="button"
-              className="flex items-center gap-2 px-4 py-2 border border-[#3a3b3e] bg-[#2b2d31] hover:bg-[#3a3b3e] text-[#e1e1e1] transition-colors rounded-full text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 border border-chat-border bg-chat-hover text-chat-text transition-colors rounded-full text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={selectedMessageIds.length === 0}
               onClick={() => openForwardModal(selectedMessagesData)}
             >
@@ -612,7 +611,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
             </button>
 
             {/* Thu hồi */}
-            <button 
+            <button
               type="button"
               className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors rounded-full text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={selectedMessageIds.length === 0}
@@ -622,7 +621,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   const sId = typeof m.senderId === "string" ? m.senderId : m.senderId?._id;
                   return sId === authUser?._id;
                 });
-                
+
                 if (myMsgs.length === 0) {
                   toast.error("Không có tin nhắn nào của bạn để thu hồi");
                   return;
@@ -644,7 +643,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
             </button>
 
             {/* Xóa */}
-            <button 
+            <button
               type="button"
               className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors rounded-full text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
               disabled={selectedMessageIds.length === 0}
@@ -665,10 +664,10 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
             </button>
 
             {/* Hủy */}
-            <button 
+            <button
               type="button"
-              onClick={clearSelection} 
-              className="ml-2 px-3 py-2 text-[#a1a1a1] hover:text-white transition-colors text-[13px] font-semibold"
+              onClick={clearSelection}
+              className="ml-2 px-3 py-2 text-chat-muted hover:text-chat-text transition-colors text-[13px] font-semibold"
             >
               Hủy
             </button>
@@ -682,154 +681,154 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
               <div className="flex items-center px-2 py-2 gap-1 h-[40px]">
                 <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Smile className="w-[18px] h-[18px]" /></button>
 
-            <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageChange} className="hidden" disabled={!canSendMessage} />
-            <input type="file" ref={attachmentInputRef} onChange={handleFileChange} className="hidden" disabled={!canSendMessage} />
-            <button disabled={isSending || !canSendMessage} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
-              <ImageIcon className="w-[18px] h-[18px]" />
-            </button>
+                <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageChange} className="hidden" disabled={!canSendMessage} />
+                <input type="file" ref={attachmentInputRef} onChange={handleFileChange} className="hidden" disabled={!canSendMessage} />
+                <button disabled={isSending || !canSendMessage} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
+                  <ImageIcon className="w-[18px] h-[18px]" />
+                </button>
 
-            <button disabled={isSending || !canSendMessage} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
-              <Paperclip className="w-[18px] h-[18px]" />
-            </button>
-            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" /></button>
-          </div>
-
-          {/* Reply Preview Bar */}
-          {replyingTo && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#1a1c1e] border-t border-[#2b2d31] border-l-2 border-l-[#0052cc] min-w-0">
-              <Reply className="w-4 h-4 text-[#0052cc] shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-[#0052cc] font-semibold mb-0.5">Trả lời tin nhắn</p>
-                <p className="text-[12px] text-[#a1a1a1] truncate">
-                  {replyingTo.messageType === "document" 
-                    ? `[Đơn] ${replyingTo.documentPayload?.templateName || "Tài liệu"}`
-                    : replyingTo.messageType === "task_assignment"
-                    ? `[Task] ${replyingTo.taskPayload?.title || "Công việc"}`
-                    : replyingTo.messageType === "file"
-                    ? "[File đính kèm]"
-                    : replyingTo.image && !replyingTo.text
-                    ? "[Hình ảnh]"
-                    : replyingTo.text || "[Tin nhắn]"}
-                </p>
+                <button disabled={isSending || !canSendMessage} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
+                  <Paperclip className="w-[18px] h-[18px]" />
+                </button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" /></button>
               </div>
-              <button
-                onClick={() => setReplyingTo(null)}
-                className="p-1 rounded-full hover:bg-[#2b2d31] text-[#717171] hover:text-white shrink-0 transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
 
-          {/* Input Area */}
-          <div className="flex flex-col border-t border-[#2b2d31] relative">
-
-            {/* Image Preview */}
-            {imagePreview && (
-              <div className="px-4 py-3 pb-0">
-                <div className="relative inline-block mt-2">
-                  <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-md border border-[#2b2d31]" />
-                  <button
-                    onClick={removeImage}
-                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#2b2d31] flex items-center justify-center text-[#e1e1e1] hover:bg-red-500 hover:text-white transition-colors"
-                    type="button"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {fileAttachment && (
-              <div className="px-4 py-3 pb-0">
-                <div className="relative flex items-center gap-3 w-full max-w-full rounded-2xl border border-[#2b2d31] bg-[#1b1d21] p-3">
-                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#131619] border border-[#2b2d31]">
-                    <FileText className="w-5 h-5 text-[#67d7ff]" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-white truncate">{fileAttachment.file.name}</p>
-                    <p className="text-[12px] text-[#9ca3af] truncate">
-                      {fileAttachment.file.type || "Tệp đính kèm"} · {(fileAttachment.file.size / 1024).toFixed(1)} KB
+              {/* Reply Preview Bar */}
+              {replyingTo && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-chat-main border-t border-chat-border border-l-2 border-l-[#0052cc] min-w-0">
+                  <Reply className="w-4 h-4 text-[#0052cc] shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-[#0052cc] font-semibold mb-0.5">Trả lời tin nhắn</p>
+                    <p className="text-[12px] text-chat-muted truncate">
+                      {replyingTo.messageType === "document"
+                        ? `[Đơn] ${replyingTo.documentPayload?.templateName || "Tài liệu"}`
+                        : replyingTo.messageType === "task_assignment"
+                          ? `[Task] ${replyingTo.taskPayload?.title || "Công việc"}`
+                          : replyingTo.messageType === "file"
+                            ? "[File đính kèm]"
+                            : replyingTo.image && !replyingTo.text
+                              ? "[Hình ảnh]"
+                              : replyingTo.text || "[Tin nhắn]"}
                     </p>
                   </div>
                   <button
-                    onClick={removeFileAttachment}
-                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#2b2d31] flex items-center justify-center text-[#e1e1e1] hover:bg-red-500 hover:text-white transition-colors"
-                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                    className="p-1 rounded-full hover:bg-chat-hover text-[#717171] hover:text-chat-text shrink-0 transition-colors"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </div>
-            )}
+              )}
 
-            <form onSubmit={handleSendMessage} className="flex flex-row items-end pb-3">
-              <textarea
-                ref={textareaRef}
-                value={text}
-                onChange={(e) => {
-                  const val = e.target.value
-                  if (val.endsWith(' ')) {
-                    const converted = convertEmoticons(val)
-                    if (converted !== val) { setText(converted); return }
-                  }
-                  setText(val)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    const converted = convertEmoticons(text)
-                    setText(converted)
-                    // dùng converted trực tiếp để không bị stale closure
-                    setTimeout(() => handleSendMessage(e), 0)
-                  }
-                }}
-                placeholder={!canSendMessage ? "Chỉ quản trị viên mới được gửi tin nhắn" : `Nhập @, tin nhắn tới ${isGroup ? selectedUser.name : selectedUser.fullname}`}
-                className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1] disabled:opacity-50 disabled:cursor-not-allowed"
-                rows={1}
-                disabled={!canSendMessage}
-              />
-              <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
-                {/* Emoji Button + Picker */}
-                <div ref={emojiPickerRef} className="relative">
-                  <button
-                    type="button"
-                    title="Emoji (Ctrl+E)"
-                    onClick={() => setShowEmojiPicker(p => !p)}
-                    className={`p-1.5 rounded-md transition-colors hover:bg-[#2b2d31] ${showEmojiPicker ? 'text-[#ebaa16]' : 'text-[#a1a1a1]'}`}
-                  >
-                    <Smile className="w-5 h-5" />
-                  </button>
-                  {showEmojiPicker && (
-                    <div className="absolute bottom-10 right-0 z-50">
-                      <EmojiPickerPanel
-                        onEmojiSelect={(emoji) => {
-                          setText(prev => prev + emoji)
-                          setShowEmojiPicker(false)
-                          textareaRef.current?.focus()
-                        }}
-                      />
+              {/* Input Area */}
+              <div className="flex flex-col border-t border-chat-border relative">
+
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="px-4 py-3 pb-0">
+                    <div className="relative inline-block mt-2">
+                      <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-md border border-chat-border" />
+                      <button
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-chat-hover flex items-center justify-center text-chat-text hover:bg-red-500 hover:text-white transition-colors"
+                        type="button"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  disabled={isSending || !canSendMessage}
-                  onClick={handleSendLike}
-                  title="Gửi like"
-                  className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ThumbsUp className="w-5 h-5" />
-                </button>
-                <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage} className="p-1.5 text-[#0052cc] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed">
-                  <Send className="w-5 h-5" />
-                </button>
+                  </div>
+                )}
+
+                {fileAttachment && (
+                  <div className="px-4 py-3 pb-0">
+                    <div className="relative flex items-center gap-3 w-full max-w-full rounded-2xl border border-chat-border bg-chat-main p-3">
+                      <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-chat-hover border border-chat-border">
+                        <FileText className="w-5 h-5 text-[#67d7ff]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-chat-text truncate">{fileAttachment.file.name}</p>
+                        <p className="text-[12px] text-chat-muted truncate">
+                          {fileAttachment.file.type || "Tệp đính kèm"} · {(fileAttachment.file.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                      <button
+                        onClick={removeFileAttachment}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-chat-hover flex items-center justify-center text-chat-text hover:bg-red-500 hover:text-white transition-colors"
+                        type="button"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <form onSubmit={handleSendMessage} className="flex flex-row items-end pb-3">
+                  <textarea
+                    ref={textareaRef}
+                    value={text}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val.endsWith(' ')) {
+                        const converted = convertEmoticons(val)
+                        if (converted !== val) { setText(converted); return }
+                      }
+                      setText(val)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        const converted = convertEmoticons(text)
+                        setText(converted)
+                        // dùng converted trực tiếp để không bị stale closure
+                        setTimeout(() => handleSendMessage(e), 0)
+                      }
+                    }}
+                    placeholder={!canSendMessage ? "Chỉ quản trị viên mới được gửi tin nhắn" : `Nhập @, tin nhắn tới ${isGroup ? selectedUser.name : selectedUser.fullname}`}
+                    className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1] disabled:opacity-50 disabled:cursor-not-allowed"
+                    rows={1}
+                    disabled={!canSendMessage}
+                  />
+                  <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
+                    {/* Emoji Button + Picker */}
+                    <div ref={emojiPickerRef} className="relative">
+                      <button
+                        type="button"
+                        title="Emoji (Ctrl+E)"
+                        onClick={() => setShowEmojiPicker(p => !p)}
+                        className={`p-1.5 rounded-md transition-colors hover:bg-chat-hover ${showEmojiPicker ? 'text-[#ebaa16]' : 'text-chat-muted'}`}
+                      >
+                        <Smile className="w-5 h-5" />
+                      </button>
+                      {showEmojiPicker && (
+                        <div className="absolute bottom-10 right-0 z-50">
+                          <EmojiPickerPanel
+                            onEmojiSelect={(emoji) => {
+                              setText(prev => prev + emoji)
+                              setShowEmojiPicker(false)
+                              textareaRef.current?.focus()
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isSending || !canSendMessage}
+                      onClick={handleSendLike}
+                      title="Gửi like"
+                      className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ThumbsUp className="w-5 h-5" />
+                    </button>
+                    <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage} className="p-1.5 text-[#0052cc] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed">
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
             </>
           ) : (
             <div className="flex items-center justify-center py-6 border-t border-[#2b2d31]">
@@ -986,12 +985,12 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
 
       {/* Custom Context Menu */}
       {contextMenu && (
-        <div 
+        <div
           className="fixed z-50 bg-[#1e1f22] border border-[#3a3b3e] rounded-xl py-1.5 w-56 shadow-2xl overflow-hidden"
           style={{ top: contextMenu.y, left: contextMenu.x }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button 
+          <button
             className="w-full text-left px-3 py-2.5 text-sm text-[#e1e1e1] hover:bg-[#2b2d31] flex items-center gap-3 transition-colors"
             onClick={async () => {
               try {

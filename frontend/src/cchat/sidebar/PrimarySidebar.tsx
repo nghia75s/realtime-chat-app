@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { MessageCircle, BookUser, CheckSquare, Cloud, Briefcase, Settings, User, Database, Globe, HelpCircle, ShieldCheck } from "lucide-react"
+import { MessageCircle, BookUser, CheckSquare, Cloud, Briefcase, Settings, User, Database, Globe, HelpCircle, ShieldCheck, LogOut } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { chatActions } from "../actions/chatActions"
 import { settingActions } from "../actions/settingActions"
@@ -119,10 +119,10 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
             side="right"
             align="end"
             sideOffset={15}
-            className="w-56 shadow-lg rounded-lg border-purple-200 py-2"
+            className="w-56 shadow-lg rounded-lg border border-chat-border bg-chat-sidebar text-chat-text py-2"
           >
             <DropdownMenuItem
-              className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700"
+              className="py-2.5 px-3 cursor-pointer text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text focus:outline-none sidebar-dropdown-item"
               onClick={() => setIsAccountModalOpen(true)}
             >
               <User className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -130,59 +130,60 @@ export function PrimarySidebar({ activeTab }: PrimarySidebarProps) {
             </DropdownMenuItem>
 
             <DropdownMenuItem
-              className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700"
+              className="py-2.5 px-3 cursor-pointer text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text focus:outline-none sidebar-dropdown-item"
               onClick={() => setIsSettingsModalOpen(true)}
             >
               <Settings className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
               <span className="text-[14px]">Cài đặt</span>
             </DropdownMenuItem>
 
-            <DropdownMenuSeparator className="my-1 border-zinc-100" />
+            <DropdownMenuSeparator className="my-1 bg-chat-border" />
 
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700 data-[state=open]:bg-purple-700">
+              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text data-[state=open]:bg-chat-hover data-[state=open]:text-chat-text focus:outline-none sidebar-dropdown-item">
                 <Database className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
                 <span className="text-[14px]">Dữ liệu</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-                <DropdownMenuSubContent className="shadow-lg border-zinc-200">
-                  <DropdownMenuItem className="py-2.5 px-4 cursor-pointer text-[14px]">Quản lý dữ liệu</DropdownMenuItem>
+                <DropdownMenuSubContent className="shadow-lg border border-chat-border bg-chat-sidebar text-chat-text py-1">
+                  <DropdownMenuItem className="py-2.5 px-4 cursor-pointer text-[14px] text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text focus:outline-none sidebar-dropdown-item">Quản lý dữ liệu</DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
 
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700 data-[state=open]:bg-purple-700">
+              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text data-[state=open]:bg-chat-hover data-[state=open]:text-chat-text focus:outline-none sidebar-dropdown-item">
                 <Globe className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
                 <span className="text-[14px]">Ngôn ngữ</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-                <DropdownMenuSubContent className="shadow-lg border-zinc-200">
-                  <DropdownMenuItem onClick={() => settingActions.changeLanguage('vi')} className="py-2 px-4 cursor-pointer text-[14px]">Tiếng Việt</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => settingActions.changeLanguage('en')} className="py-2 px-4 cursor-pointer text-[14px]">English</DropdownMenuItem>
+                <DropdownMenuSubContent className="shadow-lg border border-chat-border bg-chat-sidebar text-chat-text py-1">
+                  <DropdownMenuItem onClick={() => settingActions.changeLanguage('vi')} className="py-2 px-4 cursor-pointer text-[14px] text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text focus:outline-none sidebar-dropdown-item">Tiếng Việt</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => settingActions.changeLanguage('en')} className="py-2 px-4 cursor-pointer text-[14px] text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text focus:outline-none sidebar-dropdown-item">English</DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
 
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-purple-700 hover:text-purple-900 focus:bg-purple-700 data-[state=open]:bg-purple-700">
+              <DropdownMenuSubTrigger className="py-2.5 px-3 cursor-pointer text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text data-[state=open]:bg-chat-hover data-[state=open]:text-chat-text focus:outline-none sidebar-dropdown-item">
                 <HelpCircle className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
                 <span className="text-[14px]">Hỗ trợ</span>
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-                <DropdownMenuSubContent className="shadow-lg border-zinc-200">
-                  <DropdownMenuItem className="py-2.5 px-4 cursor-pointer text-[14px]">Trung tâm trợ giúp</DropdownMenuItem>
+                <DropdownMenuSubContent className="shadow-lg border border-chat-border bg-chat-sidebar text-chat-text py-1">
+                  <DropdownMenuItem className="py-2.5 px-4 cursor-pointer text-[14px] text-chat-text focus:bg-chat-hover focus:text-chat-text hover:bg-chat-hover hover:text-chat-text focus:outline-none sidebar-dropdown-item">Trung tâm trợ giúp</DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuPortal>
             </DropdownMenuSub>
 
-            <DropdownMenuSeparator className="my-1 border-zinc-100" />
+            <DropdownMenuSeparator className="my-1 bg-chat-border" />
 
             <DropdownMenuItem
               onClick={logout}
-              className="py-2.5 px-3 cursor-pointer text-[#ff4a4a] focus:bg-[#ff4a4a] focus:text-[#ff4a4a] hover:bg-[#ff4a4a]/10 hover:text-[#ff4a4a]"
+              className="py-2.5 px-3 cursor-pointer text-[#ff4a4a] focus:bg-[#ff4a4a] focus:text-white hover:bg-[#ff4a4a]/10 hover:text-[#ff4a4a] focus:outline-none"
             >
-              <span className="text-[14px] font-medium ml-8">Đăng xuất</span>
+              <LogOut className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
+              <span className="text-[14px] font-medium">Đăng xuất</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

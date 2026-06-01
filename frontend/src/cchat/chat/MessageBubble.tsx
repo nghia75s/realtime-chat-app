@@ -187,11 +187,11 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                   )}
                 </div>
               )}
-
-{/* File attachment */}
+ 
+              {/* File attachment */}
                   {msg.file && (
                     <div className={`px-[16px] py-[12px] rounded-2xl shadow-sm flex flex-col w-full min-w-0 gap-2 cursor-default select-text relative
-                      ${isMe ? "bg-[#0052cc] text-white" : "bg-[#2b2d31] text-[#e1e1e1]"}
+                      ${isMe ? "bg-[#0052cc] text-white" : "bg-zinc-100 dark:bg-[#2b2d31] text-zinc-900 dark:text-[#e1e1e1]"}
                     `}>
                       {isForwarded && !msg.text && (
                         <div className={`flex items-center gap-1.5 text-[11.5px] font-medium mb-1 ${isMe ? "text-blue-200" : "text-[#a1a1a1]"}`}>
@@ -224,13 +224,13 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                         </div>
                       </div>
                       {!msg.text && (
-                        <div className={`flex items-center justify-end gap-1.5 text-[10.5px] mt-0.5 ${isMe ? "text-blue-200" : "text-[#818181]"}`}>
+                        <div className={`flex items-center justify-end gap-1.5 text-[10.5px] mt-0.5 ${isMe ? "text-blue-200" : "text-zinc-500 dark:text-[#818181]"}`}>
                           <span>{timeStr}</span>
                         </div>
                       )}
                     </div>
                   )}
-
+ 
       <Dialog open={Boolean(externalLink)} onOpenChange={(open) => !open && setExternalLink(null)}>
         <DialogContent className="max-w-md bg-[#1e1f22] border border-[#2b2d31] text-[#e1e1e1]">
           <DialogHeader>
@@ -259,27 +259,27 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
+ 
                   {/* Text */}
               {msg.text && (
                 <div className={`px-[16px] py-[12px] rounded-2xl text-[15px] shadow-sm flex flex-col w-full min-w-0 gap-1.5 cursor-text select-text relative
                     ${isMe
                       ? "bg-[#0052cc] text-white"
-                      : "bg-[#2b2d31] text-[#e1e1e1]"
+                      : "bg-zinc-100 dark:bg-[#2b2d31] text-zinc-900 dark:text-[#e1e1e1]"
                     }
                   `}>
                   
                   {/* Dấu hiệu chuyển tiếp */}
                   {isForwarded && (
-                    <div className={`flex items-center gap-1.5 text-[11.5px] font-medium mb-1 ${isMe ? "text-blue-200" : "text-[#a1a1a1]"}`}>
+                    <div className={`flex items-center gap-1.5 text-[11.5px] font-medium mb-1 ${isMe ? "text-blue-200" : "text-zinc-500 dark:text-[#a1a1a1]"}`}>
                       <CornerUpRight className="w-3.5 h-3.5" /> Chuyển tiếp
                     </div>
                   )}
-
+ 
                   {/* Khung trích dẫn tin nhắn trả lời */}
                   {msg.replyTo && (
                     <div 
-                      className={`pl-2 py-1 mb-1.5 border-l-[3px] rounded-r-md text-[13px] w-full max-w-[280px] sm:max-w-[360px] min-w-0 ${isMe ? "border-l-blue-200 bg-black/10 text-blue-100" : "border-l-[#0052cc] bg-[#1e1f22] text-[#a1a1a1]"} overflow-hidden`}
+                      className={`pl-2 py-1 mb-1.5 border-l-[3px] rounded-r-md text-[13px] w-full max-w-[280px] sm:max-w-[360px] min-w-0 ${isMe ? "border-l-blue-200 bg-black/10 text-blue-100" : "border-l-[#0052cc] bg-zinc-200/50 dark:bg-[#1e1f22] text-zinc-600 dark:text-[#a1a1a1]"} overflow-hidden`}
                     >
                       <div className="font-semibold truncate text-[12.5px]">{msg.replyTo.senderId?.fullname || "Người dùng"}</div>
                       <div className="truncate opacity-90">
@@ -295,7 +295,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                       </div>
                     </div>
                   )}
-
+ 
                   <p className="leading-[1.5] whitespace-pre-wrap break-words">
                     {msg.text.split(/(https?:\/\/[^\s]+|www\.[^\s]+)/g).map((part: string, i: number) => {
                       const isLink = part.match(/^(https?:\/\/[^\s]+|www\.[^\s]+)/i);
@@ -320,7 +320,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                       return part;
                     })}
                   </p>
-                  <div className={`flex items-center justify-end gap-1.5 text-[10.5px] mt-0.5 ${isMe ? "text-blue-200" : "text-[#818181]"}`}>
+                  <div className={`flex items-center justify-end gap-1.5 text-[10.5px] mt-0.5 ${isMe ? "text-blue-200" : "text-zinc-500 dark:text-[#818181]"}`}>
                     <span>{timeStr}</span>
                   </div>
                 </div>
