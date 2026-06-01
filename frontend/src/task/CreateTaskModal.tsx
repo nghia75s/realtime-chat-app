@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
-import { X, Users, ChevronDown, ChevronUp, StickyNote } from "lucide-react"
+import { X, Users, ChevronDown, ChevronUp, StickyNote, Calendar } from "lucide-react"
 import { useTaskStore } from "@/store/useTaskStore"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import toast from "react-hot-toast"
 import { AssigneePickerModal } from "./AssigneePickerModal"
+import { formatShortDate } from "@/lib/formatTime"
 
 interface CreateTaskModalProps {
   onClose: () => void;
@@ -115,12 +116,28 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
                 <input disabled value={authUser?.fullname || "Quản lý"} className="w-full bg-chat-sidebar border border-chat-border rounded-md px-3 py-2.5 text-[14px] text-chat-muted cursor-not-allowed" />
               </div>
               <div className="flex flex-col gap-1.5 flex-1 relative">
-                <label className="text-[13px] font-medium text-chat-text/90">Deadline <span className="text-red-500">*</span></label>
-                <input
-                  required type="datetime-local" value={deadline}
-                  onChange={e => handleDeadlineChange(e.target.value)}
-                  className={`w-full bg-chat-main border ${deadlineError ? 'border-red-500' : 'border-chat-border focus:border-[#0052cc]'} rounded-md px-3 py-2.5 text-[14px] text-chat-text outline-none transition-colors [&::-webkit-calendar-picker-indicator]:filter-invert`}
-                />
+                <label className="text-[13px] font-medium text-[#e1e1e1]">Deadline <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <div className={`flex items-center justify-between bg-[#131416] border ${deadlineError ? 'border-red-500' : 'border-[#2b2d31] hover:border-[#0052cc]'} rounded-md px-3 py-2.5 cursor-pointer transition-colors`}>
+                    <span className={`text-[14px] ${deadline ? "text-white" : "text-[#a1a1a1]"}`}>
+                      {deadline ? formatShortDate(deadline) : "Chọn thời hạn"}
+                    </span>
+                    <Calendar className="w-4 h-4 text-[#a1a1a1]" />
+                  </div>
+                  <input
+                    required
+                    type="datetime-local"
+                    value={deadline}
+                    onChange={(e) => handleDeadlineChange(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    onClick={(e) => {
+                      if (e.currentTarget.showPicker) {
+                        e.currentTarget.showPicker();
+                      }
+                    }}
+                    onKeyDown={(e) => e.preventDefault()}
+                  />
+                </div>
                 {deadlineError && <span className="text-[11px] text-red-500 absolute -bottom-5">{deadlineError}</span>}
               </div>
             </div>

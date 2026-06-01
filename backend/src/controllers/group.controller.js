@@ -91,6 +91,14 @@ export const sendGroupMessage = async (req, res) => {
         if (!group.members.some(memberId => memberId.toString() === senderId.toString())) {
             return res.status(403).json({ message: "You are not a member of this group." });
         }
+
+        const isCreator = group.createdBy.toString() === senderId.toString();
+        const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === senderId.toString());
+        const canSendMessages = group.settings?.memberPermissions?.sendMessages !== false;
+
+        if (!isCreator && !isAdmin && !canSendMessages) {
+            return res.status(403).json({ message: "You don't have permission to send messages in this group." });
+        }
         let imageUrl;
         if (image) {
             // upload base64 image to cloudinary
@@ -157,10 +165,17 @@ export const getGroupMessages = async (req, res) => {
         if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
             return res.status(403).json({ message: "You are not a member of this group." });
         }
-        const messages = await GroupMessage.find({ 
-            groupId, 
-            deletedBy: { $ne: userId } 
-        }).populate("senderId", "fullname profilePicture")
+        let query = { groupId, deletedBy: { $ne: userId } };
+        
+        if (group.settings?.readRecentMessages === false) {
+            const joinDate = group.joinDates?.get(userId.toString());
+            if (joinDate) {
+                query.createdAt = { $gte: joinDate };
+            }
+        }
+
+        const messages = await GroupMessage.find(query)
+            .populate("senderId", "fullname profilePicture")
           .populate({
             path: "replyTo",
             select: "text image senderId",
@@ -217,8 +232,12 @@ export const updateGroup = async (req, res) => {
             return res.status(404).json({ message: "Group not found." });
         }
 
-        if (group.createdBy.toString() !== userId.toString()) {
-            return res.status(403).json({ message: "Only group creator can update group info." });
+        const isCreator = group.createdBy.toString() === userId.toString();
+        const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+        const canChangeNameAndAvatar = group.settings?.memberPermissions?.changeNameAndAvatar !== false;
+
+        if (!isCreator && !isAdmin && !canChangeNameAndAvatar) {
+            return res.status(403).json({ message: "You don't have permission to update group info." });
         }
 
         const updateData = {};
@@ -275,8 +294,8 @@ export const addMember = async (req, res) => {
             return res.status(404).json({ message: "Group not found." });
         }
 
-        if (group.createdBy.toString() !== currentUserId.toString()) {
-            return res.status(403).json({ message: "Only group creator can add members." });
+        if (group.createdBy.toString() !== currentUserId.toString() && (!group.admins || !group.admins.some(adminId => adminId.toString() === currentUserId.toString()))) {
+            return res.status(403).json({ message: "Only group creator and admins can add members." });
         }
 
         const userToAdd = await User.findById(userId);
@@ -288,26 +307,21 @@ export const addMember = async (req, res) => {
             return res.status(400).json({ message: "User is already a member of this group." });
         }
 
-        group.members.push(userId);
+        if (group.invitedMembers?.some(memberId => memberId.toString() === userId.toString())) {
+            return res.status(400).json({ message: "User is already invited to this group." });
+        }
+
+        if (!group.invitedMembers) group.invitedMembers = [];
+        group.invitedMembers.push(userId);
+        
         await group.save();
 
         const updatedGroup = await Group.findById(groupId)
             .populate("members", "-password")
             .populate("createdBy", "-password");
 
-        // --- Create & Emit System Message ---
-        const systemMessage = new GroupMessage({
-            senderId: currentUserId,
-            groupId: groupId,
-            text: `${req.user.fullname} đã thêm ${userToAdd.fullname} vào nhóm.`,
-            messageType: "system"
-        });
-        await systemMessage.save();
-        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
-        
-        updatedGroup.members.forEach(member => {
-            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
-        });
+        // --- Emit Invitation Event ---
+        emitToUser(userId.toString(), "newGroupInvitation", updatedGroup);
 
         res.status(200).json(updatedGroup);
     } catch (error) {
@@ -327,9 +341,21 @@ export const removeMember = async (req, res) => {
             return res.status(404).json({ message: "Group not found." });
         }
 
-        // Allow group creator or the user themselves to remove members
-        if (group.createdBy.toString() !== currentUserId.toString() && currentUserId.toString() !== userId) {
+        // Permissions check
+        const isCreator = group.createdBy.toString() === currentUserId.toString();
+        const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === currentUserId.toString());
+        const isSelf = currentUserId.toString() === userId;
+        const isTargetCreator = group.createdBy.toString() === userId;
+        const isTargetAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId);
+
+        if (!isCreator && !isAdmin && !isSelf) {
             return res.status(403).json({ message: "You don't have permission to remove this member." });
+        }
+
+        if (isAdmin && !isCreator && !isSelf) {
+            if (isTargetCreator || isTargetAdmin) {
+                return res.status(403).json({ message: "Admins cannot remove the creator or other admins." });
+            }
         }
 
         // Bug #3: Prevent creator from removing themselves — would lose group ownership
@@ -350,6 +376,9 @@ export const removeMember = async (req, res) => {
         const userRemoved = await User.findById(userId);
 
         group.members = group.members.filter(memberId => memberId.toString() !== userId);
+        if (group.admins) {
+            group.admins = group.admins.filter(adminId => adminId.toString() !== userId);
+        }
         await group.save();
 
         const updatedGroup = await Group.findById(groupId)
@@ -374,9 +403,11 @@ export const removeMember = async (req, res) => {
         // Phát tới những người còn lại trong nhóm
         updatedGroup.members.forEach(member => {
             emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+            emitToUser(member._id.toString(), "groupUpdated", updatedGroup);
         });
         // Báo cho người bị kick (hoặc tự rời) để họ cập nhật (nếu cần)
         emitToUser(userId, "newGroupMessage", populatedMessage);
+        emitToUser(userId, "groupUpdated", updatedGroup);
 
         res.status(200).json(updatedGroup);
     } catch (error) {
@@ -396,8 +427,8 @@ export const updateGroupSettings = async (req, res) => {
             return res.status(404).json({ message: "Group not found." });
         }
 
-        if (group.createdBy.toString() !== userId.toString()) {
-            return res.status(403).json({ message: "Only group creator can update group settings." });
+        if (group.createdBy.toString() !== userId.toString() && (!group.admins || !group.admins.some(adminId => adminId.toString() === userId.toString()))) {
+            return res.status(403).json({ message: "Only group creator and admins can update group settings." });
         }
 
         const updateData = {};
@@ -431,3 +462,416 @@ export const updateGroupSettings = async (req, res) => {
     }
 };
 
+export const addAdmin = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const { userId: adminUserId } = req.body;
+        const currentUserId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        if (group.createdBy.toString() !== currentUserId.toString()) {
+            return res.status(403).json({ message: "Only group creator can assign admins." });
+        }
+        
+        if (!group.admins) group.admins = [];
+        
+        if (group.admins.some(id => id.toString() === adminUserId.toString())) {
+            return res.status(400).json({ message: "User is already an admin." });
+        }
+
+        group.admins.push(adminUserId);
+        await group.save();
+
+        const updatedGroup = await Group.findById(groupId)
+            .populate("members", "-password")
+            .populate("createdBy", "-password");
+
+        const userAdded = await User.findById(adminUserId);
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text: `${req.user.fullname} đã chỉ định ${userAdded.fullname} làm phó nhóm.`,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in addAdmin controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const removeAdmin = async (req, res) => {
+    try {
+        const { id: groupId, userId: adminUserId } = req.params;
+        const currentUserId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        if (group.createdBy.toString() !== currentUserId.toString()) {
+            return res.status(403).json({ message: "Only group creator can remove admins." });
+        }
+        
+        if (!group.admins) group.admins = [];
+
+        group.admins = group.admins.filter(id => id.toString() !== adminUserId.toString());
+        await group.save();
+
+        const updatedGroup = await Group.findById(groupId)
+            .populate("members", "-password")
+            .populate("createdBy", "-password");
+
+        const userRemoved = await User.findById(adminUserId);
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text: `${req.user.fullname} đã thu hồi quyền phó nhóm của ${userRemoved.fullname}.`,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in removeAdmin controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const transferOwner = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const { userId: newOwnerId } = req.body;
+        const currentUserId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        if (group.createdBy.toString() !== currentUserId.toString()) {
+            return res.status(403).json({ message: "Only group creator can transfer ownership." });
+        }
+
+        if (!group.members.some(m => m.toString() === newOwnerId.toString())) {
+            return res.status(400).json({ message: "New owner must be a member of the group." });
+        }
+
+        group.createdBy = newOwnerId;
+        // If new owner was an admin, remove them from admins array
+        if (group.admins) {
+            group.admins = group.admins.filter(id => id.toString() !== newOwnerId.toString());
+        }
+        await group.save();
+
+        const updatedGroup = await Group.findById(groupId)
+            .populate("members", "-password")
+            .populate("createdBy", "-password");
+
+        const newOwner = await User.findById(newOwnerId);
+        const systemMessage = new GroupMessage({
+            senderId: currentUserId,
+            groupId: groupId,
+            text: `${req.user.fullname} đã chuyển quyền trưởng nhóm cho ${newOwner.fullname}.`,
+            messageType: "system"
+        });
+        await systemMessage.save();
+        const populatedMessage = await GroupMessage.findById(systemMessage._id).populate("senderId", "fullname profilePicture");
+        
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+        });
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in transferOwner controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+// --- MEMBER APPROVAL & JOIN LINK APIS ---
+
+import crypto from "crypto";
+
+export const getInviteLink = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        const isCreator = group.createdBy.toString() === userId.toString();
+        const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+        
+        if (!isCreator && !isAdmin) {
+            return res.status(403).json({ message: "Only creator and admins can generate/view invite links." });
+        }
+
+        if (!group.inviteLinkCode) {
+            group.inviteLinkCode = crypto.randomBytes(8).toString("hex");
+            await group.save();
+        }
+
+        res.status(200).json({ inviteLinkCode: group.inviteLinkCode });
+    } catch (error) {
+        console.log("Error in getInviteLink: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const joinViaLink = async (req, res) => {
+    try {
+        const { inviteCode } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findOne({ inviteLinkCode: inviteCode });
+        if (!group) return res.status(404).json({ message: "Invalid invite link." });
+
+        if (group.settings?.allowJoinLink === false) {
+            return res.status(403).json({ message: "This group does not allow joining via link." });
+        }
+
+        if (group.members.some(memberId => memberId.toString() === userId.toString())) {
+            return res.status(400).json({ message: "You are already a member of this group." });
+        }
+
+        if (group.settings?.joinApprovalMode === true) {
+            if (group.pendingMembers?.some(memberId => memberId.toString() === userId.toString())) {
+                return res.status(400).json({ message: "Your join request is already pending." });
+            }
+            if (!group.pendingMembers) group.pendingMembers = [];
+            group.pendingMembers.push(userId);
+            await group.save();
+            return res.status(200).json({ status: "pending", message: "Join request sent. Please wait for admin approval." });
+        } else {
+            group.members.push(userId);
+            if (!group.joinDates) group.joinDates = new Map();
+            group.joinDates.set(userId, new Date());
+            await group.save();
+            
+            const updatedGroup = await Group.findById(group._id)
+                .populate("members", "-password")
+                .populate("createdBy", "-password");
+            
+            const systemMsg = new GroupMessage({
+                senderId: userId,
+                groupId: group._id,
+                messageType: "system",
+                text: `Người dùng ${req.user.fullname} đã tham gia nhóm qua link.`,
+            });
+            await systemMsg.save();
+            
+            group.members.forEach(memberId => {
+                emitToUser(memberId.toString(), "newGroupMessage", systemMsg);
+            });
+
+            return res.status(200).json({ status: "joined", group: updatedGroup });
+        }
+    } catch (error) {
+        console.log("Error in joinViaLink: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const getPendingMembers = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId).populate("pendingMembers", "-password");
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        const isCreator = group.createdBy.toString() === userId.toString();
+        const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+        
+        if (!isCreator && !isAdmin) {
+            return res.status(403).json({ message: "Only creator and admins can view pending members." });
+        }
+
+        res.status(200).json(group.pendingMembers || []);
+    } catch (error) {
+        console.log("Error in getPendingMembers: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const approveMember = async (req, res) => {
+    try {
+        const { id: groupId, userId: targetUserId } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        const isCreator = group.createdBy.toString() === userId.toString();
+        const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+        
+        if (!isCreator && !isAdmin) {
+            return res.status(403).json({ message: "Only creator and admins can approve members." });
+        }
+
+        if (!group.pendingMembers?.some(memberId => memberId.toString() === targetUserId)) {
+            return res.status(400).json({ message: "User is not in pending list." });
+        }
+
+        group.pendingMembers = group.pendingMembers.filter(id => id.toString() !== targetUserId);
+        
+        if (!group.members.some(memberId => memberId.toString() === targetUserId)) {
+            group.members.push(targetUserId);
+            if (!group.joinDates) group.joinDates = new Map();
+            group.joinDates.set(targetUserId, new Date());
+        }
+        
+        await group.save();
+
+        const approvedUser = await User.findById(targetUserId);
+
+        const systemMsg = new GroupMessage({
+            senderId: targetUserId,
+            groupId: group._id,
+            messageType: "system",
+            text: `Người dùng ${approvedUser?.fullname || "Một thành viên"} đã được phê duyệt vào nhóm.`,
+        });
+        await systemMsg.save();
+        
+        group.members.forEach(memberId => {
+            emitToUser(memberId.toString(), "newGroupMessage", systemMsg);
+        });
+
+        const updatedGroup = await Group.findById(group._id).populate("members", "-password").populate("createdBy", "-password");
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "groupUpdated", updatedGroup);
+        });
+
+        res.status(200).json({ message: "Member approved." });
+    } catch (error) {
+        console.log("Error in approveMember: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const rejectMember = async (req, res) => {
+    try {
+        const { id: groupId, userId: targetUserId } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        const isCreator = group.createdBy.toString() === userId.toString();
+        const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+        
+        if (!isCreator && !isAdmin) {
+            return res.status(403).json({ message: "Only creator and admins can reject members." });
+        }
+
+        if (!group.pendingMembers?.some(memberId => memberId.toString() === targetUserId)) {
+            return res.status(400).json({ message: "User is not in pending list." });
+        }
+
+        group.pendingMembers = group.pendingMembers.filter(id => id.toString() !== targetUserId);
+        await group.save();
+
+        res.status(200).json({ message: "Member rejected." });
+    } catch (error) {
+        console.log("Error in rejectMember: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const getGroupInvitations = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const groups = await Group.find({ invitedMembers: userId })
+            .populate("createdBy", "fullname profilePicture");
+        res.status(200).json(groups);
+    } catch (error) {
+        console.log("Error in getGroupInvitations: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const acceptGroupInvitation = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        if (!group.invitedMembers?.some(memberId => memberId.toString() === userId.toString())) {
+            return res.status(400).json({ message: "You don't have an invitation to this group." });
+        }
+
+        group.invitedMembers = group.invitedMembers.filter(id => id.toString() !== userId.toString());
+        
+        if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
+            group.members.push(userId);
+            if (!group.joinDates) group.joinDates = new Map();
+            group.joinDates.set(userId, new Date());
+        }
+        
+        await group.save();
+
+        const updatedGroup = await Group.findById(group._id)
+            .populate("members", "-password")
+            .populate("createdBy", "-password");
+
+        const systemMsg = new GroupMessage({
+            senderId: userId,
+            groupId: group._id,
+            messageType: "system",
+            text: `${req.user.fullname} đã tham gia nhóm.`,
+        });
+        await systemMsg.save();
+        
+        const populatedMessage = await GroupMessage.findById(systemMsg._id).populate("senderId", "fullname profilePicture");
+
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "newGroupMessage", populatedMessage);
+            emitToUser(member._id.toString(), "groupUpdated", updatedGroup);
+        });
+
+        // Also emit to the user who accepted the invitation so they fetch their new groups
+        emitToUser(userId.toString(), "newGroupCreated", updatedGroup);
+
+        res.status(200).json(updatedGroup);
+    } catch (error) {
+        console.log("Error in acceptGroupInvitation: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+export const declineGroupInvitation = async (req, res) => {
+    try {
+        const { id: groupId } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(groupId);
+        if (!group) return res.status(404).json({ message: "Group not found." });
+
+        if (!group.invitedMembers?.some(memberId => memberId.toString() === userId.toString())) {
+            return res.status(400).json({ message: "You don't have an invitation to this group." });
+        }
+
+        group.invitedMembers = group.invitedMembers.filter(id => id.toString() !== userId.toString());
+        await group.save();
+
+        res.status(200).json({ message: "Invitation declined." });
+    } catch (error) {
+        console.log("Error in declineGroupInvitation: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};

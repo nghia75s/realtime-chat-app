@@ -34,8 +34,20 @@ const renderLastMessagePreview = (msg: any, isGroup: boolean, authUser: any, par
     return `${displayName} đã gửi đơn từ cần phê duyệt`;
   }
   
+  if (msg.messageType === "poll") {
+    return `${senderPrefix}[Bình chọn] ${msg.pollPayload?.question || ""}`;
+  }
+  
+  if (msg.messageType === "note") {
+    return `${senderPrefix}[Ghi chú] ${msg.notePayload?.content || msg.text || ""}`;
+  }
+  
   if (msg.image && !msg.text) {
     return `${senderPrefix}[Hình ảnh]`;
+  }
+  
+  if (msg.file && !msg.text) {
+    return `${senderPrefix}[File] ${msg.file.name || "Đính kèm"}`;
   }
   
   return `${senderPrefix}${msg.text || ""}`;

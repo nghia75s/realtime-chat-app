@@ -70,3 +70,24 @@ export function formatMessageDateDivider(dateString: string): string {
 
   return `${dayOfWeek} ${dd}/${mm}/${yyyy}`
 }
+
+export const formatDate = (dateStr: string | Date) => {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  const DD = d.getDate().toString().padStart(2, '0');
+  const MM = (d.getMonth() + 1).toString().padStart(2, '0');
+  const YYYY = d.getFullYear();
+  return `${hh}:${mm} ${DD}/${MM}/${YYYY}`;
+};
+
+export const formatShortDate = (dateStr: string | Date) => {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  const DD = d.getDate().toString().padStart(2, '0');
+  const MM = (d.getMonth() + 1).toString().padStart(2, '0');
+  return `${hh}:${mm} ${DD}/${MM}`;
+};
