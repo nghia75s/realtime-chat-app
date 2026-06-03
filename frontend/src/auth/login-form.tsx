@@ -173,7 +173,7 @@ export function LoginForm({
                     <label className="text-[14px] font-normal text-zinc-400">Tài khoản (Email)</label>
                     <Input
                       type="email"
-                      placeholder="lamtao452@gmail.com"
+                      placeholder="m@example.com"
                       value={formData.email}
                       onChange={(e) => setFromData({...formData, email: e.target.value})}
                       className="bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 px-3 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full"
