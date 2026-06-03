@@ -221,7 +221,7 @@ export function LoginForm({
                   <Button 
                     type="submit" 
                     disabled={isLoggingIn} 
-                    className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-bold text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
+                    className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-normal text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
                   >
                     {isLoggingIn ? (<LoaderIcon className="w-5 h-5 animate-spin" />) : ("Đăng nhập")}
                   </Button>
@@ -283,7 +283,7 @@ export function LoginForm({
                   <Button 
                     type="submit" 
                     disabled={isLoading} 
-                    className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-bold text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
+                    className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-normal text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
                   >
                     {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Xác nhận mã"}
                   </Button>
@@ -312,18 +312,17 @@ export function LoginForm({
                     Gửi lại mã OTP
                   </Button>
 
-                  <Button
-                    variant="ghost"
+                  <button
                     type="button"
                     disabled={isLoading}
-                    className="w-full text-zinc-400 hover:text-zinc-200 mt-2 text-[14px] flex items-center justify-center gap-1.5"
+                    className="w-full text-zinc-400 hover:text-zinc-200 mt-2 text-[14px] flex items-center justify-center gap-1.5 transition-colors"
                     onClick={() => {
                       setView("login")
                       setError("")
                     }}
                   >
                     <ArrowLeft className="h-3.5 w-3.5" /> Đổi tài khoản khác
-                  </Button>
+                  </button>
                 </div>
               </div>
             </form>
@@ -342,7 +341,7 @@ export function LoginForm({
                       <MessageCircle className="w-4 h-4 text-white" />
                     </div>
                   </div>
-                  <h1 className="text-2xl font-bold font-serif text-white tracking-wide">Khôi phục quyền truy cập</h1>
+                  <h1 className="text-2xl font-bold text-white">Khôi phục quyền truy cập</h1>
                   <p className="text-[14px] text-zinc-400 text-balance">
                     Nhập địa chỉ email của bạn để nhận liên kết đặt lại mật khẩu
                   </p>
@@ -377,16 +376,15 @@ export function LoginForm({
                   <Button
                     type="submit"
                     disabled={isLoading || successMessage !== ""}
-                    className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-bold text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
+                    className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-normal text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
                   >
                     {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Gửi liên kết khôi phục"}
                   </Button>
 
-                  <Button
-                    variant="ghost"
+                  <button
                     type="button"
                     disabled={isLoading || successMessage !== ""}
-                    className="w-full text-zinc-400 hover:text-zinc-200 mt-2 text-[14px] flex items-center justify-center gap-1.5"
+                    className="w-full text-zinc-400 hover:text-zinc-200 mt-2 text-[14px] flex items-center justify-center gap-1.5 transition-colors"
                     onClick={() => {
                       setView("login")
                       setError("")
@@ -394,7 +392,7 @@ export function LoginForm({
                     }}
                   >
                     <ArrowLeft className="h-3.5 w-3.5" /> Quay lại đăng nhập
-                  </Button>
+                  </button>
                 </div>
               </div>
             </form>
