@@ -13,6 +13,10 @@ import {
   forwardMessage,
   pinMessage,
   getPinnedMessages,
+  createNote,
+  createPoll,
+  votePoll,
+  addPollOption,
 } from "../controllers/message.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
@@ -33,5 +37,11 @@ router.post("/send-document/:id", sendDocumentMessage);
 router.patch("/:id/document-reply", replyDocumentMessage);
 router.put("/:id/recall", recallMessage);
 router.put("/:id/delete", deleteMessage);
+
+// Poll & Note Routes
+router.post("/group/:groupId/note", createNote);
+router.post("/group/:groupId/poll", createPoll);
+router.post("/poll/:messageId/vote", votePoll);
+router.post("/poll/:messageId/option", addPollOption);
 
 export default router;

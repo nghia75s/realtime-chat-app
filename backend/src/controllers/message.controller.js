@@ -457,6 +457,8 @@ export const forwardMessage = async (req, res) => {
           receiverId,
           text: originalMsg.text,
           image: originalMsg.image,
+          file: originalMsg.file,
+          messageType: originalMsg.messageType || (originalMsg.file ? "file" : "text"),
           isForwarded: true,
         });
         await newMsg.save();
@@ -486,6 +488,8 @@ export const forwardMessage = async (req, res) => {
             groupId: receiverId,
             text: originalMsg.text,
             image: originalMsg.image,
+            file: originalMsg.file,
+            messageType: originalMsg.messageType || (originalMsg.file ? "file" : "text"),
             isForwarded: true,
           });
           await newMsg.save();
@@ -541,6 +545,17 @@ export const pinMessage = async (req, res) => {
     if (!message) {
       message = await GroupMessage.findById(messageId);
       isGroup = true;
+      if (message) {
+        const group = await mongoose.model("Group").findById(message.groupId);
+        if (group) {
+          const isCreator = group.createdBy.toString() === userId.toString();
+          const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+          const canPin = group.settings?.memberPermissions?.pinMessages !== false;
+          if (!isCreator && !isAdmin && !canPin) {
+            return res.status(403).json({ message: "You don't have permission to pin messages in this group." });
+          }
+        }
+      }
     }
 
     if (!message) return res.status(404).json({ message: "Message not found" });
@@ -635,6 +650,231 @@ export const getPinnedMessages = async (req, res) => {
     res.status(200).json(directMessages);
   } catch (error) {
     console.error("Error in getPinnedMessages:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// --- Note & Poll Controllers ---
+
+// POST /api/messages/group/:groupId/note
+export const createNote = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { content, pinToTop } = req.body;
+    const userId = req.user._id;
+
+    if (!content) return res.status(400).json({ message: "Nội dung ghi chú không được để trống" });
+
+    const Group = mongoose.model("Group");
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Không tìm thấy nhóm" });
+
+    // Check permission
+    if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
+      return res.status(403).json({ message: "Bạn không phải thành viên nhóm" });
+    }
+
+    const noteMsg = new GroupMessage({
+      senderId: userId,
+      groupId,
+      messageType: "note",
+      notePayload: { content },
+      isPinned: pinToTop || false,
+      pinnedBy: pinToTop ? userId : null,
+    });
+    await noteMsg.save();
+
+    const populatedMsg = await GroupMessage.findById(noteMsg._id).populate("senderId", "fullname profilePicture");
+
+    group.members.forEach(memberId => {
+      const memberIdStr = memberId.toString();
+      if (memberIdStr !== userId.toString()) {
+        emitToUser(memberIdStr, "newGroupMessage", populatedMsg);
+      }
+    });
+
+    if (pinToTop) {
+      const systemMsg = new GroupMessage({
+        senderId: userId,
+        groupId,
+        messageType: "system",
+        text: `Người dùng ${req.user.fullname} đã ghim một ghi chú.`,
+      });
+      await systemMsg.save();
+      const populatedSystemMsg = await GroupMessage.findById(systemMsg._id).populate("senderId", "fullname profilePicture");
+
+      group.members.forEach((memberId) => {
+        const memberIdStr = memberId.toString();
+        emitToUser(memberIdStr, "messagePinned", { messageId: noteMsg._id, isPinned: true, message: populatedMsg });
+        emitToUser(memberIdStr, "newGroupMessage", populatedSystemMsg);
+      });
+    }
+
+    res.status(201).json(populatedMsg);
+  } catch (error) {
+    console.error("Error in createNote:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// POST /api/messages/group/:groupId/poll
+export const createPoll = async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { question, options, deadline, allowMultiple, allowAddOptions, hideResultsBeforeVoting, hideVoters } = req.body;
+    const userId = req.user._id;
+
+    if (!question || !options || options.length < 2) {
+      return res.status(400).json({ message: "Vui lòng nhập câu hỏi và ít nhất 2 lựa chọn" });
+    }
+
+    const Group = mongoose.model("Group");
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ message: "Không tìm thấy nhóm" });
+
+    // Check permission
+    if (!group.members.some(memberId => memberId.toString() === userId.toString())) {
+      return res.status(403).json({ message: "Bạn không phải thành viên nhóm" });
+    }
+
+    const pollMsg = new GroupMessage({
+      senderId: userId,
+      groupId,
+      messageType: "poll",
+      pollPayload: {
+        question,
+        options: options.map(opt => ({ text: opt, voters: [] })),
+        deadline: deadline ? new Date(deadline) : null,
+        allowMultiple: allowMultiple || false,
+        allowAddOptions: allowAddOptions || false,
+        hideResultsBeforeVoting: hideResultsBeforeVoting || false,
+        hideVoters: hideVoters || false
+      }
+    });
+
+    await pollMsg.save();
+
+    const populatedMsg = await GroupMessage.findById(pollMsg._id).populate("senderId", "fullname profilePicture");
+
+    group.members.forEach(memberId => {
+      const memberIdStr = memberId.toString();
+      if (memberIdStr !== userId.toString()) {
+        emitToUser(memberIdStr, "newGroupMessage", populatedMsg);
+      }
+    });
+
+    res.status(201).json(populatedMsg);
+  } catch (error) {
+    console.error("Error in createPoll:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// POST /api/messages/poll/:messageId/vote
+export const votePoll = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { optionIds } = req.body; // array of selected option _ids
+    const userId = req.user._id;
+
+    const message = await GroupMessage.findById(messageId);
+    if (!message || message.messageType !== "poll") {
+      return res.status(404).json({ message: "Không tìm thấy bình chọn" });
+    }
+
+    const payload = message.pollPayload;
+    if (payload.deadline && new Date() > new Date(payload.deadline)) {
+      return res.status(400).json({ message: "Bình chọn đã hết hạn" });
+    }
+
+    if (!payload.allowMultiple && optionIds.length > 1) {
+      return res.status(400).json({ message: "Bình chọn này chỉ cho phép chọn 1 phương án" });
+    }
+
+    // Remove user's previous votes
+    payload.options.forEach(opt => {
+      opt.voters = opt.voters.filter(voterId => voterId.toString() !== userId.toString());
+    });
+
+    // Add new votes
+    optionIds.forEach(optId => {
+      const option = payload.options.id(optId);
+      if (option) {
+        option.voters.push(userId);
+      }
+    });
+
+    await message.save();
+
+    const populatedMsg = await GroupMessage.findById(message._id)
+      .populate("senderId", "fullname profilePicture")
+      .populate("pollPayload.options.voters", "fullname profilePicture");
+
+    // Emit pollUpdated to group members
+    const Group = mongoose.model("Group");
+    const group = await Group.findById(message.groupId);
+    if (group) {
+      group.members.forEach(memberId => {
+        emitToUser(memberId.toString(), "pollUpdated", { messageId: message._id, message: populatedMsg });
+      });
+    }
+
+    res.status(200).json(populatedMsg);
+  } catch (error) {
+    console.error("Error in votePoll:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// POST /api/messages/poll/:messageId/option
+export const addPollOption = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { text } = req.body;
+    const userId = req.user._id;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: "Nội dung lựa chọn không hợp lệ" });
+    }
+
+    const message = await GroupMessage.findById(messageId);
+    if (!message || message.messageType !== "poll") {
+      return res.status(404).json({ message: "Không tìm thấy bình chọn" });
+    }
+
+    const payload = message.pollPayload;
+    if (!payload.allowAddOptions) {
+      return res.status(403).json({ message: "Bình chọn này không cho phép thêm phương án mới" });
+    }
+
+    if (payload.deadline && new Date() > new Date(payload.deadline)) {
+      return res.status(400).json({ message: "Bình chọn đã hết hạn" });
+    }
+
+    // Check if option already exists
+    if (payload.options.some(opt => opt.text.trim().toLowerCase() === text.trim().toLowerCase())) {
+      return res.status(400).json({ message: "Lựa chọn đã tồn tại" });
+    }
+
+    payload.options.push({ text: text.trim(), voters: [] });
+    await message.save();
+
+    const populatedMsg = await GroupMessage.findById(message._id)
+      .populate("senderId", "fullname profilePicture")
+      .populate("pollPayload.options.voters", "fullname profilePicture");
+
+    // Emit pollUpdated to group members
+    const Group = mongoose.model("Group");
+    const group = await Group.findById(message.groupId);
+    if (group) {
+      group.members.forEach(memberId => {
+        emitToUser(memberId.toString(), "pollUpdated", { messageId: message._id, message: populatedMsg });
+      });
+    }
+
+    res.status(200).json(populatedMsg);
+  } catch (error) {
+    console.error("Error in addPollOption:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };

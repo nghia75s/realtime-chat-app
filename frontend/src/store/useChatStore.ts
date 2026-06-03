@@ -58,6 +58,22 @@ interface ChatStore {
     pinnedMessages: any[];
     getPinnedMessages: (chatId: string) => Promise<void>;
     pinMessage: (messageId: string) => Promise<void>;
+    addGroupAdmin: (groupId: string, userId: string) => Promise<any>;
+    removeGroupAdmin: (groupId: string, userId: string) => Promise<any>;
+    transferGroupOwner: (groupId: string, userId: string) => Promise<any>;
+    getInviteLink: (groupId: string) => Promise<any>;
+    joinViaLink: (inviteCode: string) => Promise<any>;
+    getPendingMembers: (groupId: string) => Promise<any>;
+    approveMember: (groupId: string, userId: string) => Promise<any>;
+    rejectMember: (groupId: string, userId: string) => Promise<any>;
+    groupInvitations: any[];
+    getGroupInvitations: () => Promise<void>;
+    acceptGroupInvitation: (groupId: string) => Promise<any>;
+    declineGroupInvitation: (groupId: string) => Promise<any>;
+    createNote: (groupId: string, payload: any) => Promise<any>;
+    createPoll: (groupId: string, payload: any) => Promise<any>;
+    votePoll: (messageId: string, optionIds: string[]) => Promise<any>;
+    addPollOption: (messageId: string, text: string) => Promise<any>;
 }
 
 // Helper: Đẩy item lên đầu mảng dựa theo _id, fallback unshift nếu chưa có
@@ -85,6 +101,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     allContacts: [],
     chats: [],
     groups: [],
+    groupInvitations: [],
     messages: [],
     pinnedMessages: [],
     managers: [],
@@ -375,6 +392,47 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             }
         });
 
+        socket.off("groupUpdated");
+        socket.on("groupUpdated", (updatedGroup) => {
+            const groupWithFlag = { ...updatedGroup, isGroup: true };
+            set((state) => {
+                const currentUser = useAuthStore.getState().authUser;
+                
+                // Check if current user is still a member
+                const isStillMember = updatedGroup.members?.some((m: any) => 
+                    m === currentUser?._id || m._id === currentUser?._id
+                );
+
+                if (currentUser && !isStillMember) {
+                    // Remove group from store and clear unread badge
+                    return {
+                        groups: state.groups.filter(g => g._id !== updatedGroup._id),
+                        unreadGroups: state.unreadGroups.filter(id => id !== updatedGroup._id),
+                        selectedUser: state.selectedUser?._id === updatedGroup._id ? null : state.selectedUser
+                    };
+                }
+
+                const newGroups = state.groups.map(g => 
+                    (g._id === updatedGroup._id) ? { ...g, ...groupWithFlag } : g
+                );
+                
+                // If the updated group is currently selected, update selectedUser too
+                const newSelectedUser = state.selectedUser?._id === updatedGroup._id 
+                    ? { ...state.selectedUser, ...groupWithFlag }
+                    : state.selectedUser;
+                    
+                return { groups: newGroups, selectedUser: newSelectedUser };
+            });
+        });
+
+        socket.off("newGroupInvitation");
+        socket.on("newGroupInvitation", (newInvitation) => {
+            const currentInvitations = get().groupInvitations;
+            if (!currentInvitations.some(i => i._id === newInvitation._id)) {
+                set({ groupInvitations: [newInvitation, ...currentInvitations] });
+            }
+        });
+
         // Real-time: Quản lý phê duyệt / từ chối lá đơn
         socket.off("documentReplied");
         socket.on("documentReplied", ({ messageId, documentReplyData }: { messageId: string; documentReplyData: any }) => {
@@ -425,6 +483,18 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             } else {
                 toast.error(message);
             }
+        });
+
+        socket.off("pollUpdated");
+        socket.on("pollUpdated", ({ messageId, message }) => {
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? message : m
+                ),
+                pinnedMessages: state.pinnedMessages.map((m) =>
+                    m._id === messageId ? message : m
+                )
+            }));
         });
     },
     unsubscribeFromMessages: () => {
@@ -599,4 +669,194 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             throw error;
         }
     },
+    addGroupAdmin: async (groupId, userId) => {
+        try {
+            const data = await chatService.addGroupAdmin(groupId, userId);
+            set((state) => ({
+                groups: state.groups.map((group) =>
+                    group._id === data._id ? { ...data, isGroup: true } : group
+                )
+            }));
+            if (get().selectedUser?.isGroup && get().selectedUser._id === data._id) {
+                set({ selectedUser: { ...data, isGroup: true } });
+            }
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi chỉ định phó nhóm");
+            throw error;
+        }
+    },
+    removeGroupAdmin: async (groupId, userId) => {
+        try {
+            const data = await chatService.removeGroupAdmin(groupId, userId);
+            set((state) => ({
+                groups: state.groups.map((group) =>
+                    group._id === data._id ? { ...data, isGroup: true } : group
+                )
+            }));
+            if (get().selectedUser?.isGroup && get().selectedUser._id === data._id) {
+                set({ selectedUser: { ...data, isGroup: true } });
+            }
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi thu hồi phó nhóm");
+            throw error;
+        }
+    },
+    transferGroupOwner: async (groupId, userId) => {
+        try {
+            const data = await chatService.transferGroupOwner(groupId, userId);
+            set((state) => ({
+                groups: state.groups.map((group) =>
+                    group._id === data._id ? { ...data, isGroup: true } : group
+                )
+            }));
+            if (get().selectedUser?.isGroup && get().selectedUser._id === data._id) {
+                set({ selectedUser: { ...data, isGroup: true } });
+            }
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi chuyển quyền trưởng nhóm");
+            throw error;
+        }
+    },
+    getInviteLink: async (groupId) => {
+        try {
+            return await chatService.getInviteLink(groupId);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi lấy link tham gia nhóm");
+            throw error;
+        }
+    },
+    joinViaLink: async (inviteCode) => {
+        try {
+            return await chatService.joinViaLink(inviteCode);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi tham gia nhóm qua link");
+            throw error;
+        }
+    },
+    getPendingMembers: async (groupId) => {
+        try {
+            return await chatService.getPendingMembers(groupId);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi lấy danh sách chờ");
+            throw error;
+        }
+    },
+    approveMember: async (groupId, userId) => {
+        try {
+            return await chatService.approveMember(groupId, userId);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi duyệt thành viên");
+            throw error;
+        }
+    },
+    rejectMember: async (groupId, userId) => {
+        try {
+            return await chatService.rejectMember(groupId, userId);
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi từ chối thành viên");
+            throw error;
+        }
+    },
+    getGroupInvitations: async () => {
+        try {
+            const data = await chatService.getGroupInvitations();
+            set({ groupInvitations: data });
+        } catch (error: any) {
+            console.error("Lỗi lấy danh sách lời mời nhóm:", error);
+        }
+    },
+    acceptGroupInvitation: async (groupId) => {
+        try {
+            const updatedGroup = await chatService.acceptGroupInvitation(groupId);
+            set((state) => ({
+                groupInvitations: state.groupInvitations.filter((g: any) => g._id !== groupId),
+            }));
+            return updatedGroup;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi chấp nhận lời mời");
+            throw error;
+        }
+    },
+    declineGroupInvitation: async (groupId) => {
+        try {
+            const data = await chatService.declineGroupInvitation(groupId);
+            set((state) => ({
+                groupInvitations: state.groupInvitations.filter((g: any) => g._id !== groupId)
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi từ chối lời mời");
+            throw error;
+        }
+    },
+    
+    // --- Poll & Note Features ---
+    createNote: async (groupId, payload) => {
+        try {
+            const data = await chatService.createNote(groupId, payload);
+            const { selectedUser, messages, groups } = get();
+            if (selectedUser?._id === groupId) {
+                set({ messages: [...messages, data] });
+            }
+            set({ groups: pushToTop(groups, groupId, selectedUser, data) });
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi tạo ghi chú");
+            throw error;
+        }
+    },
+
+    createPoll: async (groupId, payload) => {
+        try {
+            const data = await chatService.createPoll(groupId, payload);
+            const { selectedUser, messages, groups } = get();
+            if (selectedUser?._id === groupId) {
+                set({ messages: [...messages, data] });
+            }
+            set({ groups: pushToTop(groups, groupId, selectedUser, data) });
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi tạo bình chọn");
+            throw error;
+        }
+    },
+
+    votePoll: async (messageId, optionIds) => {
+        try {
+            const data = await chatService.votePoll(messageId, optionIds);
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? data : m
+                ),
+                pinnedMessages: state.pinnedMessages.map((m) =>
+                    m._id === messageId ? data : m
+                )
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi bình chọn");
+            throw error;
+        }
+    },
+
+    addPollOption: async (messageId, text) => {
+        try {
+            const data = await chatService.addPollOption(messageId, text);
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? data : m
+                ),
+                pinnedMessages: state.pinnedMessages.map((m) =>
+                    m._id === messageId ? data : m
+                )
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi thêm phương án");
+            throw error;
+        }
+    }
 }));

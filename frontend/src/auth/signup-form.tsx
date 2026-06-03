@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Eye, EyeOff, LoaderIcon, MessageCircle } from "lucide-react"
+import { Eye, EyeOff, LoaderIcon, Check, X } from "lucide-react"
 
 import { useAuthStore } from "@/store/useAuthStore"
 
@@ -24,13 +23,54 @@ export function SignupForm({
   const { signup, isSigningUp, authUser } = useAuthStore();
   const navigate = useNavigate();
 
+  // Hàm kiểm tra mật khẩu đạt đủ điều kiện
+  const isPasswordStrong = (password: string): boolean => {
+    if (!password) return false;
+    // Kiểm tra: ít nhất 8 ký tự, có chữ hoa, chữ thường, và số
+    const hasMinLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    return hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
+  };
+
+  // Hàm tính độ mạnh của mật khẩu (0-4)
+  const getPasswordStrength = (password: string): { level: number; color: string } => {
+    if (!password) return { level: 0, color: "bg-gray-300" };
+
+    let strength = 0;
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    if (hasLowerCase) strength++;
+    if (hasUpperCase) strength++;
+    if (hasNumber) strength++;
+    if (hasSpecialChar) strength++;
+
+    // Xác định màu dựa trên mức độ
+    let color = "bg-gray-300";
+    if (strength === 1) color = "bg-red-500";
+    else if (strength === 2) color = "bg-yellow-500";
+    else if (strength === 3) color = "bg-lime-400";
+    else if (strength === 4) color = "bg-green-600";
+
+    return { level: strength, color };
+  };
+
+  // Hàm kiểm tra mật khẩu khớp
+  const isPasswordMatch = (): boolean => {
+    return formData.password === formData.confirmPassword;
+  };
+
   useEffect(() => {
     if (authUser) {
       navigate("/chat")
     }
   }, [authUser, navigate])
 
-  const handleSignupSubmit = async (e : React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("")
 
@@ -62,7 +102,7 @@ export function SignupForm({
   return (
     <div className={cn("flex flex-col gap-6 w-full items-center font-['Times_New_Roman',_Times,_serif]", className)} {...props}>
       <div className="w-full rounded-[24px] border border-white/15 bg-white/[0.05] backdrop-blur-3xl shadow-[0_24px_50px_rgba(0,0,0,0.4)] overflow-hidden flex flex-col md:flex-row p-6 md:p-8 gap-6 md:gap-8">
-        
+
         {/* Left Column: Form */}
         <div className="w-full md:w-[48%] flex flex-col justify-center px-4 py-4 md:py-6">
           <form onSubmit={handleSignupSubmit} className="w-full">
@@ -89,7 +129,7 @@ export function SignupForm({
                   <Input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 px-3 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full"
                     placeholder="Nguyễn Văn A"
                   />
@@ -101,7 +141,7 @@ export function SignupForm({
                     type="email"
                     placeholder="m@example.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 px-3 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full"
                   />
                 </div>
@@ -112,18 +152,42 @@ export function SignupForm({
                     <Input
                       type={showPassword ? "text" : "password"}
                       value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 pl-3 pr-10 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      {formData.password && (
+                        isPasswordStrong(formData.password) ? (
+                          <Check size={18} className="text-green-500" />
+                        ) : (
+                          <X size={18} className="text-red-500" />
+                        )
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Thanh độ mạnh mật khẩu nhỏ */}
+                  {formData.password && (
+                    <div className="flex gap-0.5 mt-1 justify-end">
+                      {[1, 2, 3, 4].map((step) => (
+                        <div
+                          key={step}
+                          className={`h-1 w-3 rounded-full transition-colors ${step <= getPasswordStrength(formData.password).level
+                              ? getPasswordStrength(formData.password).color
+                              : "bg-gray-300 dark:bg-gray-600"
+                            }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </Field>
 
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="confirmPassword" className="text-[14px] font-normal text-zinc-400">Xác nhận mật khẩu</label>
@@ -132,16 +196,27 @@ export function SignupForm({
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       value={formData.confirmPassword}
-                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       className="bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 pl-3 pr-10 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                      {formData.confirmPassword && (
+                        !isPasswordStrong(formData.password) ? (
+                          <X size={18} className="text-red-500" />
+                        ) : isPasswordMatch() ? (
+                          <Check size={18} className="text-green-500" />
+                        ) : (
+                          <X size={18} className="text-red-500" />
+                        )
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -151,9 +226,9 @@ export function SignupForm({
               )}
 
               <div>
-                <Button 
-                  type="submit" 
-                  disabled={isSigningUp} 
+                <Button
+                  type="submit"
+                  disabled={isSigningUp}
                   className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-bold text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
                 >
                   {isSigningUp ? (<LoaderIcon className="w-5 h-5 animate-spin" />) : ("Đăng ký")}
@@ -176,13 +251,13 @@ export function SignupForm({
 
         {/* Right Column: Visual illustration panel */}
         <div className="hidden md:flex w-[52%] rounded-[18px] bg-gradient-to-br from-[#121c33] via-[#0f172a] to-[#25103c] border border-white/5 relative overflow-hidden flex-col justify-between p-10 select-none min-h-[460px]">
-          
+
           {/* Floating Bubble Illustration */}
           <div className="relative w-full h-[220px] flex items-center justify-center mb-6">
             {/* Blurs */}
             <div className="absolute w-[200px] h-[200px] rounded-full bg-cyan-500/10 blur-[50px] pointer-events-none" />
             <div className="absolute w-[180px] h-[180px] rounded-full bg-purple-500/10 blur-[50px] pointer-events-none" />
-            
+
             {/* SVG Network Graph Connection Lines */}
             <svg className="absolute inset-0 w-full h-full text-white/5" viewBox="0 0 300 200" fill="none">
               <path d="M 50 150 L 100 120 L 150 150 L 200 90 L 250 140" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
@@ -195,20 +270,20 @@ export function SignupForm({
               <circle cx="80" cy="80" r="3" className="fill-purple-400/40" />
               <circle cx="220" cy="70" r="3" className="fill-indigo-400/40" />
             </svg>
-            
+
             {/* Emoji Bubble cards - resized larger */}
             <div className="absolute top-[20px] left-[20px] bg-purple-500/10 border border-purple-500/30 rounded-[18px] w-16 h-16 shadow-lg backdrop-blur-md animate-[bounce_4s_infinite_1s] flex items-center justify-center">
               <span className="text-3xl">💜</span>
             </div>
-            
+
             <div className="absolute top-[5px] right-[30px] bg-teal-500/10 border border-teal-500/30 rounded-[18px] w-16 h-16 shadow-lg backdrop-blur-md animate-[bounce_4.5s_infinite] flex items-center justify-center">
               <span className="text-3xl">💬</span>
             </div>
-            
+
             <div className="absolute bottom-[20px] right-[10px] bg-indigo-500/10 border border-indigo-500/30 rounded-[18px] w-16 h-16 shadow-lg backdrop-blur-md animate-[bounce_5s_infinite_0.5s] flex items-center justify-center">
               <span className="text-3xl">📄</span>
             </div>
-            
+
             <div className="absolute bottom-[10px] left-[30px] bg-pink-500/10 border border-pink-500/30 rounded-[18px] w-16 h-16 shadow-lg backdrop-blur-md animate-[bounce_3.5s_infinite_1.5s] flex items-center justify-center">
               <span className="text-3xl">💖</span>
             </div>
