@@ -1,40 +1,42 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ChatHeaderProps {
   name: string;
   avatar: string;
-  isOnline?: boolean;
+  phone?: string;
 }
 
-export default function ChatHeader({ name, avatar, isOnline = true }: ChatHeaderProps) {
+export default function ChatHeader({ name, avatar, phone }: ChatHeaderProps) {
   const router = useRouter();
 
   return (
-    <View style={styles.header}>
+    <View style={styles.headerContainer}>
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <IconSymbol name="chevron.left" size={28} color="#8E8E93" />
+        <Ionicons name="arrow-back" size={24} color="#333" />
       </TouchableOpacity>
       
-      <View style={styles.headerInfo}>
-        <Image 
-          source={{ uri: avatar || 'https://via.placeholder.com/40' }} 
-          style={styles.headerAvatar} 
-        />
-        <View>
-          <Text style={styles.headerName}>{name || 'Đồng nghiệp'}</Text>
-          <Text style={styles.headerStatus}>{isOnline ? 'Đang hoạt động' : 'Ngoại tuyến'}</Text>
-        </View>
+      <Image 
+        source={{ uri: avatar || 'https://via.placeholder.com/40' }} 
+        style={styles.avatar} 
+      />
+      
+      <View style={styles.profileInfo}>
+        <Text style={styles.nameText} numberOfLines={1}>{name || 'Người dùng'}</Text>
+        <Text style={styles.phoneText}>{phone || '(+84) 99 9999 9999'}</Text>
       </View>
 
-      <View style={styles.headerActions}>
-        <TouchableOpacity style={styles.headerActionBtn}>
-          <IconSymbol name="phone.fill" size={22} color="#8E8E93" />
+      <View style={styles.actions}>
+        <TouchableOpacity style={styles.actionBtn}>
+          <Ionicons name="videocam-outline" size={24} color="#333" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerActionBtn}>
-          <IconSymbol name="video.fill" size={22} color="#8E8E93" />
+        <TouchableOpacity style={styles.actionBtn}>
+          <Ionicons name="call-outline" size={22} color="#333" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionBtnOutline}>
+          <Ionicons name="ellipsis-horizontal" size={18} color="#333" />
         </TouchableOpacity>
       </View>
     </View>
@@ -42,45 +44,56 @@ export default function ChatHeader({ name, avatar, isOnline = true }: ChatHeader
 }
 
 const styles = StyleSheet.create({
-  header: {
+  headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 10,
+    paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1c22',
-    backgroundColor: '#070913',
+    borderBottomColor: '#F0F0F0',
   },
   backButton: {
-    marginRight: 12,
+    padding: 4,
+    marginRight: 8,
   },
-  headerInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerAvatar: {
+  avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 12,
+    marginRight: 10,
   },
-  headerName: {
+  profileInfo: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  nameText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#333',
   },
-  headerStatus: {
+  phoneText: {
     fontSize: 12,
-    color: '#22c55e',
+    color: '#A0A0A0',
     marginTop: 2,
   },
-  headerActions: {
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerActionBtn: {
+  actionBtn: {
     marginLeft: 16,
-    padding: 6,
+    padding: 4,
+  },
+  actionBtnOutline: {
+    marginLeft: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

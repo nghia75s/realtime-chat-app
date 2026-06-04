@@ -1,43 +1,109 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { getChatPartnersAPI } from '@/api/message.api';
 import ChatListItem from '@/components/chat/ChatListItem';
 import { useAuthStore } from '@/store/useAuthStore';
-import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddMenu, setShowAddMenu] = useState(false);
 
   const { data: chatPartners, isLoading, isError, refetch } = useQuery({
     queryKey: ['chatPartners'],
     queryFn: getChatPartnersAPI,
   });
 
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>Tin nhắn</Text>
-      <TouchableOpacity style={styles.newChatBtn}>
-        <IconSymbol name="face.smiling" size={24} color="#3b82f6" />
-      </TouchableOpacity>
-    </View>
-  );
+  // Filter chat partners based on search query
+  const filteredPartners = chatPartners?.filter((partner: any) => {
+    const name = partner.fullname || partner.name || '';
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  }) || [];
+
+  const renderHeader = () => {
+    return (
+      <View style={styles.headerBackground}>
+        <SafeAreaView edges={['top']} style={styles.headerSafeArea}>
+          {!isSearching ? (
+            <View style={styles.headerContent}>
+              <View style={styles.headerLeft}>
+                <Ionicons name="chatbubbles" size={24} color="#fff" />
+                <Text style={styles.headerTitle}>E-Chat</Text>
+              </View>
+              <View style={styles.headerRight}>
+                <TouchableOpacity onPress={() => setIsSearching(true)} style={styles.iconButton}>
+                  <Ionicons name="search-outline" size={24} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowAddMenu(true)} style={styles.iconButton}>
+                  <Ionicons name="add" size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.headerContentSearch}>
+              <View style={styles.searchBarContainer}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search..."
+                  placeholderTextColor="#A0A0A0"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoFocus
+                />
+              </View>
+              <TouchableOpacity onPress={() => { setIsSearching(false); setSearchQuery(''); }} style={styles.closeSearchBtn}>
+                <Ionicons name="close-circle" size={28} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </SafeAreaView>
+      </View>
+    );
+  };
+
+  const renderAddMenu = () => {
+    return (
+      <Modal transparent visible={showAddMenu} animationType="fade">
+        <TouchableWithoutFeedback onPress={() => setShowAddMenu(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.dropdownMenu}>
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setShowAddMenu(false);
+                    // Handle Create Group logic here
+                  }}
+                >
+                  <Ionicons name="people-outline" size={20} color="#333" style={styles.menuIcon} />
+                  <Text style={styles.menuText}>Create Group</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    );
+  };
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
         {renderHeader()}
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#3b82f6" />
+          <ActivityIndicator size="large" color="#00A3FF" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (isError) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
         {renderHeader()}
         <View style={styles.center}>
           <Text style={styles.errorText}>Không thể tải danh sách tin nhắn.</Text>
@@ -45,15 +111,16 @@ export default function HomeScreen() {
             <Text style={styles.retryText}>Thử lại</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.container}>
       {renderHeader()}
+      {renderAddMenu()}
       <FlatList
-        data={chatPartners}
+        data={filteredPartners}
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => <ChatListItem user={item} currentUserId={user?._id} />}
         contentContainerStyle={styles.listContent}
@@ -63,35 +130,111 @@ export default function HomeScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: '#070913',
+    backgroundColor: '#FFFFFF', // Light Theme Background
   },
-  header: {
+  headerBackground: {
+    backgroundColor: '#00A3FF',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+    zIndex: 10,
+  },
+  headerSafeArea: {
+    paddingBottom: 20,
+    paddingTop: 10,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#1a1c22',
+    paddingHorizontal: 20,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+    marginLeft: 8,
   },
-  newChatBtn: {
-    padding: 8,
-    backgroundColor: '#1a1c22',
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
+    marginLeft: 15,
+    padding: 4,
+  },
+  headerContentSearch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  searchBarContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginRight: 10,
   },
+  searchInput: {
+    fontSize: 16,
+    color: '#333',
+    padding: 0, // Remove default padding on Android
+  },
+  closeSearchBtn: {
+    padding: 4,
+  },
+  // Modal & Dropdown
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 65,
+    right: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
+    minWidth: 160,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  // List
   listContent: {
+    paddingTop: 10,
     paddingBottom: 20,
   },
   center: {
@@ -106,7 +249,7 @@ const styles = StyleSheet.create({
   retryBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#00A3FF',
     borderRadius: 8,
   },
   retryText: {
@@ -118,7 +261,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#8E8E93',
+    color: '#A0A0A0',
     fontSize: 16,
   },
 });

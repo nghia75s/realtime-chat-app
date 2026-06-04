@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Alert, Dimensions } from 'react-native';
 import { signupAPI, verifyOtpAPI, checkAuthAPI, sendOtpAPI } from '@/api/auth.api';
 import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type ViewState = "register" | "otp";
+
+const { width } = Dimensions.get('window');
 
 export default function RegisterScreen() {
   const [view, setView] = useState<ViewState>("register");
@@ -24,9 +27,25 @@ export default function RegisterScreen() {
   
   // OTP state
   const [otp, setOtp] = useState('');
+  const [timeLeft, setTimeLeft] = useState(300);
   
   const { setUser } = useAuthStore();
   const router = useRouter();
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m < 10 ? `0${m}` : m}:${s < 10 ? `0${s}` : s}`;
+  };
+
+  // Timer logic for OTP
+  useEffect(() => {
+    let timer: any;
+    if (view === 'otp' && timeLeft > 0) {
+      timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [timeLeft, view]);
 
   const isPasswordStrong = (pwd: string) => {
     if (!pwd) return false;
@@ -34,14 +53,14 @@ export default function RegisterScreen() {
   };
 
   const getPasswordStrength = (pwd: string) => {
-    if (!pwd) return { level: 0, color: '#d1d5db' };
+    if (!pwd) return { level: 0, color: '#E0E0E0' };
     let strength = 0;
     if (/[a-z]/.test(pwd)) strength++;
     if (/[A-Z]/.test(pwd)) strength++;
     if (/[0-9]/.test(pwd)) strength++;
     if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) strength++;
     
-    let color = '#d1d5db';
+    let color = '#E0E0E0';
     if (strength === 1) color = '#ef4444'; 
     else if (strength === 2) color = '#eab308'; 
     else if (strength === 3) color = '#a3e635'; 
@@ -56,15 +75,15 @@ export default function RegisterScreen() {
     setSuccessMsg("");
     
     if (!fullname || !email || !password || !confirmPassword) {
-      setErrorMsg("Vui lòng điền đầy đủ thông tin đăng ký");
+      setErrorMsg("Vui lòng điền đầy đủ thông tin.");
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMsg("Mật khẩu xác nhận không khớp");
+      setErrorMsg("Mật khẩu xác nhận không khớp.");
       return;
     }
     if (!isPasswordStrong(password)) {
-      setErrorMsg("Mật khẩu chưa đủ mạnh. Cần ít nhất 8 ký tự, có hoa, thường và số.");
+      setErrorMsg("Mật khẩu chưa đủ mạnh. Cần ít nhất 8 ký tự, có chữ hoa, chữ thường và số.");
       return;
     }
 
@@ -72,10 +91,11 @@ export default function RegisterScreen() {
       setLoading(true);
       const res = await signupAPI(fullname, email, password);
       setView("otp");
+      setTimeLeft(300);
       setSuccessMsg(res.message || "Đăng ký thành công. Vui lòng kiểm tra email để lấy mã OTP.");
     } catch (error: any) {
       if (!error.response) {
-        setErrorMsg("Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại mạng hoặc IP.");
+        setErrorMsg("Không thể kết nối đến máy chủ.");
       } else {
         setErrorMsg(error.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.");
       }
@@ -111,12 +131,13 @@ export default function RegisterScreen() {
   };
 
   const handleResendOtp = async () => {
+    if (timeLeft > 0) return;
     setErrorMsg("");
     setSuccessMsg("");
-    if (!email) return;
     try {
       setLoading(true);
       await sendOtpAPI(email);
+      setTimeLeft(300);
       setSuccessMsg("Đã gửi lại mã OTP tới email của bạn.");
     } catch (error: any) {
       setErrorMsg(error.response?.data?.message || "Không thể gửi lại mã OTP.");
@@ -127,17 +148,31 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="chatbubbles" size={32} color="#fff" />
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled" bounces={false}>
+        
+        <View style={styles.headerBackground}>
+          <SafeAreaView edges={['top']}>
+            <View style={styles.headerTop}>
+              <TouchableOpacity style={styles.backPillButton} onPress={() => router.replace('/(auth)/login')}>
+                <Ionicons name="arrow-back" size={16} color="#00A3FF" />
+                <Text style={styles.backPillText}>Login</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.title}>{view === 'register' ? 'Tạo tài khoản mới' : 'Xác minh danh tính'}</Text>
-            <Text style={styles.subtitle}>
-              {view === 'register' ? 'Điền thông tin của bạn bên dưới để đăng ký' : `Nhập mã 6 số chúng tôi vừa gửi đến ${email}`}
-            </Text>
-          </View>
+
+            <View style={styles.headerContent}>
+              {view === 'register' ? (
+                <Text style={styles.headerSubtitle}>Register</Text>
+              ) : (
+                <View>
+                  <Text style={styles.headerSubtitle}>Enter OTP Code</Text>
+                  <Text style={styles.headerSmallText}>Sent to : {email}</Text>
+                </View>
+              )}
+            </View>
+          </SafeAreaView>
+        </View>
+
+        <View style={styles.content}>
           
           {errorMsg ? (
             <View style={styles.errorBox}>
@@ -151,25 +186,25 @@ export default function RegisterScreen() {
             </View>
           ) : null}
 
-          {view === 'register' ? (
+          {view === 'register' && (
             <View style={styles.form}>
+              <Text style={styles.formHint}>Please enter your details below.</Text>
+              
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Họ và Tên</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Nguyễn Văn A"
-                  placeholderTextColor="#52525b"
+                  placeholder="Full Name"
+                  placeholderTextColor="#A0A0A0"
                   value={fullname}
                   onChangeText={setFullname}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="m@example.com"
-                  placeholderTextColor="#52525b"
+                  placeholder="Email"
+                  placeholderTextColor="#A0A0A0"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -178,12 +213,11 @@ export default function RegisterScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Mật khẩu</Text>
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={[styles.input, styles.passwordInput]}
-                    placeholder="Nhập mật khẩu"
-                    placeholderTextColor="#52525b"
+                    placeholder="Password"
+                    placeholderTextColor="#A0A0A0"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
@@ -198,7 +232,7 @@ export default function RegisterScreen() {
                       />
                     )}
                     <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                      <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#a1a1aa" />
+                      <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#A0A0A0" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -209,7 +243,7 @@ export default function RegisterScreen() {
                         key={level} 
                         style={[
                           styles.strengthBar, 
-                          { backgroundColor: level <= strengthInfo.level ? strengthInfo.color : '#4b5563' }
+                          { backgroundColor: level <= strengthInfo.level ? strengthInfo.color : '#E0E0E0' }
                         ]} 
                       />
                     ))}
@@ -218,12 +252,11 @@ export default function RegisterScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Xác nhận mật khẩu</Text>
                 <View style={styles.passwordContainer}>
                   <TextInput
                     style={[styles.input, styles.passwordInput]}
-                    placeholder="Nhập lại mật khẩu"
-                    placeholderTextColor="#52525b"
+                    placeholder="Confirm Password"
+                    placeholderTextColor="#A0A0A0"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showConfirmPassword}
@@ -238,73 +271,75 @@ export default function RegisterScreen() {
                       />
                     )}
                     <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                      <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#a1a1aa" />
+                      <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#A0A0A0" />
                     </TouchableOpacity>
                   </View>
                 </View>
               </View>
 
-              <TouchableOpacity 
-                style={[styles.button, loading && styles.buttonDisabled]} 
-                onPress={handleRegister}
-                disabled={loading}
-              >
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Đăng ký</Text>}
-              </TouchableOpacity>
-
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>Đã có tài khoản? </Text>
-                <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                  <Text style={styles.linkText}>Đăng nhập</Text>
+              <View style={styles.actionRow}>
+                <View /> 
+                <TouchableOpacity 
+                  style={[styles.circularButton, loading && styles.buttonDisabled]} 
+                  onPress={handleRegister}
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#fff" /> : <Ionicons name="arrow-forward" size={24} color="#fff" />}
                 </TouchableOpacity>
               </View>
             </View>
-          ) : (
+          )}
+
+          {view === 'otp' && (
             <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, { textAlign: 'center' }]}>Mã bảo mật (OTP)</Text>
+              <View style={styles.timerContainer}>
+                <Ionicons name="time-outline" size={16} color="#A0A0A0" />
+                <Text style={styles.timerText}>
+                  {formatTime(timeLeft)}
+                </Text>
+                <TouchableOpacity onPress={handleResendOtp} disabled={timeLeft > 0 || loading}>
+                  <Text style={[styles.resendText, timeLeft > 0 && styles.resendTextDisabled]}>
+                    Resend Code
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.otpContainer}>
+                {[...Array(6)].map((_, i) => (
+                  <View key={i} style={[styles.otpBox, otp.length === i && styles.otpBoxActive]}>
+                    <Text style={styles.otpText}>{otp[i] || ''}</Text>
+                  </View>
+                ))}
                 <TextInput
-                  style={[styles.input, styles.otpInput]}
-                  placeholder="------"
-                  placeholderTextColor="#52525b"
+                  style={styles.hiddenInput}
                   value={otp}
                   onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, '').slice(0, 6))}
                   keyboardType="number-pad"
                   maxLength={6}
+                  autoFocus
                 />
               </View>
 
-              <TouchableOpacity 
-                style={[styles.button, loading && styles.buttonDisabled]} 
-                onPress={handleVerifyOtp}
-                disabled={loading}
-              >
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Xác nhận mã</Text>}
-              </TouchableOpacity>
+              <View style={styles.actionRow}>
+                <TouchableOpacity 
+                  style={styles.backLink} 
+                  onPress={() => { setView('register'); setErrorMsg(""); setOtp(""); setSuccessMsg(""); }}
+                  disabled={loading}
+                >
+                  <Text style={styles.backLinkText}>Go back</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.buttonSecondary, loading && styles.buttonDisabled]} 
-                onPress={handleResendOtp}
-                disabled={loading || !email}
-              >
-                <Text style={styles.buttonSecondaryText}>Gửi lại mã OTP</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.backButton} 
-                onPress={() => {
-                  setView('register');
-                  setOtp('');
-                  setErrorMsg("");
-                  setSuccessMsg("");
-                }}
-                disabled={loading}
-              >
-                <Ionicons name="arrow-back" size={16} color="#a1a1aa" />
-                <Text style={styles.backButtonText}>Quay lại</Text>
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.circularButton, loading && styles.buttonDisabled]} 
+                  onPress={handleVerifyOtp}
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#fff" /> : <Ionicons name="arrow-forward" size={24} color="#fff" />}
+                </TouchableOpacity>
+              </View>
             </View>
           )}
+
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -314,91 +349,102 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070913',
+    backgroundColor: '#FFFFFF',
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
   },
-  card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+  headerBackground: {
+    backgroundColor: '#00A3FF',
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    paddingBottom: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  header: {
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    marginTop: 20,
   },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(56, 189, 248, 0.2)',
-    justifyContent: 'center',
+  backPillButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.5)',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  subtitle: {
+  backPillText: {
+    color: '#00A3FF',
+    fontWeight: '600',
     fontSize: 14,
-    color: '#a1a1aa',
-    textAlign: 'center',
+    marginLeft: 4,
+  },
+  headerContent: {
+    paddingHorizontal: 24,
+    marginTop: 30,
+  },
+  headerSubtitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    lineHeight: 40,
+  },
+  headerSmallText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 8,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 30,
   },
   errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: '#FEE2E2',
+    padding: 12,
     borderRadius: 8,
-    padding: 10,
     marginBottom: 20,
   },
   errorText: {
-    color: '#f87171',
-    textAlign: 'center',
+    color: '#EF4444',
     fontSize: 14,
+    textAlign: 'center',
   },
   successBox: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
+    backgroundColor: '#D1FAE5',
+    padding: 12,
     borderRadius: 8,
-    padding: 10,
     marginBottom: 20,
   },
   successText: {
-    color: '#34d399',
-    textAlign: 'center',
+    color: '#10B981',
     fontSize: 14,
+    textAlign: 'center',
   },
   form: {
-    width: '100%',
+    flex: 1,
+  },
+  formHint: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 20,
   },
   inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    color: '#a1a1aa',
-    fontSize: 14,
-    marginBottom: 8,
+    marginBottom: 24,
   },
   input: {
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
-    color: '#fff',
-    padding: 14,
-    fontSize: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333',
   },
   passwordContainer: {
     position: 'relative',
@@ -409,78 +455,101 @@ const styles = StyleSheet.create({
   },
   rightIcons: {
     position: 'absolute',
-    right: 15,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingRight: 10,
   },
   strengthContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 6,
+    marginTop: 8,
     gap: 4,
   },
   strengthBar: {
     height: 4,
-    width: 12,
+    width: 16,
     borderRadius: 2,
   },
-  otpInput: {
-    textAlign: 'center',
-    fontSize: 24,
-    letterSpacing: 10,
-    fontWeight: 'bold',
-  },
-  button: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
-    paddingVertical: 14,
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 10,
+    marginBottom: 20,
   },
-  buttonSecondary: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 8,
-    paddingVertical: 12,
+  circularButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#00A3FF',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonSecondaryText: {
-    color: '#d4d4d8',
-    fontSize: 14,
+    shadowColor: "#00A3FF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  footerText: {
-    color: '#a1a1aa',
-    fontSize: 14,
-  },
-  linkText: {
-    color: '#38bdf8',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  backButton: {
+  
+  // OTP Styles
+  timerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginBottom: 30,
   },
-  backButtonText: {
-    color: '#a1a1aa',
-    fontSize: 14,
+  timerText: {
     marginLeft: 6,
+    marginRight: 10,
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
   },
+  resendText: {
+    fontSize: 14,
+    color: '#00A3FF',
+    fontWeight: '600',
+  },
+  resendTextDisabled: {
+    color: '#A0A0A0',
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    position: 'relative',
+    marginBottom: 40,
+  },
+  otpBox: {
+    width: width / 8,
+    height: 50,
+    borderBottomWidth: 2,
+    borderBottomColor: '#E0E0E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  otpBoxActive: {
+    borderBottomColor: '#00A3FF',
+  },
+  otpText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  hiddenInput: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0,
+  },
+  backLink: {
+    padding: 10,
+  },
+  backLinkText: {
+    color: '#666',
+    fontSize: 14,
+  }
 });

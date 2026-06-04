@@ -44,7 +44,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <ChatHeader name={name || 'Người dùng'} avatar={avatar || ''} isOnline={true} />
+      <ChatHeader name={name || 'Người dùng'} avatar={avatar || ''} />
 
       <KeyboardAvoidingView 
         style={styles.container} 
@@ -80,11 +80,11 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#070913',
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
-    backgroundColor: '#070913',
+    backgroundColor: '#FFFFFF',
   },
   center: {
     flex: 1,

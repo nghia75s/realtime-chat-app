@@ -2,41 +2,116 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
+import { View, Text } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#3b82f6', // Màu xanh chủ đạo
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarActiveTintColor: '#00A3FF',
+        tabBarInactiveTintColor: '#A0A0A0',
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: '#070913',
-          borderTopColor: '#1a1c22',
-          height: 60,
-          paddingBottom: 8,
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 0,
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+          height: 70, // Fixed height
           paddingTop: 8,
+          paddingBottom: 8,
         }
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tin nhắn',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Chats',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: focused ? '#00A3FF' : 'transparent',
+              borderRadius: 12,
+              width: 50,
+              height: 50,
+            }}>
+              <Ionicons size={22} name={focused ? "chatbubble" : "chatbubble-outline"} color={focused ? "#FFFFFF" : color} />
+              <Text style={{ color: focused ? '#FFFFFF' : color, fontSize: 10, marginTop: 4, fontWeight: focused ? 'bold' : 'normal' }}>Chats</Text>
+            </View>
+          ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="groups"
+        options={{
+          title: 'Groups',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: focused ? '#00A3FF' : 'transparent',
+              borderRadius: 12,
+              width: 50,
+              height: 50,
+            }}>
+              <Ionicons size={22} name={focused ? "people" : "people-outline"} color={focused ? "#FFFFFF" : color} />
+              <Text style={{ color: focused ? '#FFFFFF' : color, fontSize: 10, marginTop: 4, fontWeight: focused ? 'bold' : 'normal' }}>Groups</Text>
+            </View>
+          ),
         }}
       />
 
       <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: focused ? '#00A3FF' : 'transparent',
+              borderRadius: 12,
+              width: 50,
+              height: 50,
+            }}>
+              <Ionicons size={22} name={focused ? "person" : "person-outline"} color={focused ? "#FFFFFF" : color} />
+              <Text style={{ color: focused ? '#FFFFFF' : color, fontSize: 10, marginTop: 4, fontWeight: focused ? 'bold' : 'normal' }}>Profile</Text>
+            </View>
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: 'More',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: focused ? '#00A3FF' : 'transparent',
+              borderRadius: 12,
+              width: 50,
+              height: 50,
+            }}>
+              <Ionicons size={22} name={focused ? "menu" : "menu-outline"} color={focused ? "#FFFFFF" : color} />
+              <Text style={{ color: focused ? '#FFFFFF' : color, fontSize: 10, marginTop: 4, fontWeight: focused ? 'bold' : 'normal' }}>More</Text>
+            </View>
+          ),
+        }}
+      />
+
+      {/* Hidden legacy tab if it still exists */}
+      <Tabs.Screen
         name="settings"
         options={{
-          title: 'Cài đặt',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+          href: null,
         }}
       />
     </Tabs>

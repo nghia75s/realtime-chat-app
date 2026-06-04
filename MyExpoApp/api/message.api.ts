@@ -6,7 +6,7 @@ export const getMessagesAPI = async (userId: string) => {
 };
 
 export const sendMessageAPI = async (userId: string, data: { text?: string; image?: string; file?: any; replyTo?: string }) => {
-  const response = await apiClient.post(`/messages/${userId}`, data);
+  const response = await apiClient.post(`/messages/send/${userId}`, data);
   return response.data;
 };
 
