@@ -39,21 +39,21 @@ export function TaskProgressPanel({ task }: TaskProgressPanelProps) {
   };
 
   return (
-    <div className="flex flex-col gap-3 bg-[#1e1f22] p-4 rounded-lg border border-[#2b2d31]">
+    <div className="flex flex-col gap-3 p-4 rounded-lg border" style={{ background: 'var(--chat-bg-sidebar)', borderColor: 'var(--chat-border)' }}>
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-bold text-[#a1a1a1] tracking-wider uppercase flex items-center gap-1.5">
+        <span className="text-[12px] font-bold text-chat-muted tracking-wider uppercase flex items-center gap-1.5">
           <BarChart2 className="w-3.5 h-3.5" /> Tiến độ công việc
         </span>
-        <span className="text-[13px] font-semibold text-white">{doneCount}/{task.assignees.length}</span>
+        <span className="text-[13px] font-semibold text-chat-text">{doneCount}/{task.assignees.length}</span>
       </div>
       {/* Progress bar */}
-      <div className="h-1.5 bg-[#2b2d31] rounded-full overflow-hidden">
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--chat-border)' }}>
         <div
           className="h-full bg-gradient-to-r from-[#0052cc] to-green-500 rounded-full transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>
-      <span className="text-[11px] text-[#a1a1a1]">{progress}% hoàn thành</span>
+      <span className="text-[11px] text-chat-muted">{progress}% hoàn thành</span>
       {/* Per-assignee rows */}
       <div className="flex flex-col gap-2 mt-1">
         {task.assignees.map(a => {
@@ -61,21 +61,21 @@ export function TaskProgressPanel({ task }: TaskProgressPanelProps) {
           const submitCount = getSubmitCount(a.user?._id);
           const lastTime = getLastCommitTime(a.user?._id);
           return (
-            <div key={a._id} className="flex flex-col gap-1.5 bg-[#131416] p-3 rounded-md border border-[#2b2d31]">
+            <div key={a._id} className="flex flex-col gap-1.5 p-3 rounded-md border" style={{ background: 'var(--chat-bg-main)', borderColor: 'var(--chat-border)' }}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <img src={a.user?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover shrink-0" />
-                  <span className="text-[13px] text-[#e1e1e1] font-medium truncate">{a.user?.fullname || "Unknown"}</span>
+                  <span className="text-[13px] text-chat-text font-medium truncate">{a.user?.fullname || "Unknown"}</span>
                 </div>
                 <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border shrink-0 ${cls}`}>{label}</span>
               </div>
               {a.personalNote && (
-                <div className="flex items-start gap-1.5 text-[12px] text-[#a1a1a1]">
+                <div className="flex items-start gap-1.5 text-[12px] text-chat-muted">
                   <StickyNote className="w-3 h-3 shrink-0 mt-0.5 text-[#0052cc]" />
                   <span className="italic">{a.personalNote}</span>
                 </div>
               )}
-              <div className="text-[11px] text-[#6b6d70] flex items-center gap-2">
+              <div className="text-[11px] text-chat-muted flex items-center gap-2">
                 {submitCount > 0 ? (
                   <span>Đã nộp {submitCount} lần · Lần cuối: {lastTime}</span>
                 ) : (

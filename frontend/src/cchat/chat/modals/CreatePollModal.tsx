@@ -88,9 +88,9 @@ export function CreatePollModal({ isOpen, onClose, groupId }: CreatePollModalPro
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`bg-[#2b2d31] border-[#1e1f22] text-[#e1e1e1] transition-all duration-300 ${showSettings ? 'sm:max-w-[700px]' : 'sm:max-w-[500px]'} !max-h-[92vh] overflow-hidden flex flex-col p-4 gap-0`}>
-        <DialogHeader className="p-4 border-b border-[#3f4147] shrink-0">
-          <DialogTitle className="text-white text-lg font-bold">Tạo bình chọn</DialogTitle>
+      <DialogContent className={`border text-chat-text transition-all duration-300 ${showSettings ? 'sm:max-w-[700px]' : 'sm:max-w-[500px]'} !max-h-[92vh] overflow-hidden flex flex-col p-4 gap-0`} style={{ background: 'var(--chat-bg-main)', borderColor: 'var(--chat-border)' }}>
+        <DialogHeader className="p-4 border-b shrink-0" style={{ borderColor: 'var(--chat-border)' }}>
+          <DialogTitle className="text-chat-text text-lg font-bold">Tạo bình chọn</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-1 overflow-y-auto custom-scrollbar">
@@ -98,9 +98,10 @@ export function CreatePollModal({ isOpen, onClose, groupId }: CreatePollModalPro
           <div className={`flex flex-col gap-5 p-4 ${showSettings ? 'w-[60%] border-r border-[#3f4147]' : 'w-full'}`}>
             {/* Question */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold text-white">Chủ đề bình chọn</label>
+              <label className="text-sm font-semibold text-chat-text">Chủ đề bình chọn</label>
               <textarea
-                className="min-h-[80px] bg-[#1e1f22] border border-[#3f4147] rounded-md p-3 text-white placeholder-[#a1a1a1] resize-none focus:outline-none focus:ring-1 focus:ring-[#1877F2]"
+                className="min-h-[80px] border rounded-md p-3 text-chat-text placeholder-chat-muted resize-none focus:outline-none focus:ring-1 focus:ring-[#1877F2]"
+                style={{ background: 'var(--chat-bg-input)', borderColor: 'var(--chat-border)', color: 'var(--chat-text-main)' }}
                 placeholder="Đặt câu hỏi bình chọn..."
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
@@ -109,12 +110,13 @@ export function CreatePollModal({ isOpen, onClose, groupId }: CreatePollModalPro
 
             {/* Options */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold text-white">Các lựa chọn</label>
+              <label className="text-sm font-semibold text-chat-text">Các lựa chọn</label>
               {options.map((opt, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <input
                     type="text"
-                    className="flex-1 bg-[#1e1f22] border border-[#3f4147] rounded-md p-2.5 text-sm text-white placeholder-[#a1a1a1] focus:outline-none focus:ring-1 focus:ring-[#1877F2]"
+                    className="flex-1 border rounded-md p-2.5 text-sm text-chat-text focus:outline-none focus:ring-1 focus:ring-[#1877F2]"
+                    style={{ background: 'var(--chat-bg-input)', borderColor: 'var(--chat-border)', color: 'var(--chat-text-main)' }}
                     placeholder={`Lựa chọn ${index + 1}`}
                     value={opt}
                     onChange={(e) => handleOptionChange(index, e.target.value)}
@@ -122,7 +124,7 @@ export function CreatePollModal({ isOpen, onClose, groupId }: CreatePollModalPro
                   {options.length > 2 && (
                     <button
                       onClick={() => handleRemoveOption(index)}
-                      className="p-2 text-[#a1a1a1] hover:text-[#f23f43] transition-colors rounded-md hover:bg-[#1e1f22]"
+                      className="p-2 text-chat-muted hover:text-red-500 transition-colors rounded-md hover:bg-chat-hover"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -140,12 +142,12 @@ export function CreatePollModal({ isOpen, onClose, groupId }: CreatePollModalPro
 
           {/* Settings Content (Right Side) */}
           {showSettings && (
-            <div className="w-[40%] flex flex-col gap-5 p-4 bg-[#2b2d31]">
+            <div className="w-[40%] flex flex-col gap-5 p-4" style={{ background: 'var(--chat-bg-sidebar)' }}>
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-semibold text-white">Thời hạn bình chọn</label>
+                <label className="text-sm font-semibold text-chat-text">Thời hạn bình chọn</label>
                 <div className="relative">
-                  <div className="flex items-center justify-between bg-[#1e1f22] border border-[#3f4147] rounded-md p-2.5 cursor-pointer hover:border-[#1877F2] transition-colors">
-                    <span className={`text-[14px] ${deadline ? "text-white" : "text-[#a1a1a1]"}`}>
+                  <div className="flex items-center justify-between border rounded-md p-2.5 cursor-pointer hover:border-[#1877F2] transition-colors" style={{ background: 'var(--chat-bg-input)', borderColor: 'var(--chat-border)' }}>
+                    <span className={`text-[14px] ${deadline ? "text-chat-text" : "text-chat-muted"}`}>
                       {deadline ? formatShortDate(deadline) : "Không thời hạn"}
                     </span>
                     <Calendar className="w-4 h-4 text-[#a1a1a1]" />
@@ -175,25 +177,25 @@ export function CreatePollModal({ isOpen, onClose, groupId }: CreatePollModalPro
               </div>
 
               <div className="flex flex-col gap-4">
-                <label className="text-sm font-semibold text-white">Thiết lập nâng cao</label>
+                <label className="text-sm font-semibold text-chat-text">Thiết lập nâng cao</label>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#e1e1e1]">Ghim lên đầu trò chuyện</span>
+                  <span className="text-sm text-chat-text">Ghim lên đầu trò chuyện</span>
                   <ToggleSwitch checked={pinToTop} onChange={setPinToTop} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#e1e1e1]">Chọn nhiều phương án</span>
+                  <span className="text-sm text-chat-text">Chọn nhiều phương án</span>
                   <ToggleSwitch checked={allowMultiple} onChange={setAllowMultiple} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#e1e1e1]">Có thể thêm phương án</span>
+                  <span className="text-sm text-chat-text">Có thể thêm phương án</span>
                   <ToggleSwitch checked={allowAddOptions} onChange={setAllowAddOptions} />
                 </div>
               </div>
 
               <div className="flex flex-col gap-4">
-                <label className="text-sm font-semibold text-white">Bình chọn ẩn danh</label>
+                <label className="text-sm font-semibold text-chat-text">Bình chọn ẩn danh</label>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#e1e1e1]">Ẩn người bình chọn</span>
+                  <span className="text-sm text-chat-text">Ẩn người bình chọn</span>
                   <ToggleSwitch checked={hideVoters} onChange={setHideVoters} />
                 </div>
               </div>
@@ -201,10 +203,10 @@ export function CreatePollModal({ isOpen, onClose, groupId }: CreatePollModalPro
           )}
         </div>
 
-        <DialogFooter className="flex items-center justify-between bg-[#2b2d31] border-t border-[#3f4147] p-4 shrink-0 sm:justify-between w-full">
+        <DialogFooter className="flex items-center justify-between border-t p-4 shrink-0 sm:justify-between w-full" style={{ background: 'var(--chat-bg-sidebar)', borderColor: 'var(--chat-border)' }}>
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className={`p-2 rounded-md transition-colors ${showSettings ? 'bg-[#1877f2]/10 text-[#1877F2]' : 'text-[#a1a1a1] hover:bg-[#3f4147]'}`}
+            className={`p-2 rounded-md transition-colors ${showSettings ? 'bg-[#1877f2]/10 text-[#1877F2]' : 'text-chat-muted hover:bg-chat-hover'}`}
             title="Thiết lập"
           >
             <Settings className="w-5 h-5" />
@@ -213,7 +215,7 @@ export function CreatePollModal({ isOpen, onClose, groupId }: CreatePollModalPro
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-7 py-3 rounded-md bg-[#3f4147] hover:bg-[#474a52] transition-colors text-sm font-medium text-white"
+              className="px-7 py-3 rounded-md bg-chat-hover hover:bg-chat-active/20 transition-colors text-sm font-medium text-chat-text"
             >
               Hủy
             </button>

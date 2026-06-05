@@ -199,7 +199,7 @@ export const verifyotp = async (req, res) => {
     await user.save();
 
     // Generate JWT token
-    generateToken(user._id, res);
+    const token = generateToken(user._id, res);
 
     const roleDoc = await Role.findOne({ id: user.role });
     const permissions = roleDoc ? roleDoc.permissions : {};
@@ -217,6 +217,7 @@ export const verifyotp = async (req, res) => {
       dateOfBirth: user.dateOfBirth,
       permissions: permissions,
       message: "Xác thực email thành công",
+      token,
     });
   } catch (error) {
     console.error("Error in verifyotp controller:", error);
@@ -255,7 +256,7 @@ export const verifyLoginOtp = async (req, res) => {
     await user.save();
 
     // Generate JWT token
-    generateToken(user._id, res);
+    const token = generateToken(user._id, res);
 
     const roleDoc = await Role.findOne({ id: user.role });
     const permissions = roleDoc ? roleDoc.permissions : {};
@@ -272,6 +273,7 @@ export const verifyLoginOtp = async (req, res) => {
       gender: user.gender,
       dateOfBirth: user.dateOfBirth,
       permissions: permissions,
+      token,
     });
   } catch (error) {
     console.error("Error in verifyLoginOtp controller:", error);

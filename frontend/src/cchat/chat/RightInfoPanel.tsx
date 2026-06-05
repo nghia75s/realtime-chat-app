@@ -92,9 +92,9 @@ export function RightInfoPanel({ chat }: { chat: any }) {
           <div className="flex flex-col items-center pt-5 pb-4 px-4 border-b border-chat-border">
             <img src={isGroup ? (chat.groupPicture || "/group.png") : (chat.profilePicture || "/avatar.png")} className="h-[64px] w-[64px] mb-3 rounded-full object-cover border border-chat-border" alt="Avatar" />
             <div className="flex items-center gap-2 mb-4">
-              <h2 className="text-[18px] font-semibold text-white text-center cursor-pointer hover:underline">{isGroup ? chat.name : chat.fullname}</h2>
+              <h2 className="text-[18px] font-semibold text-chat-text text-center cursor-pointer hover:underline">{isGroup ? chat.name : chat.fullname}</h2>
               {isGroup && canEditInfo && (
-                <button onClick={() => setIsEditGroupOpen(true)} className="text-[#a1a1a1] hover:text-white transition-colors bg-[#2b2d31] rounded-full p-1 cursor-pointer">
+                <button onClick={() => setIsEditGroupOpen(true)} className="text-chat-muted hover:text-chat-text transition-colors bg-chat-hover rounded-full p-1 cursor-pointer">
                   <PenBox className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -162,7 +162,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
                 </CollapsibleTrigger>
                 <CollapsibleContent className="px-2 pb-2">
                   <div className="flex flex-col mt-1">
-                    <button onClick={() => setView('board')} className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#2b2d31] transition-colors rounded-md text-[#e1e1e1]">
+                    <button onClick={() => setView('board')} className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-chat-hover transition-colors rounded-md text-chat-text">
                       <FileText className="w-4 h-4 text-[#a1a1a1]" />
                       <span className="text-[14px]">Ghi chú, ghim, bình chọn</span>
                     </button>
