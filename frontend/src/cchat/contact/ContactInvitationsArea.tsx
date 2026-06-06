@@ -29,29 +29,29 @@ export function ContactInvitationsArea() {
   }
 
   return (
-    <div className="flex flex-col flex-1 bg-[#131416] h-full overflow-hidden text-white">
+    <div className="flex flex-col flex-1 h-full overflow-hidden text-chat-text" style={{ background: 'var(--chat-bg-main)' }}>
       {/* Top Bar */}
-      <div className="flex items-center px-5 py-4 border-b border-[#2b2d31] shrink-0 bg-[#1e1f22] h-[64px]">
+      <div className="flex items-center px-5 py-4 border-b border-chat-border shrink-0 h-[64px]" style={{ background: 'var(--chat-bg-header)' }}>
         <div className="flex items-center gap-3">
-          <MailOpen className="h-[22px] w-[22px] text-[#e1e1e1]" strokeWidth={2} />
-          <h2 className="text-[16px] font-semibold text-white">Lời mời nhóm</h2>
+          <MailOpen className="h-[22px] w-[22px] text-chat-text" strokeWidth={2} />
+          <h2 className="text-[16px] font-semibold text-chat-text">Lời mời nhóm</h2>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pt-5 pb-10">
-        <h3 className="text-[15px] font-semibold text-white mb-4">
+        <h3 className="text-[15px] font-semibold text-chat-text mb-4">
           Đang chờ xử lý ({groupInvitations?.length || 0})
         </h3>
         
         {groupInvitations?.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {groupInvitations.map((group) => (
-              <div key={group._id} className="bg-[#1e1f22] border border-[#2b2d31] rounded-lg p-4 flex items-center justify-between hover:border-[#3f4147] transition-all">
+              <div key={group._id} className="border border-chat-border rounded-lg p-4 flex items-center justify-between hover:border-chat-muted transition-all" style={{ background: 'var(--chat-bg-sidebar)' }}>
                 <div className="flex items-center gap-3">
-                  <img src={group.groupPicture || "/group-avatar.png"} alt={group.name} className="w-14 h-14 rounded-full object-cover" />
+                  <img src={group.groupPicture || "/group-avatar.png"} alt={group.name} className="w-14 h-14 rounded-full object-cover border border-chat-border" />
                   <div>
-                    <h4 className="font-semibold text-[15px] text-white">{group.name}</h4>
-                    <p className="text-[13px] text-[#a1a1a1] flex items-center gap-1 mt-0.5">
+                    <h4 className="font-semibold text-[15px] text-chat-text">{group.name}</h4>
+                    <p className="text-[13px] text-chat-muted flex items-center gap-1 mt-0.5">
                       <User className="h-3 w-3" />
                       Mời bởi {group.createdBy?.fullname || "Quản trị viên"}
                     </p>
@@ -81,11 +81,11 @@ export function ContactInvitationsArea() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center mt-20 text-center">
-            <div className="w-20 h-20 bg-[#2b2d31] rounded-full flex items-center justify-center mb-4">
-              <MailOpen className="h-10 w-10 text-[#a1a1a1]" />
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--chat-bg-sidebar)' }}>
+              <MailOpen className="h-10 w-10 text-chat-muted" />
             </div>
-            <h4 className="text-[15px] font-medium text-white mb-2">Không có lời mời nào</h4>
-            <p className="text-[13px] text-[#a1a1a1] max-w-sm">
+            <h4 className="text-[15px] font-medium text-chat-text mb-2">Không có lời mời nào</h4>
+            <p className="text-[13px] text-chat-muted max-w-sm">
               Khi ai đó mời bạn vào nhóm, lời mời sẽ xuất hiện ở đây.
             </p>
           </div>

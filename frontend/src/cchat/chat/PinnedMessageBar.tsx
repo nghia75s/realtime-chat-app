@@ -35,9 +35,9 @@ export function PinnedMessageBar({ onMessageClick }: { onMessageClick?: (msgId: 
   const topMessage = pinnedMessages[0];
 
   return (
-    <div className="relative z-10 w-full bg-[#1e1f22] border-b border-[#2b2d31]">
+    <div className="relative z-10 w-full border-b border-chat-border" style={{ background: 'var(--chat-input-area-bg)' }}>
       <div 
-        className="px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-[#2b2d31]/50 transition-colors"
+        className="px-4 py-2 flex items-center justify-between cursor-pointer hover:bg-chat-hover/50 transition-colors"
         onClick={() => {
           if (pinnedMessages.length === 1) {
              if (onMessageClick) onMessageClick(topMessage._id);
@@ -54,7 +54,7 @@ export function PinnedMessageBar({ onMessageClick }: { onMessageClick?: (msgId: 
             <span className="text-[13px] font-medium text-[#0052cc]">
               {pinnedMessages.length === 1 ? "Tin nhắn ghim" : `${pinnedMessages.length} tin nhắn ghim`}
             </span>
-            <span className="text-[12px] text-[#a1a1a1] truncate">
+            <span className="text-[12px] text-chat-muted truncate">
               <span className="font-medium mr-1">{topMessage.senderId?.fullname}:</span>
               {renderMessageContent(topMessage)}
             </span>
@@ -64,36 +64,36 @@ export function PinnedMessageBar({ onMessageClick }: { onMessageClick?: (msgId: 
         {pinnedMessages.length === 1 ? (
           <button 
             onClick={(e) => handleUnpin(e, topMessage._id)}
-            className="text-[12px] text-[#a1a1a1] hover:text-white px-2 py-1 rounded hover:bg-[#3a3b3e] transition-colors"
+            className="text-[12px] text-chat-muted hover:text-chat-text px-2 py-1 rounded hover:bg-chat-hover transition-colors"
           >
             Bỏ ghim
           </button>
         ) : (
           <div className="shrink-0 ml-2">
-            {isOpen ? <ChevronUp className="w-4 h-4 text-[#a1a1a1]" /> : <ChevronDown className="w-4 h-4 text-[#a1a1a1]" />}
+            {isOpen ? <ChevronUp className="w-4 h-4 text-chat-muted" /> : <ChevronDown className="w-4 h-4 text-chat-muted" />}
           </div>
         )}
       </div>
 
       {isOpen && pinnedMessages.length > 1 && (
-        <div className="absolute top-full left-0 w-full bg-[#1e1f22] border-b border-[#2b2d31] shadow-xl max-h-[300px] overflow-y-auto z-50">
+        <div className="absolute top-full left-0 w-full border-b shadow-xl max-h-[300px] overflow-y-auto z-50 border-chat-border" style={{ background: 'var(--chat-input-area-bg)' }}>
           {pinnedMessages.map((msg: any) => (
             <div 
               key={msg._id} 
-              className="flex items-center justify-between px-4 py-3 hover:bg-[#2b2d31] border-t border-[#2b2d31]/50 cursor-pointer transition-colors group"
+              className="flex items-center justify-between px-4 py-3 hover:bg-chat-hover border-t border-chat-border/50 cursor-pointer transition-colors group"
               onClick={() => handleMessageClick(msg._id)}
             >
               <div className="flex flex-col min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-[13px] font-medium text-[#e1e1e1]">{msg.senderId?.fullname}</span>
-                  <span className="text-[11px] text-[#a1a1a1]">
+                  <span className="text-[13px] font-medium text-chat-text">{msg.senderId?.fullname}</span>
+                  <span className="text-[11px] text-chat-muted">
                     {new Date(msg.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <span className="text-[12.5px] text-[#a1a1a1] truncate">
+                <span className="text-[12.5px] text-chat-muted truncate">
                   {renderMessageContent(msg)}
                 </span>
-                <span className="text-[10px] text-[#818181] mt-1">
+                <span className="text-[10px] text-chat-muted mt-1">
                   Được ghim bởi: {msg.pinnedBy?.fullname || "Người dùng"}
                 </span>
               </div>

@@ -55,16 +55,16 @@ export function TaskMessageCard({
                 <img
                   src={senderAvatar || "/avatar.png"}
                   alt={senderName || "User"}
-                  className="w-8 h-8 rounded-full object-cover border border-[#3a3b3e]"
+                  className="w-8 h-8 rounded-full object-cover border border-chat-border"
                 />
               )}
             </div>
           )}
           <div className={`flex flex-col max-w-[75%] min-w-0 gap-1 ${isMe ? "items-end" : "items-start"}`}>
             {!isMe && isGroupChat && senderName && !hideHeader && (
-              <span className="text-[12px] font-semibold text-[#a1a1a1] ml-1 mb-0.5">{senderName}</span>
+              <span className="text-[12px] font-semibold text-chat-muted ml-1 mb-0.5">{senderName}</span>
             )}
-            <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-[14px] ${isMe ? "bg-[#0052cc] text-white" : "bg-[#2b2d31] text-[#e1e1e1]"}`}>
+            <div className={`px-4 py-2 rounded-2xl max-w-[70%] text-[14px] ${isMe ? "bg-[#0052cc] text-white" : "bg-zinc-100 dark:bg-[#2b2d31] text-zinc-900 dark:text-[#e1e1e1]"}`}>
               {msg.text}
             </div>
           </div>
@@ -101,7 +101,7 @@ export function TaskMessageCard({
               <img
                 src={senderAvatar || "/avatar.png"}
                 alt={senderName || "User"}
-                className="w-8 h-8 rounded-full object-cover border border-[#3a3b3e]"
+                className="w-8 h-8 rounded-full object-cover border border-chat-border"
               />
             )}
           </div>
@@ -110,29 +110,29 @@ export function TaskMessageCard({
         <div className={`flex flex-col max-w-[75%] min-w-0 gap-1 ${isMe ? "items-end" : "items-start"}`}>
           {/* Tên người gửi */}
           {!isMe && isGroupChat && senderName && !hideHeader && (
-            <span className="text-[12px] font-semibold text-[#a1a1a1] ml-1 mb-0.5">{senderName}</span>
+            <span className="text-[12px] font-semibold text-chat-muted ml-1 mb-0.5">{senderName}</span>
           )}
 
           {/* Card chính */}
           <div
             className={`
-              relative w-[340px] rounded-2xl border shadow-lg overflow-hidden flex flex-col
+              relative w-[340px] rounded-2xl border shadow-sm overflow-hidden flex flex-col
               ${isMe
                 ? "bg-[#0d2a5c] border-[#0052cc]/50"
-                : "bg-[#1a1c1f] border-[#2b2d31]"
+                : "bg-white dark:bg-[#1a1c1f] border-zinc-200 dark:border-[#2b2d31]"
               }
             `}
           >
             {/* Header */}
-            <div className={`px-4 py-3 flex items-center gap-3 border-b ${isMe ? "border-[#0052cc]/30 bg-[#0a1f48]" : "border-[#2b2d31] bg-[#16181b]"}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isMe ? "bg-[#0052cc]/30" : "bg-[#2b2d31]"}`}>
+            <div className={`px-4 py-3 flex items-center gap-3 border-b ${isMe ? "border-[#0052cc]/30 bg-[#0a1f48]" : "border-zinc-200 dark:border-[#2b2d31] bg-zinc-50 dark:bg-[#16181b]"}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isMe ? "bg-[#0052cc]/30" : "bg-zinc-200 dark:bg-[#2b2d31]"}`}>
                 <ClipboardList className="w-4 h-4 text-[#0052cc]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[14px] font-bold text-white truncate leading-tight">
+                <p className={`text-[14px] font-bold truncate leading-tight ${isMe ? "text-white" : "text-zinc-900 dark:text-white"}`}>
                   Giao việc mới
                 </p>
-                <p className="text-[11px] text-[#a1a1a1] mt-0.5">Hệ thống quản lý công việc</p>
+                <p className="text-[11px] text-chat-muted mt-0.5">Hệ thống quản lý công việc</p>
               </div>
             </div>
 
@@ -140,25 +140,25 @@ export function TaskMessageCard({
             <div className="p-4 flex flex-col gap-3 text-[13px]">
               {/* Title */}
               <div>
-                <h3 className="font-semibold text-blue-400 text-[14px] leading-snug">{payload.title}</h3>
+                <h3 className="font-semibold text-[#1877F2] dark:text-blue-400 text-[14px] leading-snug">{payload.title}</h3>
               </div>
 
               {/* Deadline */}
               <div className="flex items-start gap-2">
-                <Calendar className="w-4 h-4 text-[#a1a1a1] shrink-0 mt-0.5" />
+                <Calendar className="w-4 h-4 text-chat-muted shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <span className="text-[#a1a1a1] text-[12px] block mb-0.5">Hạn chót</span>
-                  <span className="text-white font-medium">{dateStr}</span>
+                  <span className="text-chat-muted text-[12px] block mb-0.5">Hạn chót</span>
+                  <span className={`font-medium ${isMe ? "text-white" : "text-zinc-800 dark:text-white"}`}>{dateStr}</span>
                 </div>
               </div>
 
               {/* Description */}
               {payload.description && (
                 <div className="flex items-start gap-2">
-                  <AlignLeft className="w-4 h-4 text-[#a1a1a1] shrink-0 mt-0.5" />
+                  <AlignLeft className="w-4 h-4 text-chat-muted shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <span className="text-[#a1a1a1] text-[12px] block mb-0.5">Mô tả</span>
-                    <span className="text-white line-clamp-2">{payload.description}</span>
+                    <span className="text-chat-muted text-[12px] block mb-0.5">Mô tả</span>
+                    <span className={`line-clamp-2 ${isMe ? "text-white" : "text-zinc-800 dark:text-white"}`}>{payload.description}</span>
                   </div>
                 </div>
               )}
@@ -166,17 +166,17 @@ export function TaskMessageCard({
               {/* Note */}
               {payload.note && (
                 <div className="flex items-start gap-2">
-                  <UserCircle2 className="w-4 h-4 text-[#a1a1a1] shrink-0 mt-0.5" />
+                  <UserCircle2 className="w-4 h-4 text-chat-muted shrink-0 mt-0.5" />
                   <div className="flex-1">
-                    <span className="text-[#a1a1a1] text-[12px] block mb-0.5">Ghi chú riêng</span>
-                    <span className="text-white italic">{payload.note}</span>
+                    <span className="text-chat-muted text-[12px] block mb-0.5">Ghi chú riêng</span>
+                    <span className={`italic ${isMe ? "text-white" : "text-zinc-800 dark:text-white"}`}>{payload.note}</span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Footer timestamp */}
-            <div className="px-4 pb-3 flex items-center justify-end text-[10px] text-[#6b6b6b]">
+            <div className="px-4 pb-3 flex items-center justify-end text-[10px] text-chat-muted">
               <span>{timeStr}</span>
             </div>
           </div>

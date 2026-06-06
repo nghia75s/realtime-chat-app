@@ -86,24 +86,25 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="[&>button]:hidden bg-white border border-[#E5E7EB] text-[#111827] !w-[500px] !max-w-[600vw] rounded-2xl p-0 overflow-hidden flex flex-col h-[650px] shadow-2xl !bg-white !text-[#111827] animate-in zoom-in-95 duration-200">
+      <DialogContent className="[&>button]:hidden border text-chat-text !w-[500px] !max-w-[600vw] rounded-2xl p-0 overflow-hidden flex flex-col h-[650px] shadow-2xl animate-in zoom-in-95 duration-200" style={{ background: 'var(--chat-bg-main)', borderColor: 'var(--chat-border)', color: 'var(--chat-text-main)' }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7EB] flex-shrink-0">
-          <h2 className="text-[#111827] text-lg font-bold">Thêm thành viên</h2>
-          <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#4B5563] transition-colors p-1.5 hover:bg-[#F3F4F6] rounded-full">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-chat-border flex-shrink-0">
+          <h2 className="text-chat-text text-lg font-bold">Thêm thành viên</h2>
+          <button onClick={onClose} className="text-chat-muted hover:text-chat-text transition-colors p-1.5 hover:bg-chat-hover rounded-full">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search Input */}
-        <div className="px-6 py-3 bg-[#F9FAFB] border-b border-[#E5E7EB] flex-shrink-0">
+        <div className="px-6 py-3 border-b border-chat-border flex-shrink-0" style={{ background: 'var(--chat-bg-sidebar)' }}>
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-chat-muted" />
             <input
               type="text"
               placeholder="Tìm kiếm bạn bè..."
-              className="w-full bg-white border border-[#D1D5DB] rounded-xl pl-10 pr-4 py-2 text-[14px] text-[#111827] focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
+              className="w-full border rounded-xl pl-10 pr-4 py-2 text-[14px] text-chat-text focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-transparent transition-all placeholder:text-chat-muted"
+              style={{ background: 'var(--chat-bg-main)', borderColor: 'var(--chat-border)' }}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -111,24 +112,23 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center border-b border-[#E5E7EB] px-6 bg-white flex-shrink-0">
+        <div className="flex items-center border-b border-chat-border px-6 flex-shrink-0" style={{ background: 'var(--chat-bg-main)' }}>
           <div className="flex gap-6 text-[14px] font-semibold">
             <button
               onClick={() => setActiveTab("friends")}
-              className={`py-3 relative transition-all ${activeTab === "friends" ? "text-[#1877F2]" : "text-[#6B7280] hover:text-[#111827]"}`}
+              className={`py-3 relative transition-all ${activeTab === "friends" ? "text-[#1877F2]" : "text-chat-muted hover:text-chat-text"}`}
             >
               Bạn bè
               {activeTab === "friends" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1877F2]" />}
             </button>
-            {/* Can add 'recent' tab later if needed, keeping it simple for members */}
           </div>
         </div>
 
         {/* Dynamic Two-Column Split Layout */}
-        <div className="flex flex-1 min-h-0 bg-[#F9FAFB]">
+        <div className="flex flex-1 min-h-0" style={{ background: 'var(--chat-bg-sidebar)' }}>
 
           {/* Left Column: All Targets Selection */}
-          <div className={`${selectedIds.length > 0 ? "w-[60%]" : "w-full"} flex flex-col ${selectedIds.length > 0 ? "border-r border-[#E5E7EB]" : ""} h-full overflow-hidden transition-all duration-300`}>
+          <div className={`${selectedIds.length > 0 ? "w-[60%]" : "w-full"} flex flex-col ${selectedIds.length > 0 ? "border-r border-chat-border" : ""} h-full overflow-hidden transition-all duration-300`}>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-1">
               {filteredTargets.length > 0 ? (
                 filteredTargets.map(target => {
@@ -136,11 +136,11 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
                   return (
                     <div
                       key={target.id}
-                      className="flex items-center gap-3.5 px-3.5 py-3 hover:bg-[#F3F4F6] rounded-xl cursor-pointer transition-colors group"
+                      className="flex items-center gap-3.5 px-3.5 py-3 hover:bg-chat-hover rounded-xl cursor-pointer transition-colors group"
                       onClick={() => toggleSelect(target.id)}
                     >
                       {/* Checkbox (Circular shape) */}
-                      <div className={`w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isChecked ? "bg-[#1877F2] border-[#1877F2]" : "border-[#D1D5DB] group-hover:border-[#9CA3AF]"
+                      <div className={`w-5.5 h-5.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isChecked ? "bg-[#1877F2] border-[#1877F2]" : "border-chat-border group-hover:border-chat-muted"
                         }`}>
                         {isChecked && (
                           <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="w-3.5 h-3.5">
@@ -152,37 +152,37 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
                       <img
                         src={target.avatar || "/avatar.png"}
                         alt={target.name}
-                        className="w-10 h-10 rounded-full object-cover border border-[#E5E7EB] shrink-0"
+                        className="w-10 h-10 rounded-full object-cover border border-chat-border shrink-0"
                       />
 
-                      <span className="text-[#111827] text-[15px] font-medium truncate flex-1">{target.name}</span>
+                      <span className="text-chat-text text-[15px] font-medium truncate flex-1">{target.name}</span>
                     </div>
                   );
                 })
               ) : (
-                <div className="p-8 text-center text-[#6B7280] text-[14px]">Không tìm thấy kết quả nào</div>
+                <div className="p-8 text-center text-chat-muted text-[14px]">Không tìm thấy kết quả nào</div>
               )}
             </div>
           </div>
 
           {/* Right Column: Selected Targets (Slides in when selectedCount > 0) */}
           {selectedIds.length > 0 && (
-            <div className="w-[40%] flex flex-col bg-white h-full overflow-hidden animate-in slide-in-from-right-5 duration-200">
+            <div className="w-[40%] flex flex-col h-full overflow-hidden animate-in slide-in-from-right-5 duration-200" style={{ background: 'var(--chat-bg-main)' }}>
               {/* Header: Selected Count + Clear All */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-[#F3F4F6] flex-shrink-0">
-                <span className="text-[13.5px] font-bold text-[#374151]">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-chat-border flex-shrink-0">
+                <span className="text-[13.5px] font-bold text-chat-text">
                   Đã chọn: <span className="text-[#1877F2]">{selectedIds.length}/100</span>
                 </span>
                 <button
                   onClick={handleClearSelected}
-                  className="text-[13px] font-bold text-[#EF4444] hover:text-[#DC2626] transition-colors"
+                  className="text-[13px] font-bold text-red-500 hover:text-red-600 transition-colors"
                 >
                   Xóa tất cả
                 </button>
               </div>
 
               {/* Selected Targets List */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-2.5 flex flex-col gap-1 bg-white">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-2.5 flex flex-col gap-1" style={{ background: 'var(--chat-bg-main)' }}>
                 {selectedIds.map(id => {
                   const target = allPossibleTargets.find(t => t.id === id);
                   if (!target) return null;
@@ -192,19 +192,19 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
                   return (
                     <div
                       key={id}
-                      className="flex items-center gap-3 px-3.5 py-2.5 bg-[#F9FAFB] hover:bg-[#F3F4F6] rounded-xl group transition-colors justify-between"
+                      className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-chat-hover rounded-xl group transition-colors justify-between"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img
                           src={avatar || "/avatar.png"}
                           alt={name}
-                          className="w-8 h-8 rounded-full object-cover border border-[#E5E7EB] shrink-0"
+                          className="w-8 h-8 rounded-full object-cover border border-chat-border shrink-0"
                         />
-                        <span className="text-[#374151] text-[14.5px] font-medium truncate">{name}</span>
+                        <span className="text-chat-text text-[14.5px] font-medium truncate">{name}</span>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleSelect(id); }}
-                        className="text-[#9CA3AF] hover:text-[#4B5563] p-1 rounded-full hover:bg-white transition-colors shrink-0"
+                        className="text-chat-muted hover:text-chat-text p-1 rounded-full hover:bg-chat-hover transition-colors shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -217,8 +217,8 @@ export function AddGroupMemberModal({ isOpen, onClose, groupId, currentMembers }
         </div>
 
         {/* Footer Area with Action Buttons */}
-        <div className="flex-shrink-0 bg-[#F9FAFB] border-t border-[#E5E7EB] p-4 flex flex-row items-center justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2.5 bg-[#E5E7EB] hover:bg-[#D1D5DB] text-[#374151] rounded-xl transition-all text-[14px] font-bold">
+        <div className="flex-shrink-0 border-t border-chat-border p-4 flex flex-row items-center justify-end gap-3" style={{ background: 'var(--chat-bg-sidebar)' }}>
+          <button onClick={onClose} className="px-5 py-2.5 bg-chat-hover hover:bg-chat-active/20 text-chat-text rounded-xl transition-all text-[14px] font-bold">
             Hủy
           </button>
 

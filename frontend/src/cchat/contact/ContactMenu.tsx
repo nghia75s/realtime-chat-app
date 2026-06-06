@@ -1,4 +1,4 @@
-import { Search, UserPlus, Users, User, Mail, UserCog } from "lucide-react"
+import { Search, UserPlus, Users, User, UserCog } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 
 export type ActiveMenu = "contacts" | "groups" | "group_invites"

@@ -83,7 +83,7 @@ export function TaskTimeline({ task, role, authUser }: TaskTimelineProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="shrink-0 mb-4">
-        <h3 className="text-[16px] font-semibold text-white mb-3 flex items-center gap-2">
+        <h3 className="text-[16px] font-semibold text-chat-text mb-3 flex items-center gap-2">
           <Clock className="w-4 h-4 text-[#0052cc]" /> Lịch sử hoạt động
         </h3>
         {/* Assignee filter tabs */}
@@ -94,8 +94,9 @@ export function TaskTimeline({ task, role, authUser }: TaskTimelineProps) {
               className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors border ${
                 selectedAssigneeFilter === null
                   ? "bg-[#0052cc] border-[#0052cc] text-white"
-                  : "border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#4a4d52]"
+                  : "text-chat-muted hover:text-chat-text"
               }`}
+              style={selectedAssigneeFilter === null ? {} : { borderColor: 'var(--chat-border)' }}
             >
               Tất cả
             </button>
@@ -108,8 +109,9 @@ export function TaskTimeline({ task, role, authUser }: TaskTimelineProps) {
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium transition-colors border ${
                   selectedAssigneeFilter === a.user?._id
                     ? "bg-[#0052cc] border-[#0052cc] text-white"
-                    : "border-[#2b2d31] text-[#a1a1a1] hover:text-white hover:border-[#4a4d52]"
+                    : "text-chat-muted hover:text-chat-text"
                 }`}
+                style={selectedAssigneeFilter === a.user?._id ? {} : { borderColor: 'var(--chat-border)' }}
               >
                 <img src={a.user?.profilePicture || "/avatar.png"} className="w-4 h-4 rounded-full object-cover" />
                 {a.user?.fullname?.split(" ").pop()}
@@ -121,7 +123,7 @@ export function TaskTimeline({ task, role, authUser }: TaskTimelineProps) {
 
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 relative">
         {/* Timeline Line */}
-        <div className="absolute top-4 bottom-4 left-4 w-0.5 bg-[#2b2d31]"></div>
+        <div className="absolute top-4 bottom-4 left-4 w-0.5" style={{ background: 'var(--chat-border)' }}></div>
 
         <div className="flex flex-col gap-6 relative pb-6">
           {primaryCommits.map((primaryCommit) => {
@@ -132,39 +134,39 @@ export function TaskTimeline({ task, role, authUser }: TaskTimelineProps) {
             return (
               <div key={primaryCommit._id} className="flex gap-4 group">
                 <div className="z-10">{renderCommitIcon(primaryCommit.type)}</div>
-                <div className="flex-1 bg-[#1e1f22] border border-[#2b2d31] p-4 rounded-lg shadow-sm group-hover:border-[#0052cc]/30 transition-colors flex flex-col gap-2">
+                <div className="flex-1 border p-4 rounded-lg shadow-sm hover:border-[#0052cc]/50 transition-colors flex flex-col gap-2" style={{ background: 'var(--chat-bg-sidebar)', borderColor: 'var(--chat-border)' }}>
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <img src={primaryCommit.userId?.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover" />
-                      <span className="font-semibold text-white text-[14px]">{primaryCommit.userId?.fullname || "Unknown"}</span>
+                      <span className="font-semibold text-chat-text text-[14px]">{primaryCommit.userId?.fullname || "Unknown"}</span>
                     </div>
-                    <span className="text-[12px] text-[#a1a1a1]">
+                    <span className="text-[12px] text-chat-muted">
                       {new Date(primaryCommit.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                     </span>
                   </div>
-                  <p className="text-[14px] text-[#e1e1e1] leading-relaxed">{primaryCommit.description}</p>
+                  <p className="text-[14px] text-chat-text leading-relaxed">{primaryCommit.description}</p>
 
                   {primaryCommit.fileName && (
-                    <div className="mt-2 flex items-center gap-2 bg-[#131416] border border-[#2b2d31] w-max px-3 py-2 rounded-md hover:bg-[#2b2d31] cursor-pointer transition-colors">
-                      <Paperclip className="w-4 h-4 text-[#a1a1a1]" />
-                      <span className="text-[13px] text-[#e1e1e1] max-w-[200px] truncate">{primaryCommit.fileName}</span>
+                    <div className="mt-2 flex items-center gap-2 border w-max px-3 py-2 rounded-md cursor-pointer transition-colors hover:opacity-80" style={{ background: 'var(--chat-bg-main)', borderColor: 'var(--chat-border)' }}>
+                      <Paperclip className="w-4 h-4 text-chat-muted" />
+                      <span className="text-[13px] text-chat-text max-w-[200px] truncate">{primaryCommit.fileName}</span>
                     </div>
                   )}
 
                   {/* Display nested Feedback/Evaluations */}
                   {evaluations.length > 0 && (
-                    <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-[#2b2d31] relative">
-                      <div className="absolute top-0 left-4 w-px h-full bg-[#2b2d31]" />
+                    <div className="flex flex-col gap-3 mt-4 pt-4 border-t relative" style={{ borderColor: 'var(--chat-border)' }}>
+                      <div className="absolute top-0 left-4 w-px h-full" style={{ background: 'var(--chat-border)' }} />
                       {evaluations.map(evalCommit => (
                         <div key={evalCommit._id} className={`ml-8 p-3 rounded-md border ${evalCommit.type === 'reject' ? 'bg-red-500/10 border-red-500/20' : 'bg-green-500/10 border-green-500/20'} animate-in fade-in slide-in-from-top-2 duration-300`}>
                           <div className="flex items-center gap-2 mb-1.5">
                             {evalCommit.type === 'reject' ? <XCircle className="w-4 h-4 text-red-500" /> : <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                            <span className="font-semibold text-[13px] text-white">{evalCommit.userId?.fullname || "Unknown"} <span className="opacity-60 text-xs ml-1">(Quản lý)</span></span>
-                            <span className="text-[12px] text-[#a1a1a1] ml-auto">
+                            <span className="font-semibold text-[13px] text-chat-text">{evalCommit.userId?.fullname || "Unknown"} <span className="opacity-60 text-xs ml-1">(Quản lý)</span></span>
+                            <span className="text-[12px] text-chat-muted ml-auto">
                               {new Date(evalCommit.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                             </span>
                           </div>
-                          <p className={`text-[13px] leading-relaxed ${evalCommit.type === 'reject' ? 'text-red-100' : 'text-green-100'}`}>{evalCommit.description}</p>
+                          <p className={`text-[13px] leading-relaxed ${evalCommit.type === 'reject' ? 'text-red-600 dark:text-red-100' : 'text-green-600 dark:text-green-100'}`}>{evalCommit.description}</p>
                         </div>
                       ))}
                     </div>
@@ -172,15 +174,15 @@ export function TaskTimeline({ task, role, authUser }: TaskTimelineProps) {
 
                   {/* Manager Action Form */}
                   {role === 'manager' && primaryCommit.type === 'commit' && !hasEvaluated && task.status !== 'done' && (
-                    <div className="mt-3 pt-3 border-t border-[#2b2d31]">
+                    <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--chat-border)' }}>
                       {isEvaluating ? (
-                        <div className="bg-[#131416] border border-blue-500/30 p-4 rounded-md flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200">
-                          <p className="text-[13px] text-[#e1e1e1] font-medium">Nhận xét bản thảo của {primaryCommit.userId.fullname}:</p>
+                        <div className="border border-blue-500/30 p-4 rounded-md flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200" style={{ background: 'var(--chat-bg-main)' }}>
+                          <p className="text-[13px] text-chat-text font-medium">Nhận xét bản thảo của {primaryCommit.userId.fullname}:</p>
                           {!isRejecting ? (
                             <div className="flex gap-3 mt-1">
                               <button onClick={() => setIsRejecting(true)} className="px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 rounded-md text-[13px] font-semibold transition-colors">Yêu cầu làm lại</button>
                               <button onClick={() => handleManagerApprove(primaryCommit._id)} className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-[13px] font-semibold transition-colors flex-1 shadow-sm">Duyệt Đạt</button>
-                              <button onClick={() => setEvaluatingCommitId(null)} className="px-3 py-2 text-[#a1a1a1] hover:text-white transition-colors">Hủy</button>
+                              <button onClick={() => setEvaluatingCommitId(null)} className="px-3 py-2 text-chat-muted hover:text-chat-text transition-colors">Hủy</button>
                             </div>
                           ) : (
                             <div className="flex flex-col gap-3">
@@ -188,11 +190,12 @@ export function TaskTimeline({ task, role, authUser }: TaskTimelineProps) {
                                 value={rejectText}
                                 onChange={e => setRejectText(e.target.value)}
                                 placeholder="Ghi rõ lý do cần sửa..."
-                                className="w-full bg-[#1e1f22] border border-[#2b2d31] rounded-md p-3 text-[14px] focus:border-red-500 outline-none resize-none placeholder:text-[#a1a1a1]"
+                                className="w-full border rounded-md p-3 text-[14px] focus:border-red-500 outline-none resize-none placeholder:text-chat-muted text-chat-text"
+                                style={{ background: 'var(--chat-bg-sidebar)', borderColor: 'var(--chat-border)' }}
                                 rows={3}
                               />
                               <div className="flex gap-2 justify-end">
-                                <button onClick={() => setIsRejecting(false)} className="px-4 py-2 text-[13px] text-[#a1a1a1] hover:text-white transition-colors">Quay lại</button>
+                                <button onClick={() => setIsRejecting(false)} className="px-4 py-2 text-[13px] text-chat-muted hover:text-chat-text transition-colors">Quay lại</button>
                                 <button onClick={() => handleManagerReject(primaryCommit._id)} disabled={!rejectText.trim()} className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white rounded-md text-[13px] font-semibold transition-colors flex items-center gap-2"><Send className="w-3.5 h-3.5" /> Gửi phản hồi</button>
                               </div>
                             </div>

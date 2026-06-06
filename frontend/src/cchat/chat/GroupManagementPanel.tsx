@@ -89,40 +89,40 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
   )
 
   return (
-    <div className="flex w-[340px] shrink-0 flex-col bg-[#1e1f22] border-l border-[#2b2d31] h-full overflow-hidden text-[#e1e1e1]">
+    <div className="flex w-[340px] shrink-0 flex-col border-l border-chat-border h-full overflow-hidden text-chat-text" style={{ background: 'var(--chat-bg-sidebar)' }}>
       {/* Header */}
-      <div className="flex h-[60px] items-center border-b border-[#2b2d31] px-4 py-[14px] shrink-0 z-10">
-        <button onClick={onBack} className="mr-3 text-[#a1a1a1] hover:text-white transition-colors">
+      <div className="flex h-[60px] items-center border-b border-chat-border px-4 py-[14px] shrink-0 z-10" style={{ background: 'var(--chat-bg-sidebar)' }}>
+        <button onClick={onBack} className="mr-3 text-chat-muted hover:text-chat-text transition-colors">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <span className="font-medium text-[16px] text-white">Quản lý nhóm</span>
+        <span className="font-medium text-[16px] text-chat-text">Quản lý nhóm</span>
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
         <div className="flex flex-col">
 
           {/* Member Permissions */}
-          <div className="px-4 py-4 border-b border-[#2b2d31]">
-            <h3 className="text-[14px] font-semibold text-[#8B929A] mb-3 uppercase tracking-wide">Cho phép các thành viên trong nhóm:</h3>
+          <div className="px-4 py-4 border-b border-chat-border">
+            <h3 className="text-[14px] font-semibold text-chat-muted mb-3 uppercase tracking-wide">Cho phép các thành viên trong nhóm:</h3>
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between group cursor-pointer" onClick={() => togglePermission('changeNameAndAvatar')}>
-                <span className="text-[15px] text-[#e1e1e1] flex-1 pr-4">Thay đổi tên & ảnh đại diện của nhóm</span>
+                <span className="text-[15px] text-chat-text flex-1 pr-4">Thay đổi tên &amp; ảnh đại diện của nhóm</span>
                 <Checkbox checked={settings.memberPermissions.changeNameAndAvatar} onChange={() => togglePermission('changeNameAndAvatar')} />
               </div>
               <div className="flex items-center justify-between group cursor-pointer" onClick={() => togglePermission('pinMessages')}>
-                <span className="text-[15px] text-[#e1e1e1] flex-1 pr-4">Ghim tin nhắn, ghi chú, bình chọn lên đầu hội thoại</span>
+                <span className="text-[15px] text-chat-text flex-1 pr-4">Ghim tin nhắn, ghi chú, bình chọn lên đầu hội thoại</span>
                 <Checkbox checked={settings.memberPermissions.pinMessages} onChange={() => togglePermission('pinMessages')} />
               </div>
               <div className="flex items-center justify-between group cursor-pointer" onClick={() => togglePermission('createNotes')}>
-                <span className="text-[15px] text-[#e1e1e1] flex-1 pr-4">Tạo mới ghi chú, nhắc hẹn</span>
+                <span className="text-[15px] text-chat-text flex-1 pr-4">Tạo mới ghi chú, nhắc hẹn</span>
                 <Checkbox checked={settings.memberPermissions.createNotes} onChange={() => togglePermission('createNotes')} />
               </div>
               <div className="flex items-center justify-between group cursor-pointer" onClick={() => togglePermission('createPolls')}>
-                <span className="text-[15px] text-[#e1e1e1] flex-1 pr-4">Tạo mới bình chọn</span>
+                <span className="text-[15px] text-chat-text flex-1 pr-4">Tạo mới bình chọn</span>
                 <Checkbox checked={settings.memberPermissions.createPolls} onChange={() => togglePermission('createPolls')} />
               </div>
               <div className="flex items-center justify-between group cursor-pointer" onClick={() => togglePermission('sendMessages')}>
-                <span className="text-[15px] text-[#e1e1e1] flex-1 pr-4">Gửi tin nhắn</span>
+                <span className="text-[15px] text-chat-text flex-1 pr-4">Gửi tin nhắn</span>
                 <Checkbox checked={settings.memberPermissions.sendMessages} onChange={() => togglePermission('sendMessages')} />
               </div>
             </div>
@@ -130,29 +130,29 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
 
           {/* Settings Toggles */}
           <div className="flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3.5 hover:bg-[#2b2d31] transition-colors cursor-pointer border-b border-[#2b2d31]" onClick={() => toggleSetting('joinApprovalMode')}>
-              <span className="text-[15px] text-[#e1e1e1]">Chế độ phê duyệt thành viên mới</span>
+            <div className="flex items-center justify-between px-4 py-3.5 hover:bg-chat-hover transition-colors cursor-pointer border-b border-chat-border" onClick={() => toggleSetting('joinApprovalMode')}>
+              <span className="text-[15px] text-chat-text">Chế độ phê duyệt thành viên mới</span>
               <Switch checked={settings.joinApprovalMode} onChange={() => toggleSetting('joinApprovalMode')} />
             </div>
-            <div className="flex items-center justify-between px-4 py-3.5 hover:bg-[#2b2d31] transition-colors cursor-pointer border-b border-[#2b2d31]" onClick={() => toggleSetting('highlightAdminMessages')}>
-              <span className="text-[15px] text-[#e1e1e1]">Đánh dấu tin nhắn từ trưởng/phó nhóm</span>
+            <div className="flex items-center justify-between px-4 py-3.5 hover:bg-chat-hover transition-colors cursor-pointer border-b border-chat-border" onClick={() => toggleSetting('highlightAdminMessages')}>
+              <span className="text-[15px] text-chat-text">Đánh dấu tin nhắn từ trưởng/phó nhóm</span>
               <Switch checked={settings.highlightAdminMessages} onChange={() => toggleSetting('highlightAdminMessages')} />
             </div>
-            <div className="flex items-center justify-between px-4 py-3.5 hover:bg-[#2b2d31] transition-colors cursor-pointer border-b border-[#2b2d31]" onClick={() => toggleSetting('readRecentMessages')}>
-              <span className="text-[15px] text-[#e1e1e1]">Cho phép thành viên mới đọc tin nhắn gần nhất</span>
+            <div className="flex items-center justify-between px-4 py-3.5 hover:bg-chat-hover transition-colors cursor-pointer border-b border-chat-border" onClick={() => toggleSetting('readRecentMessages')}>
+              <span className="text-[15px] text-chat-text">Cho phép thành viên mới đọc tin nhắn gần nhất</span>
               <Switch checked={settings.readRecentMessages} onChange={() => toggleSetting('readRecentMessages')} />
             </div>
-            <div className="flex items-center justify-between px-4 py-3.5 hover:bg-[#2b2d31] transition-colors cursor-pointer border-b border-[#2b2d31]" onClick={() => toggleSetting('allowJoinLink')}>
-              <span className="text-[15px] text-[#e1e1e1]">Cho phép dùng link tham gia nhóm</span>
+            <div className="flex items-center justify-between px-4 py-3.5 hover:bg-chat-hover transition-colors cursor-pointer border-b border-chat-border" onClick={() => toggleSetting('allowJoinLink')}>
+              <span className="text-[15px] text-chat-text">Cho phép dùng link tham gia nhóm</span>
               <Switch checked={settings.allowJoinLink} onChange={() => toggleSetting('allowJoinLink')} />
             </div>
           </div>
 
           {/* Links */}
-          <div className="flex flex-col py-2 border-b border-[#2b2d31]">
+          <div className="flex flex-col py-2 border-b border-chat-border">
             {settings.allowJoinLink && (
               <div 
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#2b2d31] transition-colors cursor-pointer group"
+                className="flex items-center gap-3 px-4 py-2.5 hover:bg-chat-hover transition-colors cursor-pointer group"
                 onClick={async () => {
                   try {
                     const res = await useChatStore.getState().getInviteLink(chat._id);
@@ -165,17 +165,17 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
                   }
                 }}
               >
-                <LinkIcon className="w-5 h-5 text-[#a1a1a1] group-hover:text-white" />
-                <span className="text-[15px] text-[#e1e1e1]">Sao chép link tham gia</span>
+                <LinkIcon className="w-5 h-5 text-chat-muted group-hover:text-chat-text" />
+                <span className="text-[15px] text-chat-text">Sao chép link tham gia</span>
               </div>
             )}
-            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#2b2d31] transition-colors cursor-pointer group">
-              <Ban className="w-5 h-5 text-[#a1a1a1] group-hover:text-white" />
-              <span className="text-[15px] text-[#e1e1e1]">Chặn khỏi nhóm</span>
+            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-chat-hover transition-colors cursor-pointer group">
+              <Ban className="w-5 h-5 text-chat-muted group-hover:text-chat-text" />
+              <span className="text-[15px] text-chat-text">Chặn khỏi nhóm</span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#2b2d31] transition-colors cursor-pointer group">
-              <Crown className="w-5 h-5 text-[#a1a1a1] group-hover:text-white" />
-              <span className="text-[15px] text-[#e1e1e1]">Trưởng & phó nhóm</span>
+            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-chat-hover transition-colors cursor-pointer group">
+              <Crown className="w-5 h-5 text-chat-muted group-hover:text-chat-text" />
+              <span className="text-[15px] text-chat-text">Trưởng &amp; phó nhóm</span>
             </div>
           </div>
 

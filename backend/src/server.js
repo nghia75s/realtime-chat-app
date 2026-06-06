@@ -22,7 +22,7 @@ const PORT = ENV.PORT || 3000;
 initCronJobs();
 
 app.use(express.json({ limit: "25mb" })); // req.body - increased for file attachment uploads
-app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
@@ -41,7 +41,7 @@ if (ENV.NODE_ENV === "production") {
   });
 }
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log("Server running on port: " + PORT);
   connectDB();
 });
