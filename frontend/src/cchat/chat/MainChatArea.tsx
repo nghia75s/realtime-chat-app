@@ -675,35 +675,35 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           </div>
         </div>
       ) : (
-        <div className="bg-[#1e1f22] flex flex-col shrink-0 min-w-0">
+        <div className="bg-white dark:bg-[#131416] border-t border-zinc-200 dark:border-zinc-800 flex flex-col shrink-0 min-w-0">
           {canSendMessage ? (
             <>
               {/* Top Toolbar */}
               <div className="flex items-center px-2 py-2 gap-1 h-[40px]">
-                <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Smile className="w-[18px] h-[18px]" /></button>
+                <button disabled={isSending || !canSendMessage} className="p-1.5 text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md disabled:opacity-50"><Smile className="w-[18px] h-[18px]" strokeWidth={2.3} /></button>
 
             <input type="file" accept="image/*" ref={imageInputRef} onChange={handleImageChange} className="hidden" disabled={!canSendMessage} />
             <input type="file" ref={attachmentInputRef} onChange={handleFileChange} className="hidden" disabled={!canSendMessage} />
-            <button disabled={isSending || !canSendMessage} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
-              <ImageIcon className="w-[18px] h-[18px]" />
+            <button disabled={isSending || !canSendMessage} onClick={() => imageInputRef.current?.click()} className="p-1.5 text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md disabled:opacity-50">
+              <ImageIcon className="w-[18px] h-[18px]" strokeWidth={2.3} />
             </button>
 
-            <button disabled={isSending || !canSendMessage} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50">
-              <Paperclip className="w-[18px] h-[18px]" />
+            <button disabled={isSending || !canSendMessage} onClick={() => attachmentInputRef.current?.click()} className="p-1.5 text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md disabled:opacity-50">
+              <Paperclip className="w-[18px] h-[18px]" strokeWidth={2.3} />
             </button>
-            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" /></button>
-            <button disabled={isSending || !canSendMessage} className="p-1.5 text-[#a1a1a1] hover:bg-[#2b2d31] rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" /></button>
+            <button disabled={isSending || !canSendMessage} className="p-1.5 text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md disabled:opacity-50"><FileText className="w-[18px] h-[18px]" strokeWidth={2.3} /></button>
+            <button disabled={isSending || !canSendMessage} className="p-1.5 text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md disabled:opacity-50"><Type className="w-[18px] h-[18px]" strokeWidth={2.3} /></button>
+            <button disabled={isSending || !canSendMessage} className="p-1.5 text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md disabled:opacity-50"><Maximize className="w-[18px] h-[18px]" strokeWidth={2.3} /></button>
+            <button disabled={isSending || !canSendMessage} className="p-1.5 text-zinc-700 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md disabled:opacity-50"><Clock className="w-[18px] h-[18px]" strokeWidth={2.3} /></button>
           </div>
 
           {/* Reply Preview Bar */}
           {replyingTo && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-chat-main border-t border-chat-border border-l-2 border-l-[#0052cc] min-w-0">
+            <div className="flex items-center gap-2 px-4 py-2 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 border-l-2 border-l-[#0052cc] min-w-0">
               <Reply className="w-4 h-4 text-[#0052cc] shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] text-[#0052cc] font-semibold mb-0.5">Trả lời tin nhắn</p>
-                <p className="text-[12px] text-chat-muted truncate">
+                <p className="text-[12px] text-zinc-500 dark:text-zinc-400 truncate">
                   {replyingTo.messageType === "document" 
                     ? `[Đơn] ${replyingTo.documentPayload?.templateName || "Tài liệu"}`
                     : replyingTo.messageType === "task_assignment"
@@ -717,7 +717,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
               </div>
               <button
                 onClick={() => setReplyingTo(null)}
-                className="p-1 rounded-full hover:bg-chat-hover text-[#717171] hover:text-chat-text shrink-0 transition-colors"
+                className="p-1 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-[#717171] dark:text-[#a1a1a1] hover:text-zinc-800 dark:hover:text-white shrink-0 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -725,16 +725,16 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           )}
 
           {/* Input Area */}
-          <div className="flex flex-col border-t border-chat-border relative">
+          <div className="flex flex-col border-t border-zinc-200 dark:border-zinc-800 relative">
 
             {/* Image Preview */}
             {imagePreview && (
               <div className="px-4 py-3 pb-0">
                 <div className="relative inline-block mt-2">
-                  <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-md border border-chat-border" />
+                  <img src={imagePreview} alt="Preview" className="w-16 h-16 object-cover rounded-md border border-zinc-200 dark:border-zinc-800" />
                   <button
                     onClick={removeImage}
-                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-chat-hover flex items-center justify-center text-chat-text hover:bg-red-500 hover:text-white transition-colors"
+                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-red-500 dark:hover:bg-red-600 hover:text-white transition-colors"
                     type="button"
                   >
                     <X className="w-3 h-3" />
@@ -745,19 +745,19 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
 
             {fileAttachment && (
               <div className="px-4 py-3 pb-0">
-                <div className="relative flex items-center gap-3 w-full max-w-full rounded-2xl border border-chat-border bg-chat-main p-3">
-                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-chat-hover border border-chat-border">
-                    <FileText className="w-5 h-5 text-[#67d7ff]" />
+                <div className="relative flex items-center gap-3 w-full max-w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-3">
+                  <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                    <FileText className="w-5 h-5 text-sky-500" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-chat-text truncate">{fileAttachment.file.name}</p>
-                    <p className="text-[12px] text-chat-muted truncate">
+                    <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">{fileAttachment.file.name}</p>
+                    <p className="text-[12px] text-zinc-500 dark:text-zinc-400 truncate">
                       {fileAttachment.file.type || "Tệp đính kèm"} · {(fileAttachment.file.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
                   <button
                     onClick={removeFileAttachment}
-                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-chat-hover flex items-center justify-center text-chat-text hover:bg-red-500 hover:text-white transition-colors"
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-red-500 dark:hover:bg-red-600 hover:text-white transition-colors"
                     type="button"
                   >
                     <X className="w-3 h-3" />
@@ -788,7 +788,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   }
                 }}
                 placeholder={!canSendMessage ? "Chỉ quản trị viên mới được gửi tin nhắn" : `Nhập @, tin nhắn tới ${isGroup ? selectedUser.name : selectedUser.fullname}`}
-                className="flex-1 bg-transparent text-[15px] text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-[#a1a1a1] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-transparent text-[15px] text-zinc-800 dark:text-white px-4 py-3 outline-none resize-none min-h-[44px] max-h-[120px] custom-scrollbar placeholder:text-zinc-400 dark:placeholder:text-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 rows={1}
                 disabled={!canSendMessage}
               />
@@ -799,7 +799,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                     type="button"
                     title="Emoji (Ctrl+E)"
                     onClick={() => setShowEmojiPicker(p => !p)}
-                    className={`p-1.5 rounded-md transition-colors hover:bg-chat-hover ${showEmojiPicker ? 'text-[#ebaa16]' : 'text-chat-muted'}`}
+                    className={`p-1.5 rounded-md transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${showEmojiPicker ? 'text-[#ebaa16]' : 'text-zinc-500 dark:text-zinc-400'}`}
                   >
                     <Smile className="w-5 h-5" />
                   </button>
@@ -820,11 +820,11 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   disabled={isSending || !canSendMessage}
                   onClick={handleSendLike}
                   title="Gửi like"
-                  className="p-1.5 text-[#ebaa16] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1.5 text-[#ebaa16] hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ThumbsUp className="w-5 h-5" />
                 </button>
-                <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage} className="p-1.5 text-[#0052cc] hover:bg-[#2b2d31] rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed">
+                <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage} className="p-1.5 text-[#0052cc] hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed">
                   <Send className="w-5 h-5" />
                 </button>
               </div>
@@ -832,8 +832,8 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           </div>
             </>
           ) : (
-            <div className="flex items-center justify-center py-6 border-t border-[#2b2d31]">
-              <span className="text-[14px] text-[#a1a1a1]">Chỉ trưởng/phó nhóm mới có quyền gửi tin nhắn vào nhóm này.</span>
+            <div className="flex items-center justify-center py-6 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+              <span className="text-[14px] text-zinc-500 dark:text-zinc-400">Chỉ trưởng/phó nhóm mới có quyền gửi tin nhắn vào nhóm này.</span>
             </div>
           )}
         </div>
