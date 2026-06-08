@@ -1,8 +1,9 @@
-import { useState } from "react"
-import { Bell, ShieldAlert, ChevronRight, FileText, Pin, Users, LogOut, PenBox, Settings, AlertTriangle, Trash2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Bell, ShieldAlert, ChevronRight, FileText, Pin, Users, LogOut, PenBox, Settings } from "lucide-react"
 import { ArchivePanel } from "./ArchivePanel"
 import { GroupManagementPanel } from "./GroupManagementPanel"
 import { MembersPanel } from "./MembersPanel"
+import { AdminsPanel } from "./AdminsPanel"
 import { GroupBoardPanel } from "../chat/GroupBoardPanel"
 import { AddGroupMemberModal } from "./modals/AddGroupMemberModal"
 import { EditGroupModal } from "./modals/EditGroupModal"
@@ -15,12 +16,16 @@ import {
 import { useAuthStore } from "@/store/useAuthStore"
 
 export function RightInfoPanel({ chat }: { chat: any }) {
-  const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board">("info")
+  const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board" | "admins" | "pending_members">("info")
   const [archiveTab, setArchiveTab] = useState<"media" | "file" | "link">("media")
   const [isBoardOpen, setIsBoardOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false)
   const [isMuteNotificationOpen, setIsMuteNotificationOpen] = useState(false)
+
+  useEffect(() => {
+    setView("info");
+  }, [chat?._id]);
 
   const { authUser, pinChat } = useAuthStore()
 
@@ -53,7 +58,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
   }
 
   if (view === "management") {
-    return <GroupManagementPanel chat={chat} onBack={() => setView("info")} />
+    return <GroupManagementPanel chat={chat} onBack={() => setView("info")} onViewAdmins={() => setView("admins")} />
   }
 
   if (view === "members") {
@@ -76,6 +81,21 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
   if (view === "board") {
     return <GroupBoardPanel chat={chat} onBack={() => setView("info")} />
+  }
+
+  if (view === "admins") {
+    return <AdminsPanel chat={chat} onBack={() => setView("management")} />
+  }
+
+  if (view === "pending_members") {
+    return (
+      <MembersPanel
+        chat={chat}
+        onBack={() => setView("info")}
+        onAddMember={() => setIsAddMemberOpen(true)}
+        initialTab="pending"
+      />
+    )
   }
 
   return (
@@ -141,16 +161,30 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
             {/* Members Section */}
             {isGroup && (
-              <button onClick={() => setView('members')} className="flex flex-col w-full px-4 py-3 hover:bg-chat-hover transition-colors border-b border-chat-border group">
-                <div className="flex items-center justify-between w-full mb-1">
-                  <span className="text-[15px] font-bold text-chat-text">Thành viên nhóm</span>
-                  <ChevronRight className="h-4 w-4 text-chat-muted group-hover:text-chat-text transition-colors" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-chat-muted" />
-                  <span className="text-[13px] text-chat-muted">{members.length} thành viên</span>
-                </div>
-              </button>
+              <>
+                <button onClick={() => setView('members')} className="flex flex-col w-full px-4 py-3 hover:bg-chat-hover transition-colors border-b border-chat-border group">
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span className="text-[15px] font-bold text-chat-text">Thành viên nhóm</span>
+                    <ChevronRight className="h-4 w-4 text-chat-muted group-hover:text-chat-text transition-colors" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-chat-muted" />
+                    <span className="text-[13px] text-chat-muted">{members.length} thành viên</span>
+                  </div>
+                </button>
+
+                {isManager && chat.settings?.joinApprovalMode && (
+                  <button onClick={() => setView('pending_members')} className="flex items-center justify-between w-full px-4 py-3 hover:bg-chat-hover transition-colors border-b border-chat-border group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[15px] font-bold text-chat-text">Yêu cầu tham gia</span>
+                      {chat.pendingMembers?.length > 0 && (
+                        <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[12px] font-semibold">{chat.pendingMembers.length}</span>
+                      )}
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-chat-muted group-hover:text-chat-text transition-colors" />
+                  </button>
+                )}
+              </>
             )}
 
             {/* Bảng tin nhóm */}
@@ -217,15 +251,6 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
             {/* Bottom Actions Zone */}
             <div className="w-full py-2 flex flex-col">
-              <button className="flex items-center gap-3 w-full px-4 py-3 hover:bg-chat-hover transition-colors">
-                <AlertTriangle className="h-5 w-5 text-chat-muted" strokeWidth={1.5} />
-                <span className="text-[15px] text-chat-text">Báo xấu</span>
-              </button>
-
-              <button className="flex items-center gap-3 w-full px-4 py-3 hover:bg-red-500/10 text-red-500 transition-colors">
-                <Trash2 className="h-5 w-5" strokeWidth={1.5} />
-                <span className="text-[15px]">Xóa lịch sử trò chuyện</span>
-              </button>
 
               {isGroup && (
                 <button className="flex items-center gap-3 w-full px-4 py-3 hover:bg-red-500/10 text-red-500 transition-colors">

@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { ChevronLeft, LogOut, Check, Ban, Crown, Link as LinkIcon } from "lucide-react"
+import { useState, useEffect } from "react"
+import { ChevronLeft, LogOut, Check, Crown, Link as LinkIcon } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import { toast } from "react-hot-toast"
@@ -7,15 +7,16 @@ import { toast } from "react-hot-toast"
 interface GroupManagementPanelProps {
   chat: any;
   onBack: () => void;
+  onViewAdmins?: () => void;
 }
 
-export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps) {
+export function GroupManagementPanel({ chat, onBack, onViewAdmins }: GroupManagementPanelProps) {
   const { updateGroupSettings } = useChatStore()
   const { authUser } = useAuthStore()
-  
+
   const creatorId = typeof chat.createdBy === "string" ? chat.createdBy : chat.createdBy?._id
   const isCreator = authUser?._id === creatorId
-  
+
   // Lấy cài đặt mặc định hoặc từ dữ liệu nhóm
   const defaultSettings = {
     memberPermissions: {
@@ -34,6 +35,16 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
   const currentSettings = chat.settings || defaultSettings
   const [settings, setSettings] = useState(currentSettings)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [inviteLinkStr, setInviteLinkStr] = useState("")
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (settings.allowJoinLink) {
+      useChatStore.getState().getInviteLink(chat._id).then((res: any) => {
+        setInviteLinkStr(`${window.location.origin}/join/${res.inviteLinkCode}`);
+      }).catch(() => { });
+    }
+  }, [settings.allowJoinLink, chat._id])
 
   const handleUpdate = async (newSettings: any) => {
     setSettings(newSettings)
@@ -70,7 +81,7 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
 
   // Custom Toggle Switch Component
   const Switch = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
-    <div 
+    <div
       className={`w-9 h-5 flex items-center rounded-full p-1 cursor-pointer transition-colors ${checked ? 'bg-[#1877F2]' : 'bg-[#D1D5DB]'}`}
       onClick={onChange}
     >
@@ -80,7 +91,7 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
 
   // Custom Checkbox Component
   const Checkbox = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
-    <div 
+    <div
       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 cursor-pointer transition-all ${checked ? "bg-[#1877F2] border-[#1877F2]" : "border-[#D1D5DB]"}`}
       onClick={onChange}
     >
@@ -150,30 +161,28 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
 
           {/* Links */}
           <div className="flex flex-col py-2 border-b border-chat-border">
-            {settings.allowJoinLink && (
-              <div 
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-chat-hover transition-colors cursor-pointer group"
-                onClick={async () => {
-                  try {
-                    const res = await useChatStore.getState().getInviteLink(chat._id);
-                    // Mocking front-end join URL
-                    const link = `${window.location.origin}/join/${res.inviteLinkCode}`;
-                    navigator.clipboard.writeText(link);
-                    toast.success("Đã sao chép link tham gia nhóm!");
-                  } catch (e) {
-                    // handled
-                  }
-                }}
-              >
-                <LinkIcon className="w-5 h-5 text-chat-muted group-hover:text-chat-text" />
-                <span className="text-[15px] text-chat-text">Sao chép link tham gia</span>
+            {settings.allowJoinLink && inviteLinkStr && (
+              <div className="px-4 py-3">
+                <div className="text-[13px] text-chat-muted mb-1.5 font-medium">Link tham gia nhóm:</div>
+                <div className="flex items-center gap-2">
+                  <input type="text" readOnly value={inviteLinkStr} className="flex-1 bg-chat-hover text-chat-text text-[13px] rounded-md px-3 py-2 outline-none border border-chat-border" />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(inviteLinkStr);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                      toast.success("Đã sao chép link tham gia nhóm!");
+                    }}
+                    className="p-2 hover:bg-[#1877F2]/20 active:scale-90 rounded-md transition-all duration-200 bg-[#1877F2]/10 text-[#1877F2] flex items-center justify-center"
+                    title="Sao chép"
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             )}
-            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-chat-hover transition-colors cursor-pointer group">
-              <Ban className="w-5 h-5 text-chat-muted group-hover:text-chat-text" />
-              <span className="text-[15px] text-chat-text">Chặn khỏi nhóm</span>
-            </div>
-            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-chat-hover transition-colors cursor-pointer group">
+
+            <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-chat-hover transition-colors cursor-pointer group" onClick={onViewAdmins}>
               <Crown className="w-5 h-5 text-chat-muted group-hover:text-chat-text" />
               <span className="text-[15px] text-chat-text">Trưởng &amp; phó nhóm</span>
             </div>
@@ -182,10 +191,10 @@ export function GroupManagementPanel({ chat, onBack }: GroupManagementPanelProps
           {/* Dissolve Group */}
           {isCreator && (
             <div className="px-4 py-6 flex justify-center">
-               <button className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-[#ef4444]/10 hover:bg-[#ef4444]/20 text-[#ef4444] rounded-xl transition-colors font-medium">
-                  <LogOut className="w-5 h-5" />
-                  Giải tán nhóm
-               </button>
+              <button className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-[#ef4444]/10 hover:bg-[#ef4444]/20 text-[#ef4444] rounded-xl transition-colors font-medium">
+                <LogOut className="w-5 h-5" />
+                Giải tán nhóm
+              </button>
             </div>
           )}
 

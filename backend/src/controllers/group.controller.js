@@ -173,10 +173,19 @@ export const getGroupMessages = async (req, res) => {
         }
         let query = { groupId, deletedBy: { $ne: userId } };
         
-        if (group.settings?.readRecentMessages === false) {
-            const joinDate = group.joinDates?.get(userId.toString());
-            if (joinDate) {
+        const joinDate = group.joinDates?.get(userId.toString());
+        if (joinDate) {
+            if (group.settings?.readRecentMessages === false) {
                 query.createdAt = { $gte: joinDate };
+            } else {
+                const priorMessages = await GroupMessage.find({ groupId, deletedBy: { $ne: userId }, createdAt: { $lt: joinDate } })
+                    .sort({ createdAt: -1 })
+                    .limit(100)
+                    .select('createdAt');
+                
+                if (priorMessages.length === 100) {
+                    query.createdAt = { $gte: priorMessages[99].createdAt };
+                }
             }
         }
 
@@ -659,16 +668,26 @@ export const joinViaLink = async (req, res) => {
         }
 
         if (group.members.some(memberId => memberId.toString() === userId.toString())) {
-            return res.status(400).json({ message: "You are already a member of this group." });
+            return res.status(400).json({ message: "Bạn đã là thành viên của nhóm" });
         }
 
         if (group.settings?.joinApprovalMode === true) {
             if (group.pendingMembers?.some(memberId => memberId.toString() === userId.toString())) {
-                return res.status(400).json({ message: "Your join request is already pending." });
+                return res.status(400).json({ message: "Yêu cầu tham gia nhóm của bạn đang được xử lý" });
             }
             if (!group.pendingMembers) group.pendingMembers = [];
             group.pendingMembers.push(userId);
             await group.save();
+            
+            // Emit socket event to creator and admins
+            const creatorIdStr = group.createdBy.toString();
+            emitToUser(creatorIdStr, "joinRequestPending", { groupId: group._id, userId });
+            if (group.admins) {
+                group.admins.forEach(adminId => {
+                    emitToUser(adminId.toString(), "joinRequestPending", { groupId: group._id, userId });
+                });
+            }
+
             return res.status(200).json({ status: "pending", message: "Join request sent. Please wait for admin approval." });
         } else {
             group.members.push(userId);

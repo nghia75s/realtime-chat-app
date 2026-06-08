@@ -9,7 +9,7 @@ import mongoose from "mongoose";
 
 const VALID_COMMIT_TYPES = ["commit", "approve", "reject"];
 
-// Helper: validate deadline trong khoảng (now, now + 100 năm]
+
 const validateDeadline = (deadline) => {
   const taskDeadline = new Date(deadline);
   const now = new Date();
@@ -22,7 +22,7 @@ const validateDeadline = (deadline) => {
   return null; // OK
 };
 
-// Helper: filter commits và assignees cho employee dựa theo canViewOthers
+
 const filterCommitsForEmployee = (task, myId) => {
   const myAssignee = task.assignees.find(
     (a) => a.user._id?.toString() === myId.toString() || a.user?.toString() === myId.toString()
@@ -239,7 +239,7 @@ export const createTask = async (req, res) => {
         { path: "taskId", select: "title" }
       ]);
       emitToUser(assigneeId, "newMessage", newMessage);
-      emitToUser(creatorId, "newMessage", newMessage); // Cập nhật cho người gửi
+      emitToUser(creatorId, "newMessage", newMessage); 
       emitToUser(assigneeId, "newNotification", newNotif);
     });
 
@@ -363,8 +363,6 @@ export const addCommit = async (req, res) => {
       emitToUser(assigneeId.toString(), "newNotification", newNotif);
     }
 
-    // Bug #1 FIX: Trạng thái tổng chỉ dựa vào allDone
-    // Trạng thái chi tiết từng người (rejected/pending/submitted) đã đủ thể hiện
     const allDone =
       task.assignees.length > 0 &&
       task.assignees.every((a) => a.status === "done");

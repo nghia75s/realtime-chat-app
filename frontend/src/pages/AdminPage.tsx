@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar";
-import UserManagement from "./UserManagement";
-import RoleManagement from "./RoleManagement";
-import DepartmentManagement from "./DepartmentManagement";
+import UserManagement from "../admin/UserManagement";
+import RoleManagement from "../admin/RoleManagement";
+import DepartmentManagement from "../admin/DepartmentManagement";
 import { Users, Shield, Building2 } from "lucide-react";
 
 type AdminTab = "users" | "roles" | "departments";

@@ -55,6 +55,8 @@ interface ChatStore {
     deleteMessage: (messageId: string) => Promise<any>;
     forwardMessage: (messageId: string, receiverIds: string[], note?: string) => Promise<any>;
     updateGroupSettings: (groupId: string, settings: any) => Promise<any>;
+    joinModalCode: string | null;
+    setJoinModalCode: (code: string | null) => void;
     pinnedMessages: any[];
     getPinnedMessages: (chatId: string) => Promise<void>;
     pinMessage: (messageId: string) => Promise<void>;
@@ -433,6 +435,28 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             }
         });
 
+        socket.off("joinRequestPending");
+        socket.on("joinRequestPending", ({ groupId, userId }) => {
+            set((state) => {
+                const newGroups = state.groups.map(g => {
+                    if (g._id === groupId) {
+                        const newPending = g.pendingMembers ? [...g.pendingMembers] : [];
+                        if (!newPending.includes(userId)) {
+                            newPending.push(userId);
+                        }
+                        return { ...g, pendingMembers: newPending };
+                    }
+                    return g;
+                });
+                
+                const newSelectedUser = state.selectedUser?._id === groupId 
+                    ? { ...state.selectedUser, pendingMembers: newGroups.find(g => g._id === groupId)?.pendingMembers }
+                    : state.selectedUser;
+
+                return { groups: newGroups, selectedUser: newSelectedUser };
+            });
+        });
+
         // Real-time: Quản lý phê duyệt / từ chối lá đơn
         socket.off("documentReplied");
         socket.on("documentReplied", ({ messageId, documentReplyData }: { messageId: string; documentReplyData: any }) => {
@@ -526,6 +550,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             console.error("Failed to fetch managers:", error);
         }
     },
+
+    isMessageLoading: false,
+    joinModalCode: null,
+    setJoinModalCode: (code: string | null) => set({ joinModalCode: code }),
 
     sendDocumentMessage: async (receiverId, documentPayload) => {
         try {
@@ -746,7 +774,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
     approveMember: async (groupId, userId) => {
         try {
-            return await chatService.approveMember(groupId, userId);
+            const data = await chatService.approveMember(groupId, userId);
+            set((state) => {
+                const newGroups = state.groups.map(g => {
+                    if (g._id === groupId) {
+                        return { ...g, pendingMembers: g.pendingMembers?.filter((id: string) => id !== userId) };
+                    }
+                    return g;
+                });
+                const newSelectedUser = state.selectedUser?._id === groupId 
+                    ? { ...state.selectedUser, pendingMembers: state.selectedUser.pendingMembers?.filter((id: string) => id !== userId) }
+                    : state.selectedUser;
+                return { groups: newGroups, selectedUser: newSelectedUser };
+            });
+            return data;
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Lỗi duyệt thành viên");
             throw error;
@@ -754,7 +795,20 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
     rejectMember: async (groupId, userId) => {
         try {
-            return await chatService.rejectMember(groupId, userId);
+            const data = await chatService.rejectMember(groupId, userId);
+            set((state) => {
+                const newGroups = state.groups.map(g => {
+                    if (g._id === groupId) {
+                        return { ...g, pendingMembers: g.pendingMembers?.filter((id: string) => id !== userId) };
+                    }
+                    return g;
+                });
+                const newSelectedUser = state.selectedUser?._id === groupId 
+                    ? { ...state.selectedUser, pendingMembers: state.selectedUser.pendingMembers?.filter((id: string) => id !== userId) }
+                    : state.selectedUser;
+                return { groups: newGroups, selectedUser: newSelectedUser };
+            });
+            return data;
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Lỗi từ chối thành viên");
             throw error;

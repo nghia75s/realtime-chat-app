@@ -7,10 +7,11 @@ import { useChatStore } from "./store/useChatStore"
 import { useEffect } from "react"
 import PageLoader from "./components/ui/PageLoader"
 import ContactsPage from "./pages/ContactsPage"
-import TasksPage from "./task/TasksPage"
-import DocumentFillerPage from "./tools/DocumentFillerPage"
-import AdminPage from "./admin/AdminPage"
+import TasksPage from "./pages/TasksPage"
+import DocumentFillerPage from "./pages/DocumentFillerPage"
+import AdminPage from "./pages/AdminPage"
 import DocumentPage from "./cloud/DocumentPage"
+import JoinGroupPage from "./pages/JoinGroupPage"
 import GlobalAlerts from "./components/ui/GlobalAlerts"
 import { useThemeStore } from "./store/useThemeStore"
 
@@ -44,6 +45,7 @@ function App() {
         <Route path="/chat" element={authUser ? (authUser.permissions?.viewChat !== false ? <ChatPage /> : <Navigate to="/login" />) : <Navigate to="/login" />} />
         <Route path="/contacts" element={authUser ? (authUser.permissions?.viewContacts ? <ContactsPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
         <Route path="/todo" element={authUser ? (authUser.permissions?.viewTasks ? <TasksPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
+        <Route path="/join/:inviteCode" element={<JoinGroupPage />} />
         <Route path="/tools" element={authUser ? (authUser.permissions?.viewTools ? <DocumentFillerPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
         <Route path="/cloud" element={authUser ? (authUser.permissions?.viewCloud ? <DocumentPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
         <Route path="/admin" element={authUser && authUser.permissions?.viewAdmin ? <AdminPage /> : <Navigate to="/chat" />} />
