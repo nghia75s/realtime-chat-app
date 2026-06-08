@@ -130,25 +130,17 @@ export function DocumentMessageCard({
           )}
 
           {/* Card chính */}
-          <div
-            className={`
-              relative w-[320px] rounded-2xl border shadow-lg overflow-hidden
-              ${isMe
-                ? "bg-[#0d2a5c] border-[#0052cc]/50"
-                : "bg-[#1a1c1f] border-[#2b2d31]"
-              }
-            `}
-          >
+          <div className="relative w-[320px] rounded-2xl border shadow-lg overflow-hidden bg-white dark:bg-[#1a1c1f] border-zinc-200 dark:border-[#2b2d31]">
             {/* Header */}
-            <div className={`px-4 py-3 flex items-center gap-2.5 border-b ${isMe ? "border-[#0052cc]/30 bg-[#0a1f48]" : "border-[#2b2d31] bg-[#16181b]"}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isMe ? "bg-[#0052cc]/30" : "bg-[#2b2d31]"}`}>
+            <div className="px-4 py-3 flex items-center gap-2.5 border-b border-zinc-200 dark:border-[#2b2d31] bg-zinc-50 dark:bg-[#16181b]">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-zinc-200 dark:bg-[#2b2d31]">
                 <FileText className="w-4 h-4 text-[#0052cc]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-white truncate">
+                <p className="text-[13px] font-semibold text-zinc-900 dark:text-white truncate">
                   {payload?.templateName || "Lá đơn"}
                 </p>
-                <p className="text-[11px] text-[#a1a1a1]">Văn bản nội bộ</p>
+                <p className="text-[11px] text-zinc-500 dark:text-[#a1a1a1]">Văn bản nội bộ</p>
               </div>
               {/* Status badge */}
               {reply && (
@@ -163,7 +155,7 @@ export function DocumentMessageCard({
 
             {/* Document preview — thu nhỏ, cắt chiều cao */}
             <div
-              className="relative overflow-hidden cursor-pointer group m-3 rounded-lg border border-[#2b2d31]"
+              className="relative overflow-hidden cursor-pointer group m-3 rounded-lg border border-zinc-200 dark:border-[#2b2d31]"
               style={{ height: "180px" }}
               onClick={() => payload?.htmlContent && onViewFull(payload.htmlContent, payload.templateName || "Lá đơn")}
             >
@@ -268,8 +260,7 @@ export function DocumentMessageCard({
               </div>
             )}
 
-            {/* Footer timestamp */}
-            <div className={`px-4 pb-3 pt-1 flex items-center justify-between text-[11px] text-[#6b6b6b] ${canApprove ? "" : "border-t border-[#2b2d31]/50 pt-2"}`}>
+            <div className={`px-4 pb-3 pt-1 flex items-center justify-between text-[11px] text-[#6b6b6b] ${canApprove ? "" : "border-t border-zinc-200 dark:border-[#2b2d31]/50 pt-2"}`}>
               <button
                 onClick={() => payload?.htmlContent && onViewFull(payload.htmlContent, payload.templateName || "Lá đơn")}
                 className="text-[#0052cc] hover:underline text-[11px]"

@@ -3,6 +3,7 @@ import { useAuthStore } from "@/store/useAuthStore"
 import { useChatStore } from "@/store/useChatStore"
 import { useMessageActionStore } from "@/store/useMessageActionStore"
 import { Reply, Forward, Copy, Info, Trash2, RotateCcw, MoreHorizontal, CheckSquare, Square, CornerUpRight, Pin } from "lucide-react"
+import { useCallStore } from "@/store/useCallStore"
 import { toast } from "react-hot-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { MessageBubbleProps } from "@/store/useMessageBubbleStore.ts"
@@ -43,6 +44,234 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
   })
 
   const fileExtension = msg.file?.name?.split(".").pop()?.toUpperCase() || "FILE"
+
+  // --- CALL LOG MESSAGE RENDERER ---
+  if (msg.messageType === "call_log") {
+    const callLog = msg.callPayload;
+    const callType = callLog?.callType || "voice";
+    const duration = callLog?.duration || 0;
+    // Lấy trạng thái từ callPayload, nếu không có thì mặc định theo duration
+    const status = callLog?.status || (duration > 0 ? "completed" : "missed");
+    
+    // Định dạng chuỗi thời lượng: ví dụ, "0 phút 25 giây"
+    const minutes = Math.floor(duration / 60);
+    const remainingSeconds = duration % 60;
+    const durationStr = `${minutes} phút ${remainingSeconds.toString().padStart(2, "0")} giây`;
+
+    // Xác định xem tiêu đề có màu đỏ hay không (Bạn đã từ chối hoặc Cuộc gọi nhỡ đối với người nhận)
+    const isRedTitle = 
+      (status === "rejected" && !isMe) || 
+      (status === "missed" && !isMe) ||
+      (status === "cancelled" && !isMe);
+    const titleColorClass = isRedTitle 
+      ? "text-[#e53e3e] dark:text-[#f87171]" 
+      : "text-zinc-900 dark:text-white";
+
+    // Xác định tiêu đề cuộc gọi hiển thị
+    let title = "";
+    if (status === "rejected") {
+      title = isMe ? "Người nhận từ chối" : "Bạn đã từ chối";
+    } else if (status === "cancelled") {
+      title = isMe ? "Bạn đã hủy" : "Cuộc gọi nhỡ";
+    } else if (status === "missed") {
+      title = isMe 
+        ? (callType === "video" ? "Cuộc gọi video đi" : "Cuộc gọi thoại đi")
+        : "Cuộc gọi nhỡ";
+    } else {
+      title = callType === "video"
+        ? (isMe ? "Cuộc gọi video đi" : "Cuộc gọi video đến")
+        : (isMe ? "Cuộc gọi thoại đi" : "Cuộc gọi thoại đến");
+    }
+
+    // Phụ đề (ví dụ: Cuộc gọi thoại, Cuộc gọi video hoặc thời lượng cuộc gọi)
+    const subtitleText = status === "completed"
+      ? durationStr
+      : (callType === "video" ? "Cuộc gọi video" : "Cuộc gọi thoại");
+
+    // Tên nút gọi lại: viết hoa "GỌI LẠI" khi tiêu đề có màu đỏ, ngược lại viết hoa chữ cái đầu "Gọi lại"
+    const buttonText = isRedTitle ? "GỌI LẠI" : "Gọi lại";
+
+    const handleCallAgain = () => {
+      const chatPartner = useChatStore.getState().selectedUser;
+      if (chatPartner) {
+        useCallStore.getState().initiateCall(chatPartner, callType);
+      }
+    };
+
+    // Hàm hiển thị huy hiệu (badge) đè lên biểu tượng cuộc gọi
+    const renderBadge = () => {
+      if (status === "rejected") {
+        if (!isMe) {
+          // Bạn đã từ chối: hiển thị dấu x nhỏ màu xám
+          return (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white dark:bg-[#1a1c1f] text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-[#2b2d31]">
+              <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </span>
+          );
+        } else {
+          // Người nhận từ chối: hiển thị vòng tròn cấm màu đỏ 🚫
+          return (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white dark:bg-[#1a1c1f] text-[#e53e3e] border border-zinc-200 dark:border-[#2b2d31]">
+              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+              </svg>
+            </span>
+          );
+        }
+      } else if (status === "cancelled") {
+        if (isMe) {
+          // Bạn đã hủy: hiển thị mũi tên chéo màu đỏ/cam chỉ lên trên bên phải (outgoing cancelled/missed)
+          return (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white dark:bg-[#1a1c1f] text-[#e53e3e] border border-zinc-200 dark:border-[#2b2d31]">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" className="rotate-[315deg] origin-center" />
+              </svg>
+            </span>
+          );
+        } else {
+          // Đối phương hủy -> cuộc gọi nhỡ ở phía người nhận: hiển thị dấu x màu đỏ
+          return (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white dark:bg-[#1a1c1f] text-[#e53e3e] border border-zinc-200 dark:border-[#2b2d31]">
+              <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </span>
+          );
+        }
+      } else if (status === "missed") {
+        if (!isMe) {
+          // Cuộc gọi nhỡ bên phía người nhận: hiển thị dấu x màu đỏ
+          return (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white dark:bg-[#1a1c1f] text-[#e53e3e] border border-zinc-200 dark:border-[#2b2d31]">
+              <svg className="w-2 h-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </span>
+          );
+        } else {
+          // Cuộc gọi nhỡ bên phía người gọi (Không trả lời): hiển thị mũi tên xám chỉ ra ngoài
+          return (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white dark:bg-[#1a1c1f] text-zinc-400 dark:text-zinc-500 border border-zinc-200 dark:border-[#2b2d31]">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" className="rotate-[315deg] origin-center" />
+              </svg>
+            </span>
+          );
+        }
+      } else {
+        // completed - cuộc gọi thành công
+        if (isMe) {
+          // Cuộc gọi đi thành công: mũi tên xanh lá chỉ ra ngoài
+          return (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white dark:bg-[#1a1c1f] text-green-500 border border-zinc-200 dark:border-[#2b2d31]">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" className="rotate-[315deg] origin-center" />
+              </svg>
+            </span>
+          );
+        } else {
+          // Cuộc gọi đến thành công: mũi tên xanh dương chỉ vào trong
+          return (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white dark:bg-[#1a1c1f] text-blue-500 border border-zinc-200 dark:border-[#2b2d31]">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" className="rotate-[315deg] origin-center" />
+              </svg>
+            </span>
+          );
+        }
+      }
+    };
+
+    return (
+      <div
+        className={`flex w-full items-start group transition-colors px-4 py-1 mb-1 ${isSelected ? "bg-chat-hover/40" : ""} ${isSelectionMode ? "cursor-pointer hover:bg-chat-hover/20" : ""}`}
+        onClick={() => isSelectionMode && toggleSelect()}
+      >
+        {isSelectionMode && (
+          <div className="flex items-center justify-center w-8 shrink-0 pt-2 mr-2">
+            {isSelected ? (
+              <CheckSquare className="w-5 h-5 text-[#0052cc]" />
+            ) : (
+              <Square className="w-5 h-5 text-[#a1a1a1]" />
+            )}
+          </div>
+        )}
+
+        <div className={`flex flex-1 ${isMe ? "justify-end" : "justify-start"}`}>
+          {!isMe && !isSelectionMode && (
+            <div className="flex items-start mr-2 shrink-0 w-8">
+              {!hideHeader && (
+                <img
+                  src={senderAvatar || "/avatar.png"}
+                  alt={senderName || "User"}
+                  className="w-8 h-8 rounded-full object-cover border border-chat-border cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => onAvatarClick?.(msg.senderId)}
+                />
+              )}
+            </div>
+          )}
+
+          <div className={`flex flex-col max-w-[75%] min-w-0 gap-1 ${isMe ? "items-end" : "items-start"}`}>
+            {!isMe && isGroupChat && senderName && !hideHeader && (
+              <span className="text-[12px] font-semibold text-[#a1a1a1] ml-1 mb-0.5">{senderName}</span>
+            )}
+
+            {/* Khung tin nhắn thiết kế theo chuẩn Zalo */}
+            <div className="w-[220px] rounded-2xl border shadow-sm p-4 flex flex-col gap-3.5 select-none relative bg-white dark:bg-[#1a1c1f] border-zinc-200 dark:border-[#2b2d31] text-zinc-900 dark:text-[#e1e1e1]">
+              {/* Tiêu đề hiển thị */}
+              <p className={`text-[14px] font-semibold leading-tight ${titleColorClass}`}>
+                {title}
+              </p>
+
+              {/* Khối hiển thị biểu tượng và trạng thái phụ */}
+              <div className="flex items-center gap-2.5">
+                {/* Vùng chứa biểu tượng cuộc gọi */}
+                <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                  {callType === "video" ? (
+                    <span className="relative">
+                      <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      {renderBadge()}
+                    </span>
+                  ) : (
+                    <span className="relative">
+                      <svg className="w-5 h-5 text-zinc-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      {renderBadge()}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[13px] text-zinc-500 dark:text-[#a1a1a1] font-medium leading-none">
+                  {subtitleText}
+                </span>
+              </div>
+
+              {/* Đường kẻ ngang ngăn cách */}
+              <div className="w-full h-[1px] bg-zinc-200 dark:bg-[#2d2f31] -my-1" />
+
+              {/* Nút Gọi lại */}
+              <button
+                onClick={handleCallAgain}
+                className="w-full text-center text-[13px] font-bold text-[#0052cc] hover:text-[#0040a0] dark:text-blue-400 dark:hover:text-blue-300 transition-colors cursor-pointer select-none py-0.5"
+              >
+                {buttonText}
+              </button>
+            </div>
+            
+            {/* Thời gian nhắn */}
+            <span className="text-[10px] text-chat-muted self-end mt-1 px-1">
+              {timeStr}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // --- SYSTEM MESSAGE RENDERER ---
   if (msg.messageType === "system") {

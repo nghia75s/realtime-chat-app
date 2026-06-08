@@ -17,6 +17,7 @@ import { PollMessageCard } from "./PollMessageCard"
 import { ProfileModal } from "./modals/ProfileModal"
 import { toast } from "react-hot-toast"
 import { EmojiPickerPanel } from "@/components/ui/EmojiPickerPanel"
+import { useCallStore } from "@/store/useCallStore"
 import { formatMessageDateDivider } from "@/lib/formatTime"
 
 // Emoticon shortcode → Emoji
@@ -63,6 +64,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
     getPinnedMessages,
     pinMessage
   } = useChatStore()
+  const { initiateCall } = useCallStore()
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
     window.addEventListener("click", handleClick)
@@ -410,13 +412,25 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Cuộc gọi thoại">
-            <Phone className="w-5 h-5" />
-          </button>
-          <button className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Cuộc gọi video">
-            <Video className="w-5 h-5" />
-          </button>
-          <div className="w-[1px] h-6 bg-chat-border mx-1"></div>
+          {!isGroup && (
+            <>
+              <button 
+                onClick={() => initiateCall(selectedUser, "voice")}
+                className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors cursor-pointer" 
+                title="Cuộc gọi thoại"
+              >
+                <Phone className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => initiateCall(selectedUser, "video")}
+                className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors cursor-pointer" 
+                title="Cuộc gọi video"
+              >
+                <Video className="w-5 h-5" />
+              </button>
+              <div className="w-[1px] h-6 bg-chat-border mx-1"></div>
+            </>
+          )}
           <button onClick={onToggleRightSidebar} className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Thông tin hội thoại">
             {isRightSidebarOpen ? <PanelRightClose className="w-5 h-5" /> : <PanelRightOpen className="w-5 h-5" />}
           </button>

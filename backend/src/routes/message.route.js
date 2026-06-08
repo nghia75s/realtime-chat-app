@@ -17,6 +17,7 @@ import {
   createPoll,
   votePoll,
   addPollOption,
+  sendCallLogMessage,
 } from "../controllers/message.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
@@ -34,6 +35,7 @@ router.post("/pin/:messageId", pinMessage);
 router.get("/:id", getMessagesByUserId);
 router.post("/send/:id", sendMessage);
 router.post("/send-document/:id", sendDocumentMessage);
+router.post("/send-call-log/:id", sendCallLogMessage);
 router.patch("/:id/document-reply", replyDocumentMessage);
 router.put("/:id/recall", recallMessage);
 router.put("/:id/delete", deleteMessage);

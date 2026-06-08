@@ -878,3 +878,38 @@ export const addPollOption = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// POST /api/messages/send-call-log/:id
+export const sendCallLogMessage = async (req, res) => {
+  try {
+    const { id: receiverId } = req.params;
+    const senderId = req.user._id;
+    const { callType, duration, status } = req.body;
+
+    if (!callType || duration === undefined) {
+      return res.status(400).json({ message: "callType and duration are required." });
+    }
+
+    const newMessage = new Message({
+      senderId,
+      receiverId,
+      messageType: "call_log",
+      callPayload: {
+        callType,
+        duration,
+        status: status || "completed",
+      },
+    });
+
+    await newMessage.save();
+    await newMessage.populate("senderId", "fullname profilePicture");
+
+    emitToUser(receiverId.toString(), "newMessage", newMessage);
+    emitToUser(senderId.toString(), "newMessage", newMessage);
+
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error("Error in sendCallLogMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

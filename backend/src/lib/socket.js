@@ -95,6 +95,65 @@ io.on("connection", (socket) => {
     });
   });
 
+  // Call events (WebRTC Signaling & UI Sync)
+  socket.on("call-user", (data) => {
+    const { receiverId, offer, callType } = data;
+    emitToUser(receiverId, "incoming-call", {
+      caller: {
+        _id: socket.userId,
+        fullname: socket.user?.fullname || "Người dùng",
+        profilePicture: socket.user?.profilePicture || "/avatar.png",
+      },
+      offer,
+      callType,
+    });
+  });
+
+  socket.on("answer-call", (data) => {
+    const { callerId, answer } = data;
+    emitToUser(callerId, "call-accepted", {
+      answer,
+    });
+  });
+
+  socket.on("ice-candidate", (data) => {
+    const { targetId, candidate } = data;
+    emitToUser(targetId, "ice-candidate", {
+      candidate,
+      senderId: socket.userId,
+    });
+  });
+
+  socket.on("end-call", (data) => {
+    const { targetId } = data;
+    emitToUser(targetId, "call-ended", {
+      senderId: socket.userId,
+    });
+  });
+
+  socket.on("reject-call", (data) => {
+    const { callerId } = data;
+    emitToUser(callerId, "call-rejected", {
+      senderId: socket.userId,
+    });
+  });
+
+  socket.on("toggle-camera", (data) => {
+    const { targetId, enabled } = data;
+    emitToUser(targetId, "peer-camera-toggled", {
+      enabled,
+      senderId: socket.userId,
+    });
+  });
+
+  socket.on("toggle-mic", (data) => {
+    const { targetId, enabled } = data;
+    emitToUser(targetId, "peer-mic-toggled", {
+      enabled,
+      senderId: socket.userId,
+    });
+  });
+
   // with socket.on we listen for events from clients
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.user.fullname);
