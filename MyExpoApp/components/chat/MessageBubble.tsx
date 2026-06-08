@@ -8,7 +8,7 @@ interface MessageBubbleProps {
   avatar?: string;
 }
 
-export default function MessageBubble({ item, isMe }: MessageBubbleProps) {
+const MessageBubble = ({ item, isMe }: MessageBubbleProps) => {
   // Mock time
   const timeStr = item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:10';
 
@@ -19,7 +19,12 @@ export default function MessageBubble({ item, isMe }: MessageBubbleProps) {
           <Text style={styles.myText}>{item.text}</Text>
           <View style={styles.myTimeContainer}>
             <Text style={styles.myTimeText}>{timeStr}</Text>
-            <Ionicons name="checkmark-done" size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />
+            <Ionicons 
+              name={item.read ? "checkmark-done" : "checkmark"} 
+              size={14} 
+              color={item.read ? "#34D399" : "#E5E7EB"} // Xanh lá nếu đã xem, xám nhạt nếu đã gửi
+              style={{ marginLeft: 4 }} 
+            />
           </View>
         </View>
       </View>
@@ -30,8 +35,10 @@ export default function MessageBubble({ item, isMe }: MessageBubbleProps) {
     <View style={styles.theirWrapper}>
       <View style={[styles.bubble, styles.theirBubble]}>
         <Text style={styles.theirText}>{item.text}</Text>
+        <View style={styles.theirTimeContainer}>
+          <Text style={styles.theirTimeText}>{timeStr}</Text>
+        </View>
       </View>
-      <Text style={styles.theirTimeText}>{timeStr}</Text>
     </View>
   );
 }
@@ -50,20 +57,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    borderRadius: 20,
+    borderRadius: 16,
   },
   myBubble: {
     backgroundColor: '#00A3FF',
-    borderBottomRightRadius: 4,
   },
   theirBubble: {
-    backgroundColor: '#FFFFFF', // Light gray/white
-    borderBottomLeftRadius: 4,
+    backgroundColor: '#FFFFFF',
+    alignSelf: 'flex-start',
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
-    elevation: 1, // Slight elevation to separate from background
+    elevation: 1,
   },
   myText: {
     fontSize: 16,
@@ -86,10 +92,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(255,255,255,0.8)',
   },
+  theirTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   theirTimeText: {
-    fontSize: 12,
-    color: '#A0A0A0',
-    marginTop: 6,
-    marginLeft: 4,
+    fontSize: 11,
+    color: '#9CA3AF',
   },
 });
+
+export default React.memo(MessageBubble);

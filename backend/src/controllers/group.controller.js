@@ -52,13 +52,22 @@ export const getMyGroups = async (req, res) => {
             .populate("createdBy", "-password")
             .sort({ updatedAt: -1 });
 
-        // Lấy lastMessage cho từng nhóm
+        // Lấy lastMessage và số tin nhắn chưa đọc cho từng nhóm
         const groupsWithLastMessage = await Promise.all(groups.map(async (group) => {
             const lastMsg = await GroupMessage.findOne({ groupId: group._id }).sort({ createdAt: -1 }).populate("senderId", "fullname");
+            
+            // Tính số lượng tin nhắn chưa đọc
+            const unreadCount = await GroupMessage.countDocuments({
+                groupId: group._id,
+                senderId: { $ne: userId },
+                readBy: { $nin: [userId] }
+            });
+
             return {
                 ...group.toObject(),
                 lastMessage: lastMsg || null,
-                lastMessageDate: lastMsg ? lastMsg.createdAt : group.createdAt
+                lastMessageDate: lastMsg ? lastMsg.createdAt : group.createdAt,
+                unreadCount: unreadCount
             };
         }));
 
@@ -139,12 +148,9 @@ export const sendGroupMessage = async (req, res) => {
             });
         }
 
-        // Emit the new group message to all group members except the sender
+        // Emit the new group message to all group members (including sender for syncing)
         group.members.forEach(memberId => {
-            const memberIdStr = memberId.toString();
-            if (memberIdStr !== senderId.toString()) {
-                emitToUser(memberIdStr, "newGroupMessage", populatedMessage);
-            }
+            emitToUser(memberId.toString(), "newGroupMessage", populatedMessage);
         });
 
         res.status(201).json(populatedMessage);
@@ -181,13 +187,22 @@ export const getGroupMessages = async (req, res) => {
             select: "text image senderId",
             populate: { path: "senderId", select: "fullname" }
           })
+          .populate("readBy", "profilePicture")
           .sort({ createdAt: 1 });
 
         // Đánh dấu đã đọc: thêm userId vào readBy của các tin chưa đọc (không phải do mình gửi)
-        await GroupMessage.updateMany(
-            { groupId, senderId: { $ne: userId }, readBy: { $nin: [userId] } },
-            { $addToSet: { readBy: userId } }
-        );
+        const unreadCount = await GroupMessage.countDocuments({ groupId, senderId: { $ne: userId }, readBy: { $nin: [userId] } });
+        
+        if (unreadCount > 0) {
+            await GroupMessage.updateMany(
+                { groupId, senderId: { $ne: userId }, readBy: { $nin: [userId] } },
+                { $addToSet: { readBy: userId } }
+            );
+            // Thông báo cập nhật readBy cho các thành viên trong nhóm
+            group.members.forEach(memberId => {
+                emitToUser(memberId.toString(), "groupMessagesRead", { groupId, readerId: userId });
+            });
+        }
 
         res.status(200).json(messages);
     } catch (error) {

@@ -59,6 +59,7 @@ export default function ChatScreen() {
 
     return () => {
       socket.off("newMessage", handleNewMessage);
+      queryClient.invalidateQueries({ queryKey: ['chatPartners'] });
     };
   }, [socket, id, queryClient]);
 
@@ -110,6 +111,10 @@ export default function ChatScreen() {
             contentContainerStyle={styles.listContent}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            removeClippedSubviews={Platform.OS === 'android'}
           />
         )}
 

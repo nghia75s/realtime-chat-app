@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = 'http://192.168.2.160:3000';
+const SOCKET_URL = 'http://192.168.100.45:3000';
 
 interface User {
   _id: string;
@@ -10,6 +10,10 @@ interface User {
   email: string;
   profilePicture?: string;
   role?: string;
+  department?: string;
+  phoneNumber?: string;
+  gender?: string;
+  dateOfBirth?: string;
 }
 
 interface AuthState {
@@ -57,6 +61,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     newSocket.on('getOnlineUsers', (userIds: string[]) => {
       set({ onlineUsers: userIds });
+    });
+
+    newSocket.on('profileUpdated', (updatedUser: User) => {
+      const currentUser = get().user;
+      if (currentUser && updatedUser._id === currentUser._id) {
+        set({ user: { ...currentUser, ...updatedUser } });
+      }
+    });
+
+    newSocket.on('roleUpdated', ({ newRole }: { oldRole: string, newRole: string }) => {
+      const currentUser = get().user;
+      if (currentUser) {
+        set({ user: { ...currentUser, role: newRole } });
+      }
+    });
+
+    newSocket.on('departmentUpdated', ({ department }: { department: string }) => {
+      const currentUser = get().user;
+      if (currentUser) {
+        set({ user: { ...currentUser, department } });
+      }
     });
   },
   disconnectSocket: () => {
