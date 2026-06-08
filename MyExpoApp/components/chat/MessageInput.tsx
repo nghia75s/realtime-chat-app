@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Modal, Text, TouchableWithoutFeedback } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, Modal, Text, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
 
 interface MessageInputProps {
   text: string;
@@ -11,6 +13,14 @@ interface MessageInputProps {
 
 export default function MessageInput({ text, setText, onSend, isPending }: MessageInputProps) {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => { showSub.remove(); hideSub.remove(); }
+  }, []);
 
   const isTyping = text.trim().length > 0;
 
@@ -35,7 +45,7 @@ export default function MessageInput({ text, setText, onSend, isPending }: Messa
                     </View>
                     <Text style={styles.menuItemText}>Camera</Text>
                   </TouchableOpacity>
-                  
+
                   {/* Record */}
                   <TouchableOpacity style={styles.menuItem} onPress={() => setShowAttachMenu(false)}>
                     <View style={[styles.menuIconCircle, { backgroundColor: '#00A3FF' }]}>
@@ -61,7 +71,7 @@ export default function MessageInput({ text, setText, onSend, isPending }: Messa
                     </View>
                     <Text style={styles.menuItemText}>Gallery</Text>
                   </TouchableOpacity>
-                  
+
                   {/* Location */}
                   <TouchableOpacity style={styles.menuItem} onPress={() => setShowAttachMenu(false)}>
                     <View style={[styles.menuIconCircle, { backgroundColor: '#34C759' }]}>
@@ -87,11 +97,14 @@ export default function MessageInput({ text, setText, onSend, isPending }: Messa
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {
+      paddingBottom: isKeyboardVisible ? 0 : Math.max(insets.bottom, 12),
+      marginBottom: isKeyboardVisible ? 5 : 0
+    }]}>
       {renderAttachMenu()}
-      
-      <TouchableOpacity 
-        style={styles.plusBtn} 
+
+      <TouchableOpacity
+        style={styles.plusBtn}
         onPress={() => setShowAttachMenu(true)}
       >
         <Ionicons name="add" size={32} color="#00A3FF" />
@@ -102,11 +115,11 @@ export default function MessageInput({ text, setText, onSend, isPending }: Messa
           style={styles.input}
           value={text}
           onChangeText={setText}
-          placeholder="Type a message ..."
+          placeholder=""
           placeholderTextColor="#A0A0A0"
           multiline
         />
-        
+
         {/* Only show inner icons when NOT typing */}
         {!isTyping && (
           <View style={styles.innerIcons}>
@@ -120,15 +133,15 @@ export default function MessageInput({ text, setText, onSend, isPending }: Messa
         )}
       </View>
 
-      <TouchableOpacity 
-        style={[styles.actionBtn, isPending && styles.actionBtnDisabled]} 
+      <TouchableOpacity
+        style={[styles.actionBtn, isPending && styles.actionBtnDisabled]}
         onPress={handleSend}
         disabled={isPending}
       >
-        <Ionicons 
-          name={isTyping ? "send" : "mic"} 
-          size={isTyping ? 20 : 24} 
-          color="#FFF" 
+        <Ionicons
+          name={isTyping ? "send" : "mic"}
+          size={isTyping ? 20 : 24}
+          color="#FFF"
           style={isTyping ? { marginLeft: 4 } : {}}
         />
       </TouchableOpacity>

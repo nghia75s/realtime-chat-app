@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useAdminStore, DEPARTMENTS } from "@/store/useAdminStore";
-import { mockDocs, type DocCategory } from "./data";
+import { mockDocs, type DocCategory } from "./data.ts";
 import { Folder, Image as ImageIcon, Link as LinkIcon, FileText, File, Download, ExternalLink, ChevronLeft, Search } from "lucide-react";
 
 export default function DocumentPage() {
@@ -203,8 +203,8 @@ export default function DocumentPage() {
                               <td className="px-4 py-4 text-sm">
                                 {activeCategory === "forms" ? (
                                   <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${doc.status === "approved" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                                      doc.status === "rejected" ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                                        "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                    doc.status === "rejected" ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                                      "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
                                     }`}>
                                     {doc.status === "approved" ? "Đã duyệt" : doc.status === "rejected" ? "Từ chối" : "Đang chờ"}
                                   </span>

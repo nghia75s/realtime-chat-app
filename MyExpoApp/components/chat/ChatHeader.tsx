@@ -7,9 +7,10 @@ interface ChatHeaderProps {
   name: string;
   avatar: string;
   phone?: string;
+  onProfilePress?: () => void;
 }
 
-export default function ChatHeader({ name, avatar, phone }: ChatHeaderProps) {
+export default function ChatHeader({ name, avatar, phone, onProfilePress }: ChatHeaderProps) {
   const router = useRouter();
 
   return (
@@ -23,10 +24,10 @@ export default function ChatHeader({ name, avatar, phone }: ChatHeaderProps) {
         style={styles.avatar} 
       />
       
-      <View style={styles.profileInfo}>
+      <TouchableOpacity style={styles.profileInfo} onPress={onProfilePress}>
         <Text style={styles.nameText} numberOfLines={1}>{name || 'Người dùng'}</Text>
         <Text style={styles.phoneText}>{phone || '(+84) 99 9999 9999'}</Text>
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.actionBtn}>

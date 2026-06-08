@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Modal, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getChatPartnersAPI } from '@/api/message.api';
 import ChatListItem from '@/components/chat/ChatListItem';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
-  const { user } = useAuthStore();
+  const { user, socket } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -17,6 +18,20 @@ export default function HomeScreen() {
     queryKey: ['chatPartners'],
     queryFn: getChatPartnersAPI,
   });
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = () => {
+      // Tự động tải lại danh sách cuộc trò chuyện khi có tin nhắn mới
+      queryClient.invalidateQueries({ queryKey: ['chatPartners'] });
+    };
+
+    socket.on("newMessage", handleNewMessage);
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+    };
+  }, [socket, queryClient]);
 
   // Filter chat partners based on search query
   const filteredPartners = chatPartners?.filter((partner: any) => {
