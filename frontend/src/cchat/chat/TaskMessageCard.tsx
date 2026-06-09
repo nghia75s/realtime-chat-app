@@ -114,22 +114,14 @@ export function TaskMessageCard({
           )}
 
           {/* Card chính */}
-          <div
-            className={`
-              relative w-[340px] rounded-2xl border shadow-sm overflow-hidden flex flex-col
-              ${isMe
-                ? "bg-[#0d2a5c] border-[#0052cc]/50"
-                : "bg-white dark:bg-[#1a1c1f] border-zinc-200 dark:border-[#2b2d31]"
-              }
-            `}
-          >
+          <div className="relative w-[340px] rounded-2xl border shadow-sm overflow-hidden flex flex-col bg-white dark:bg-[#1a1c1f] border-zinc-200 dark:border-[#2b2d31]">
             {/* Header */}
-            <div className={`px-4 py-3 flex items-center gap-3 border-b ${isMe ? "border-[#0052cc]/30 bg-[#0a1f48]" : "border-zinc-200 dark:border-[#2b2d31] bg-zinc-50 dark:bg-[#16181b]"}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isMe ? "bg-[#0052cc]/30" : "bg-zinc-200 dark:bg-[#2b2d31]"}`}>
+            <div className="px-4 py-3 flex items-center gap-3 border-b border-zinc-200 dark:border-[#2b2d31] bg-zinc-50 dark:bg-[#16181b]">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-zinc-200 dark:bg-[#2b2d31]">
                 <ClipboardList className="w-4 h-4 text-[#0052cc]" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-[14px] font-bold truncate leading-tight ${isMe ? "text-white" : "text-zinc-900 dark:text-white"}`}>
+                <p className="text-[14px] font-bold truncate leading-tight text-zinc-900 dark:text-white">
                   Giao việc mới
                 </p>
                 <p className="text-[11px] text-chat-muted mt-0.5">Hệ thống quản lý công việc</p>
@@ -148,7 +140,7 @@ export function TaskMessageCard({
                 <Calendar className="w-4 h-4 text-chat-muted shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <span className="text-chat-muted text-[12px] block mb-0.5">Hạn chót</span>
-                  <span className={`font-medium ${isMe ? "text-white" : "text-zinc-800 dark:text-white"}`}>{dateStr}</span>
+                  <span className="font-medium text-zinc-800 dark:text-white">{dateStr}</span>
                 </div>
               </div>
 
@@ -158,7 +150,7 @@ export function TaskMessageCard({
                   <AlignLeft className="w-4 h-4 text-chat-muted shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <span className="text-chat-muted text-[12px] block mb-0.5">Mô tả</span>
-                    <span className={`line-clamp-2 ${isMe ? "text-white" : "text-zinc-800 dark:text-white"}`}>{payload.description}</span>
+                    <span className="line-clamp-2 text-zinc-800 dark:text-white">{payload.description}</span>
                   </div>
                 </div>
               )}
@@ -169,7 +161,7 @@ export function TaskMessageCard({
                   <UserCircle2 className="w-4 h-4 text-chat-muted shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <span className="text-chat-muted text-[12px] block mb-0.5">Ghi chú riêng</span>
-                    <span className={`italic ${isMe ? "text-white" : "text-zinc-800 dark:text-white"}`}>{payload.note}</span>
+                    <span className="italic text-zinc-800 dark:text-white">{payload.note}</span>
                   </div>
                 </div>
               )}
