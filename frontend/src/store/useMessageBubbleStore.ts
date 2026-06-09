@@ -45,10 +45,15 @@ export interface Message {
   isRecalled?: boolean;
   isForwarded?: boolean;
   replyTo?: any;
-  messageType?: "text" | "file" | "document" | "task_assignment" | "system";
+  messageType?: "text" | "file" | "document" | "task_assignment" | "system" | "call_log";
   documentPayload?: DocumentPayload;
   documentReplyData?: DocumentReplyData;
   taskPayload?: TaskPayload;
+  callPayload?: {
+    callType: "voice" | "video";
+    duration: number;
+    status?: "completed" | "rejected" | "missed" | "cancelled";
+  };
   createdAt: string;
 }
 
