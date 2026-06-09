@@ -3,6 +3,8 @@ import { Phone, Video, PanelRightClose, PanelRightOpen, Smile, Send, Paperclip, 
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useMessageActionStore } from "@/store/useMessageActionStore"
+import { useCallStore } from "@/store/useCallStore"
+import { useGroupCallStore } from "@/store/useGroupCallStore"
 import NoChatHistoryPlaceholder from "@/components/ui/NoChatHistoryPlaceholder"
 import MessageLoadingSkeleton from "@/components/ui/MessageLoadingSkeleton"
 import { MessageBubble } from "./MessageBubble"
@@ -65,11 +67,21 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
     getPinnedMessages,
     pinMessage
   } = useChatStore()
+  const { initiateCall } = useCallStore()
+  const { initiateGroupCall } = useGroupCallStore()
   useEffect(() => {
     const handleClick = () => setContextMenu(null)
     window.addEventListener("click", handleClick)
     return () => window.removeEventListener("click", handleClick)
   }, [])
+
+  const handleCall = (type: "audio" | "video") => {
+    if (isGroup) {
+      initiateGroupCall(selectedUser, type);
+    } else {
+      initiateCall(selectedUser, type);
+    }
+  };
 
   const { onlineUsers, authUser } = useAuthStore()
 
@@ -481,10 +493,10 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Cuộc gọi thoại">
+          <button onClick={() => handleCall('audio')} className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Cuộc gọi thoại">
             <Phone className="w-5 h-5" />
           </button>
-          <button className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Cuộc gọi video">
+          <button onClick={() => handleCall('video')} className="p-2 text-chat-muted hover:bg-chat-hover rounded-md transition-colors" title="Cuộc gọi video">
             <Video className="w-5 h-5" />
           </button>
           <div className="w-[1px] h-6 bg-chat-border mx-1"></div>
@@ -863,7 +875,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`flex flex-col border-t border-chat-border relative ${isDragActive ? 'bg-chat-hover/40' : ''}`}
+                  className={`flex items-end gap-3 border-t border-chat-border relative ${isDragActive ? 'bg-chat-hover/40' : ''}`}
                 >
                   <textarea
                     ref={textareaRef}
@@ -894,14 +906,35 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
                     rows={1}
                     disabled={!canSendMessage}
                   />
-                  <div className="flex items-center gap-2 pr-3 pb-0 shrink-0">
-                    <div className="flex items-center gap-1 rounded-2xl border border-chat-border bg-chat-hover px-2 py-1">
+                  <div className="flex flex-col items-end gap-2 pr-3 pb-2">
+                    <div className="flex items-center gap-1 rounded-2xl">
+                      <div ref={emojiPickerRef} className="relative">
+                        <button
+                          type="button"
+                          title="Emoji (Ctrl+E)"
+                          onClick={() => setShowEmojiPicker(p => !p)}
+                          className={`p-2 rounded-lg transition-colors hover:bg-chat-hover ${showEmojiPicker ? 'text-[#ebaa16]' : 'text-chat-muted'}`}
+                        >
+                          <Smile className="w-5 h-5" />
+                        </button>
+                        {showEmojiPicker && (
+                          <div className="absolute bottom-full right-0 mb-2 z-50">
+                            <EmojiPickerPanel
+                              onEmojiSelect={(emoji) => {
+                                setText(prev => prev + emoji)
+                                setShowEmojiPicker(false)
+                                textareaRef.current?.focus()
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                       <button
                         type="button"
                         disabled={isSending || !canSendMessage}
                         onClick={handleSendLike}
                         title="Gửi like"
-                        className="p-1.5 text-[#ebaa16] hover:bg-chat-hover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-2 text-[#ebaa16] hover:bg-chat-hover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <ThumbsUp className="w-5 h-5" />
                       </button>
@@ -909,32 +942,10 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
                         name="send"
                         type="submit"
                         disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage}
-                        className="p-1.5 text-[#0052cc] hover:bg-chat-hover rounded-lg transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                        className="p-2 text-[#0052cc] hover:bg-chat-hover rounded-lg transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                       >
                         <Send className="w-5 h-5" />
                       </button>
-                    </div>
-                    {/* Emoji Button + Picker */}
-                    <div ref={emojiPickerRef} className="relative">
-                      <button
-                        type="button"
-                        title="Emoji (Ctrl+E)"
-                        onClick={() => setShowEmojiPicker(p => !p)}
-                        className={`p-1.5 rounded-md transition-colors hover:bg-chat-hover ${showEmojiPicker ? 'text-[#ebaa16]' : 'text-chat-muted'}`}
-                      >
-                        <Smile className="w-5 h-5" />
-                      </button>
-                      {showEmojiPicker && (
-                        <div className="absolute bottom-10 right-0 z-50">
-                          <EmojiPickerPanel
-                            onEmojiSelect={(emoji) => {
-                              setText(prev => prev + emoji)
-                              setShowEmojiPicker(false)
-                              textareaRef.current?.focus()
-                            }}
-                          />
-                        </div>
-                      )}
                     </div>
                   </div>
                 </form>
