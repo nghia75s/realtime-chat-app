@@ -45,9 +45,11 @@ const convertEmoticons = (t: string) => t.replace(EMOTICON_RE, m => EMOTICON_MAP
 interface MainChatAreaProps {
   isRightSidebarOpen: boolean;
   onToggleRightSidebar: () => void;
+  requestedImageMessageId?: string | null;
+  onConsumeRequestedImage?: () => void;
 }
 
-export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainChatAreaProps) {
+export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, requestedImageMessageId, onConsumeRequestedImage }: MainChatAreaProps) {
   const {
     selectedUser,
     getMessagesByUserId,
@@ -133,6 +135,15 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       setDidDrag(false)
     }
   }
+
+  const requestedImageRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!requestedImageMessageId || requestedImageMessageId === requestedImageRef.current) return
+    requestedImageRef.current = requestedImageMessageId
+    openImageModal(requestedImageMessageId)
+    onConsumeRequestedImage?.()
+  }, [requestedImageMessageId, onConsumeRequestedImage])
 
   const closeImageModal = () => {
     setImageModalIndex(null)
@@ -357,6 +368,66 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
       setImagePreview(null);
     };
     reader.readAsDataURL(file);
+  }
+
+  const [isDragActive, setIsDragActive] = useState(false)
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!canSendMessage) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.kind !== "file") continue;
+      const file = item.getAsFile();
+      if (!file) continue;
+
+      e.preventDefault();
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string);
+          setFileAttachment(null);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFileAttachment({ file, data: "" });
+        setImagePreview(null);
+      }
+      break;
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!canSendMessage) return;
+    setIsDragActive(true);
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsDragActive(false);
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsDragActive(false);
+    if (!canSendMessage) return;
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+        setFileAttachment(null);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFileAttachment({ file, data: "" });
+      setImagePreview(null);
+    }
   }
 
   const removeImage = () => {
@@ -787,15 +858,25 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                   </div>
                 )}
 
-                <form onSubmit={handleSendMessage} className="flex flex-row items-end pb-3">
+                <form
+                  onSubmit={handleSendMessage}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`flex flex-col border-t border-chat-border relative ${isDragActive ? 'bg-chat-hover/40' : ''}`}
+                >
                   <textarea
                     ref={textareaRef}
                     value={text}
+                    onPaste={handlePaste}
                     onChange={(e) => {
                       const val = e.target.value
                       if (val.endsWith(' ')) {
                         const converted = convertEmoticons(val)
-                        if (converted !== val) { setText(converted); return }
+                        if (converted !== val) {
+                          setText(converted)
+                          return
+                        }
                       }
                       setText(val)
                     }}
@@ -813,7 +894,26 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                     rows={1}
                     disabled={!canSendMessage}
                   />
-                  <div className="flex items-center gap-1 pr-3 pb-0 shrink-0">
+                  <div className="flex items-center gap-2 pr-3 pb-0 shrink-0">
+                    <div className="flex items-center gap-1 rounded-2xl border border-chat-border bg-chat-hover px-2 py-1">
+                      <button
+                        type="button"
+                        disabled={isSending || !canSendMessage}
+                        onClick={handleSendLike}
+                        title="Gửi like"
+                        className="p-1.5 text-[#ebaa16] hover:bg-chat-hover rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ThumbsUp className="w-5 h-5" />
+                      </button>
+                      <button
+                        name="send"
+                        type="submit"
+                        disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage}
+                        className="p-1.5 text-[#0052cc] hover:bg-chat-hover rounded-lg transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
                     {/* Emoji Button + Picker */}
                     <div ref={emojiPickerRef} className="relative">
                       <button
@@ -836,18 +936,6 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar }: MainC
                         </div>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      disabled={isSending || !canSendMessage}
-                      onClick={handleSendLike}
-                      title="Gửi like"
-                      className="p-1.5 text-[#ebaa16] hover:bg-chat-hover rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <ThumbsUp className="w-5 h-5" />
-                    </button>
-                    <button name="send" type="submit" disabled={(!text.trim() && !imagePreview && !fileAttachment) || isSending || !canSendMessage} className="p-1.5 text-[#0052cc] hover:bg-chat-hover rounded-md transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed">
-                      <Send className="w-5 h-5" />
-                    </button>
                   </div>
                 </form>
               </div>

@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Bell, ShieldAlert, ChevronRight, FileText, Pin, Users, LogOut, PenBox, Settings, AlertTriangle, Trash2 } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { Bell, BellOff, ShieldAlert, ChevronRight, FileText, Pin, Users, LogOut, PenBox, Settings, AlertTriangle, Trash2, Search } from "lucide-react"
 import { ArchivePanel } from "./ArchivePanel"
 import { GroupManagementPanel } from "./GroupManagementPanel"
 import { MembersPanel } from "./MembersPanel"
@@ -13,16 +13,29 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useAuthStore } from "@/store/useAuthStore"
+import { useChatStore } from "@/store/useChatStore"
 
-export function RightInfoPanel({ chat }: { chat: any }) {
-  const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board">("info")
+export function RightInfoPanel({ chat, onRequestOpenImage }: { chat: any; onRequestOpenImage?: (messageId: string) => void }) {
+  const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board" | "search">("info")
   const [archiveTab, setArchiveTab] = useState<"media" | "file" | "link">("media")
   const [isBoardOpen, setIsBoardOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
   const [isEditGroupOpen, setIsEditGroupOpen] = useState(false)
   const [isMuteNotificationOpen, setIsMuteNotificationOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
 
-  const { authUser, pinChat } = useAuthStore()
+  const { authUser, pinChat, muteChat } = useAuthStore()
+  const { messages } = useChatStore()
+
+  useEffect(() => {
+    setView("info")
+    setArchiveTab("media")
+    setIsBoardOpen(false)
+    setIsAddMemberOpen(false)
+    setIsEditGroupOpen(false)
+    setIsMuteNotificationOpen(false)
+    setSearchQuery("")
+  }, [chat?._id])
 
   const openArchive = (tab: "media" | "file" | "link") => {
     setArchiveTab(tab)
@@ -44,12 +57,59 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
   const isPinned = authUser?.pinnedChats?.includes(chat._id)
 
+  const isMuted = useMemo(() => {
+    return authUser?.mutedChats?.some((m: any) => {
+      if (m.chatId !== chat._id) return false
+      if (!m.mutedUntil) return true
+      return new Date(m.mutedUntil) > new Date()
+    })
+  }, [authUser?.mutedChats, chat._id])
+
+  const handleToggleNotifications = async () => {
+    if (isMuted) {
+      await muteChat(chat._id)
+    } else {
+      setIsMuteNotificationOpen(true)
+    }
+  }
+
+  const filteredMessages = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return []
+
+    return (messages || []).filter((msg: any) => {
+      const text = [
+        msg.text,
+        msg.file?.name,
+        msg.senderId?.fullname,
+        msg.messageType === "document" ? msg.templateName || msg.documentName : "",
+        msg.messageType === "task_assignment" ? msg.taskTitle || msg.text : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+
+      return text.includes(query)
+    })
+  }, [messages, searchQuery])
+
+  const handleScrollToMessage = (msgId: string) => {
+    const el = document.getElementById(`message-${msgId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      el.classList.add("bg-chat-hover/50", "transition-colors", "duration-500", "rounded-lg")
+      setTimeout(() => {
+        el.classList.remove("bg-chat-hover/50")
+      }, 2000)
+    }
+  }
+
   const handlePinChat = () => {
     pinChat(chat._id)
   }
 
   if (view === "archive") {
-    return <ArchivePanel initialTab={archiveTab} onBack={() => setView("info")} />
+    return <ArchivePanel initialTab={archiveTab} onBack={() => setView("info")} onMediaClick={onRequestOpenImage} />
   }
 
   if (view === "management") {
@@ -78,6 +138,58 @@ export function RightInfoPanel({ chat }: { chat: any }) {
     return <GroupBoardPanel chat={chat} onBack={() => setView("info")} />
   }
 
+  if (view === "search") {
+    return (
+      <div className="flex w-[340px] shrink-0 flex-col bg-chat-sidebar border-l border-chat-border h-full overflow-hidden text-chat-text">
+        <div className="flex h-[65px] items-center justify-between border-b border-chat-border px-4 py-[14px] shrink-0 font-medium text-[16px] text-chat-text shadow-sm z-10">
+          <button onClick={() => { setView("info"); setSearchQuery("") }} className="text-chat-muted hover:text-chat-text transition-colors">
+            <ChevronRight className="h-5 w-5 rotate-180" />
+          </button>
+          <span>Tìm tin nhắn</span>
+          <div className="w-5" />
+        </div>
+
+        <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar px-4 py-4">
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-chat-muted" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm theo nội dung hoặc tên người gửi"
+                className="w-full rounded-2xl border border-chat-border bg-chat-bg py-3 pl-10 pr-4 text-chat-text outline-none transition-colors focus:border-chat-active focus:ring-2 focus:ring-chat-active/20"
+              />
+            </div>
+          </div>
+
+          {searchQuery.trim() === "" ? (
+            <div className="text-chat-muted text-sm">Nhập từ khóa để tìm tin nhắn trong hội thoại.</div>
+          ) : filteredMessages.length === 0 ? (
+            <div className="text-chat-muted text-sm">Không tìm thấy tin nhắn phù hợp.</div>
+          ) : (
+            <div className="space-y-3">
+              {filteredMessages.map((msg: any) => (
+                <button
+                  key={msg._id}
+                  onClick={() => handleScrollToMessage(msg._id)}
+                  className="w-full rounded-xl border border-chat-border bg-chat-hover p-3 text-left transition hover:border-chat-active hover:bg-chat-active/10"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-semibold text-chat-text truncate">{msg.senderId?.fullname || (isGroup ? "Người dùng" : chat.fullname)}</span>
+                    <span className="text-[12px] text-chat-muted">{new Date(msg.createdAt).toLocaleString()}</span>
+                  </div>
+                  <p className="mt-2 text-[14px] text-chat-text line-clamp-2">
+                    {msg.text || msg.file?.name || (msg.messageType === "document" ? "Tin nhắn tài liệu" : "Tin nhắn")}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex w-[340px] shrink-0 flex-col bg-chat-sidebar border-l border-chat-border h-full overflow-hidden text-chat-text">
       {/* Header */}
@@ -102,11 +214,18 @@ export function RightInfoPanel({ chat }: { chat: any }) {
 
             {/* Quick Actions - 4 Buttons for Groups, 2 for personal */}
             <div className="flex items-start justify-center gap-4 w-full">
-              <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-14" onClick={() => setIsMuteNotificationOpen(true)}>
+              <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-14" onClick={handleToggleNotifications}>
                 <div className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-chat-hover text-chat-text transition-colors group-hover:bg-chat-active/20 group-hover:text-[#7c3aed]">
-                  <Bell className="h-[18px] w-[18px]" />
+                  {isMuted ? <BellOff className="h-[18px] w-[18px]" /> : <Bell className="h-[18px] w-[18px]" />}
                 </div>
-                <span className="text-[12px] text-chat-text text-center leading-tight">Tắt thông báo</span>
+                <span className="text-[12px] text-chat-text text-center leading-tight">{isMuted ? "Mở thông báo" : "Tắt thông báo"}</span>
+              </div>
+
+              <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-14" onClick={() => setView("search") }>
+                <div className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-chat-hover text-chat-text transition-colors group-hover:bg-chat-active/20 group-hover:text-[#7c3aed]">
+                  <Search className="h-[18px] w-[18px]" />
+                </div>
+                <span className="text-[12px] text-chat-text text-center leading-tight">Tìm tin nhắn</span>
               </div>
 
               <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-14" onClick={handlePinChat}>
