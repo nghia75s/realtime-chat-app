@@ -14,11 +14,11 @@ const validateDeadline = (deadline) => {
   const taskDeadline = new Date(deadline);
   const now = new Date();
   const maxDeadline = new Date();
-  maxDeadline.setFullYear(maxDeadline.getFullYear() + 100);
+  maxDeadline.setFullYear(maxDeadline.getFullYear() + 10);
 
   if (isNaN(taskDeadline.getTime())) return "Deadline không hợp lệ";
   if (taskDeadline <= now) return "Deadline phải là thời điểm trong tương lai";
-  if (taskDeadline > maxDeadline) return "Deadline không được vượt quá 100 năm kể từ hôm nay";
+  if (taskDeadline > maxDeadline) return "Deadline không được vượt quá 10 năm kể từ hôm nay";
   return null; // OK
 };
 

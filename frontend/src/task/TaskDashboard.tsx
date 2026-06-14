@@ -3,6 +3,7 @@ import { Search, Filter, Calendar, Plus, Clock, CheckCircle2, XCircle, PieChart 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import type { TaskItem } from "@/store/useTaskStore"
 import { useAuthStore } from "@/store/useAuthStore"
+import { TaskStatisticsModal } from "./TaskStatisticsModal"
 
 interface TaskDashboardProps {
   role: "manager" | "employee";
@@ -14,6 +15,7 @@ interface TaskDashboardProps {
 export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskDashboardProps) {
   const { authUser } = useAuthStore();
   const [filterStr, setFilterStr] = useState("");
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   const displayedTasks = tasks.filter(t => {
     // Role filter
@@ -67,14 +69,23 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
           </button>
         </div>
 
-        {(authUser?.permissions?.editTasks || authUser?.permissions?.viewAdmin) && (
+        <div className="flex items-center gap-3">
           <button
-            onClick={onOpenCreate}
-            className="flex items-center gap-2 bg-[#0052cc] hover:bg-[#0052cc]/90 text-white px-4 py-2 rounded-md text-[14px] font-medium transition-colors"
+            onClick={() => setShowStatsModal(true)}
+            className="flex items-center gap-2 bg-chat-sidebar hover:bg-chat-hover text-[#0052cc] border border-[#0052cc]/30 px-4 py-2 rounded-md text-[14px] font-medium transition-colors"
           >
-            <Plus className="w-4 h-4" /> Tạo Task mới
+            <PieChartIcon className="w-4 h-4" /> Thống kê
           </button>
-        )}
+          
+          {(authUser?.permissions?.editTasks || authUser?.permissions?.viewAdmin) && (
+            <button
+              onClick={onOpenCreate}
+              className="flex items-center gap-2 bg-[#0052cc] hover:bg-[#0052cc]/90 text-white px-4 py-2 rounded-md text-[14px] font-medium transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Tạo Task mới
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats Chart Section */}
@@ -180,6 +191,14 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
           )}
         </div>
       </div>
+
+      {showStatsModal && (
+        <TaskStatisticsModal
+          tasks={tasks}
+          role={role}
+          onClose={() => setShowStatsModal(false)}
+        />
+      )}
     </div>
   )
 }
