@@ -214,9 +214,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             set({ isMessagesLoading: false })
         }
     },
+
     sendMessage: async (messageData) => {
         const { selectedUser, messages, chats } = get()
         try {
+            // gọi API
             const data = await chatService.sendMessage(selectedUser._id, messageData);
             set({ messages: messages.concat(data) })
             set({ chats: pushToTop(chats, selectedUser._id, selectedUser, data) });

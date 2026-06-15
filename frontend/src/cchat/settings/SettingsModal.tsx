@@ -31,7 +31,7 @@ type TabType = "general" | "appearance" | "notifications";
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("general")
   const [language, setLanguage] = useState<"vi" | "en">("vi")
-  const { theme, setTheme } = useThemeStore()
+  const { theme, setTheme } = useThemeStore() // lấy theme hiện tại + hàm đổi theme
 
   const tabs = [
     { id: "general", icon: SettingsIcon, label: "Cài đặt chung" },
@@ -100,18 +100,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <span className="text-[14px] text-chat-text">Thay đổi ngôn ngữ</span>
                         <span className="text-[14px] font-medium text-chat-text flex items-center gap-2">
                           {language === "vi" ? "Tiếng Việt" : "English"}
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                         </span>
                       </div>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[180px] rounded-xl shadow-lg border-chat-border bg-chat-sidebar py-1" align="end">
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => { setLanguage("vi"); settingActions.changeLanguage("vi"); }}
                         className="py-2.5 px-3 cursor-pointer text-[14px] text-chat-text rounded-lg mx-1 focus:bg-chat-hover font-medium"
                       >
                         Tiếng Việt
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={() => { setLanguage("en"); settingActions.changeLanguage("en"); }}
                         className="py-2.5 px-3 cursor-pointer text-[14px] text-chat-text rounded-lg mx-1 focus:bg-chat-hover font-medium"
                       >
@@ -180,20 +180,19 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <h3 className="font-semibold text-[15px] mb-3">Cài đặt giao diện</h3>
 
                   <RadioGroup
-                    value={theme}
+                    value={theme} //hiển thị theme đang chọn
                     onValueChange={(val) => setTheme(val as "light" | "dark")}
                     className="flex items-center gap-6 mt-2"
                   >
                     {/* Sáng */}
                     <div className="flex flex-col items-center gap-4 cursor-pointer group">
                       <Label htmlFor="theme-light" className="cursor-pointer group">
-                        <div className={`w-[100px] h-[70px] bg-white border-2 transition-colors rounded-lg shadow-sm relative flex items-center justify-center mb-2 ${
-                          theme === "light" ? "border-[#7c3aed]" : "border-zinc-200 group-hover:border-[#7c3aed]"
-                        }`}>
+                        <div className={`w-[100px] h-[70px] bg-white border-2 transition-colors rounded-lg shadow-sm relative flex items-center justify-center mb-2 ${theme === "light" ? "border-[#7c3aed]" : "border-zinc-200 group-hover:border-[#7c3aed]"
+                          }`}>
                           <div className="w-[80%] h-[60%] bg-[#ede9fe] rounded border border-purple-200"></div>
                           {theme === "light" && (
                             <div className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-[#7c3aed] flex items-center justify-center">
-                              <svg width="7" height="7" viewBox="0 0 7 7" fill="none"><path d="M1 3.5L2.8 5.5L6 1.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <svg width="7" height="7" viewBox="0 0 7 7" fill="none"><path d="M1 3.5L2.8 5.5L6 1.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                             </div>
                           )}
                         </div>
@@ -207,14 +206,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     {/* Tối */}
                     <div className="flex flex-col items-center gap-4 cursor-pointer group">
                       <Label htmlFor="theme-dark" className="cursor-pointer group">
-                        <div className={`w-[100px] h-[70px] bg-[#1a1c22] border-2 transition-colors rounded-lg shadow-sm relative flex items-center justify-center mb-2 ${
-                          theme === "dark" ? "border-[#7c3aed]" : "border-transparent group-hover:border-[#7c3aed]"
-                        }`}>
+                        <div className={`w-[100px] h-[70px] bg-[#1a1c22] border-2 transition-colors rounded-lg shadow-sm relative flex items-center justify-center mb-2 ${theme === "dark" ? "border-[#7c3aed]" : "border-transparent group-hover:border-[#7c3aed]"
+                          }`}>
                           <div className="w-[80%] h-[60%] bg-zinc-800 rounded border border-zinc-700"></div>
                           <div className="absolute top-3 right-3 w-4 h-3 bg-[#7c3aed] rounded-sm"></div>
                           {theme === "dark" && (
                             <div className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-[#7c3aed] flex items-center justify-center">
-                              <svg width="7" height="7" viewBox="0 0 7 7" fill="none"><path d="M1 3.5L2.8 5.5L6 1.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              <svg width="7" height="7" viewBox="0 0 7 7" fill="none"><path d="M1 3.5L2.8 5.5L6 1.5" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                             </div>
                           )}
                         </div>

@@ -124,22 +124,19 @@ export const useCallStore = create<CallState>((set, get) => {
 
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
-    // Add local tracks to peer connection
     localStream.getTracks().forEach((track) => {
       pc.addTrack(track, localStream);
     });
 
-    // Handle remote track
     pc.ontrack = (event) => {
       console.log("WebRTC: Received remote track", event.streams[0]);
       if (event.streams && event.streams[0]) {
-        // Tạo một MediaStream mới chứa các track từ stream nhận được để đổi reference, giúp Zustand/React nhận diện thay đổi và cập nhật UI
         const newStream = new MediaStream(event.streams[0].getTracks());
         set({ remoteStream: newStream });
       }
     };
 
-    // Lắng nghe và gửi các ứng viên mạng (ICE candidates) của bạn sang cho đối phương qua socket
+
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         console.log("WebRTC: Sending ICE candidate to", peerId);
@@ -199,7 +196,7 @@ export const useCallStore = create<CallState>((set, get) => {
           video: type === "video" ? true : false,
         };
         console.log("📷 getUserMedia constraints:", constraints);
-        
+
         let stream: MediaStream;
         try {
           stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -217,7 +214,7 @@ export const useCallStore = create<CallState>((set, get) => {
             throw mediaErr;
           }
         }
-        
+
         set({ localStream: stream });
         console.log("📡 localStream set. Video tracks:", stream.getVideoTracks().length, "Audio tracks:", stream.getAudioTracks().length);
 
@@ -301,7 +298,7 @@ export const useCallStore = create<CallState>((set, get) => {
           audio: true,
           video: callType === "video" ? true : false,
         };
-        
+
         let stream: MediaStream;
         try {
           stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -317,7 +314,7 @@ export const useCallStore = create<CallState>((set, get) => {
             throw mediaErr;
           }
         }
-        
+
         set({ localStream: stream });
 
         const pc = setupPeerConnection(stream, peerUser._id);
@@ -363,7 +360,7 @@ export const useCallStore = create<CallState>((set, get) => {
     endCall: () => {
       const { peerUser, callStatus } = get();
       const socket = useAuthStore.getState().socket;
-      
+
       // Nếu đang ở trạng thái đổ chuông đi mà gác máy -> nghĩa là tự hủy cuộc gọi
       if (callStatus === "ringing_outgoing") {
         set({ callEndReason: "cancelled" });
@@ -404,7 +401,7 @@ export const useCallStore = create<CallState>((set, get) => {
         const videoTrack = localStream.getVideoTracks()[0];
         if (videoTrack && videoTrack.readyState === "live") {
           videoTrack.enabled = true;
-          set({ 
+          set({
             localCameraEnabled: true,
             callType: "video"
           });
@@ -436,7 +433,7 @@ export const useCallStore = create<CallState>((set, get) => {
           if (!streamToUse) {
             streamToUse = new MediaStream();
           }
-          
+
           // Thêm track camera vào stream cục bộ
           streamToUse.addTrack(newVideoTrack);
           newVideoTrack.enabled = true;
@@ -458,7 +455,7 @@ export const useCallStore = create<CallState>((set, get) => {
           }
 
           // Cập nhật trạng thái
-          set({ 
+          set({
             localCameraEnabled: true,
             callType: "video" // Tự động đổi loại cuộc gọi thành video
           });
