@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { useChatStore } from "@/store/useChatStore"
-import { Search, X, Users } from "lucide-react"
+import { Search, X } from "lucide-react"
 import { toast } from "react-hot-toast"
 
 interface AddGroupMemberModalProps {

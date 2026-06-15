@@ -311,6 +311,13 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                             className={`underline ${isMe ? 'text-blue-200 hover:text-white' : 'text-blue-400 hover:text-blue-300'} transition-colors`}
                             onClick={(e) => {
                               e.preventDefault();
+                              if (href.includes(window.location.origin + "/join/")) {
+                                const inviteCode = href.split("/join/")[1];
+                                if (inviteCode) {
+                                  useChatStore.getState().setJoinModalCode(inviteCode);
+                                  return;
+                                }
+                              }
                               setExternalLink(href);
                             }}
                           >

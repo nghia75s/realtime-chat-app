@@ -84,6 +84,16 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
   const groupItems = selectedGroups.map(id => ({ id, label: groups.find((g: any) => g._id === id)?.name || id, avatar: groups.find((g: any) => g._id === id)?.groupPicture, type: "group" as const }))
   const allSelected = [...assigneeItems, ...groupItems]
 
+  // Calculate all unique users involved (direct assignees + group members)
+  const allNoteUserIds = Array.from(new Set([
+    ...assignees,
+    ...selectedGroups.flatMap(groupId => {
+      const g = groups.find((g: any) => g._id === groupId);
+      if (!g || !g.members) return [];
+      return g.members.map((m: any) => typeof m === 'string' ? m : m._id);
+    })
+  ]));
+
   const hasSelection = assignees.length > 0 || selectedGroups.length > 0
   return (
     <>
@@ -93,7 +103,7 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-chat-border shrink-0">
             <h2 className="text-[18px] font-semibold text-chat-text">Giao việc mới</h2>
-            <button onClick={onClose} className="text-chat-muted hover:text-chat-text p-1 rounded-md hover:bg-chat-hover transition-colors"><X className="w-5 h-5" /></button>
+            <button type="button" onClick={onClose} className="text-chat-muted hover:text-chat-text p-1 rounded-md hover:bg-chat-hover transition-colors"><X className="w-5 h-5" /></button>
           </div>
 
           {/* Form Body */}
@@ -116,13 +126,13 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
                 <input disabled value={authUser?.fullname || "Quản lý"} className="w-full bg-chat-sidebar border border-chat-border rounded-md px-3 py-2.5 text-[14px] text-chat-muted cursor-not-allowed" />
               </div>
               <div className="flex flex-col gap-1.5 flex-1 relative">
-                <label className="text-[13px] font-medium text-[#e1e1e1]">Deadline <span className="text-red-500">*</span></label>
+                <label className="text-[13px] font-medium text-chat-text/90">Deadline <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <div className={`flex items-center justify-between bg-[#131416] border ${deadlineError ? 'border-red-500' : 'border-[#2b2d31] hover:border-[#0052cc]'} rounded-md px-3 py-2.5 cursor-pointer transition-colors`}>
-                    <span className={`text-[14px] ${deadline ? "text-white" : "text-[#a1a1a1]"}`}>
+                  <div className={`flex items-center justify-between bg-chat-main border ${deadlineError ? 'border-red-500' : 'border-chat-border hover:border-[#0052cc]'} rounded-md px-3 py-2.5 cursor-pointer transition-colors`}>
+                    <span className={`text-[14px] ${deadline ? "text-chat-text" : "text-chat-muted"}`}>
                       {deadline ? formatShortDate(deadline) : "Chọn thời hạn"}
                     </span>
-                    <Calendar className="w-4 h-4 text-[#a1a1a1]" />
+                    <Calendar className="w-4 h-4 text-chat-muted" />
                   </div>
                   <input
                     required
@@ -168,13 +178,13 @@ export function CreateTaskModal({ onClose }: CreateTaskModalProps) {
             </div>
 
             {/* Per-assignee Notes */}
-            {assignees.length > 0 && (
+            {allNoteUserIds.length > 0 && (
               <div className="flex flex-col gap-2">
                 <label className="text-[13px] font-medium text-chat-text/90 flex items-center gap-1.5">
                   <StickyNote className="w-4 h-4 text-[#0052cc]" /> Ghi chú riêng cho từng người <span className="text-chat-muted font-normal">(tùy chọn)</span>
                 </label>
                 <div className="flex flex-col gap-2">
-                  {assignees.map(id => {
+                  {allNoteUserIds.map(id => {
                     const contact = allContacts.find(c => c._id === id)
                     if (!contact) return null
                     const isOpen = expandedNotes.has(id)

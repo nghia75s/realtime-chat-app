@@ -23,16 +23,12 @@ export function TaskHeader() {
     fetchNotifications()
     subscribeToNotifications()
     return () => unsubscribeFromNotifications()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Zustand functions được memo ổn định, dùng [] tránh chạy lại vô ńí gây duplicate listener
+  }, [])
 
-  // Bug #7 retry: Nếu lần đầu socket chưa sẵn sàng (authUser thay đổi sau login),
-  // gọi lại subscribe để đảm bảo realtime notification luôn được kết nối
   useEffect(() => {
     if (!isSubscribed) {
       subscribeToNotifications()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser, isSubscribed])
 
   useEffect(() => {

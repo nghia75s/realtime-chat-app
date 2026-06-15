@@ -272,7 +272,18 @@ export default function DocumentPage() {
                                 </div>
                               </td>
                               <td className="px-4 py-4 text-sm text-chat-muted">{doc.date}</td>
-                              <td className="px-4 py-4 text-sm text-chat-muted">{doc.size || "-"}</td>
+                              <td className="px-4 py-4 text-sm">
+                                {activeCategory === "forms" ? (
+                                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${doc.status === "approved" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                                    doc.status === "rejected" ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                                      "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                    }`}>
+                                    {doc.status === "approved" ? "Đã duyệt" : doc.status === "rejected" ? "Từ chối" : "Đang chờ"}
+                                  </span>
+                                ) : (
+                                  <span className="text-chat-muted">{doc.size || "-"}</span>
+                                )}
+                              </td>
                               <td className="px-4 py-4 text-right">
                                 {doc.url ? (
                                   <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex p-2 text-chat-muted hover:text-[#0052cc] transition-colors rounded">

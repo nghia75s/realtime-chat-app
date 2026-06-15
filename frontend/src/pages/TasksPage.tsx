@@ -3,10 +3,10 @@ import { useSearchParams } from "react-router-dom";
 import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useAuthStore } from "@/store/useAuthStore";
-import { TaskHeader } from "./TaskHeader";
-import { TaskDashboard } from "./TaskDashboard";
-import { CreateTaskModal } from "./CreateTaskModal";
-import { TaskDetail } from "./TaskDetail";
+import { TaskHeader } from "../task/TaskHeader";
+import { TaskDashboard } from "../task/TaskDashboard";
+import { CreateTaskModal } from "../task/CreateTaskModal";
+import { TaskDetail } from "../task/TaskDetail";
 
 export default function TasksPage() {
   const { authUser } = useAuthStore();

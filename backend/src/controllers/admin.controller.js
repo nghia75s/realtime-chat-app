@@ -172,6 +172,8 @@ export const updateUserDepartment = async (req, res) => {
     user.department = department;
     await user.save();
 
+    emitToUser(id, "departmentUpdated", { department });
+
     res.status(200).json({ message: "Cập nhật phòng ban thành công", user });
   } catch (error) {
     console.error("Error in updateUserDepartment:", error.message);

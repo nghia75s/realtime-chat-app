@@ -20,6 +20,10 @@
   },
   "homepage": "https://github.com/nghia75s/realtime-chat-app#readme",
   "dependencies": {
-    "expo": "^56.0.8"
+    "expo": "^56.0.9"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.14",
+    "typescript": "~6.0.3"
   }
 }

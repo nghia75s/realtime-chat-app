@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar"
 import {
-  FileText, CheckCircle2, UserPlus, X, Search, Send, Loader2
+  FileText, CheckCircle2, UserPlus, X, Send, Loader2
 } from "lucide-react"
-import { Templates, type DocumentTemplate } from "./templates/data"
+import { Templates, type DocumentTemplate } from "@/tools/templates/data"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useChatStore } from "@/store/useChatStore"
 import { toast } from "react-hot-toast"
@@ -42,8 +42,8 @@ function generatePreviewHTML(template: DocumentTemplate, data: Record<string, st
   return html
 }
 
-import { DocumentPreviewPanel } from "./DocumentPreviewPanel"
-import { ReceiverSelectionModal } from "./ReceiverSelectionModal"
+import { DocumentPreviewPanel } from "@/tools/DocumentPreviewPanel"
+import { ReceiverSelectionModal } from "@/tools/ReceiverSelectionModal"
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 

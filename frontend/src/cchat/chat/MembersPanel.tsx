@@ -15,12 +15,13 @@ interface MembersPanelProps {
   chat: any;
   onBack: () => void;
   onAddMember: () => void;
+  initialTab?: "members" | "pending";
 }
 
-export function MembersPanel({ chat, onBack, onAddMember }: MembersPanelProps) {
+export function MembersPanel({ chat, onBack, onAddMember, initialTab = "members" }: MembersPanelProps) {
   const { authUser } = useAuthStore()
   const { removeGroupMember, leaveGroup, setActiveTab, addGroupAdmin, removeGroupAdmin, transferGroupOwner, getPendingMembers, approveMember, rejectMember } = useChatStore()
-  const [panelTab, setPanelTab] = useState<"members" | "pending">("members")
+  const [panelTab, setPanelTab] = useState<"members" | "pending">(initialTab)
   const [pendingMembersList, setPendingMembersList] = useState<any[]>([])
 
   if (!chat || !chat.isGroup) return null;

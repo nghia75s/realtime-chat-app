@@ -40,10 +40,17 @@ export const getMessagesByUserId = async (req, res) => {
     });
 
     // Đánh dấu đã đọc: các tin nhắn người kia gửi cho mình mà chưa đọc
-    await Message.updateMany(
-      { senderId: userToChatId, receiverId: myId, read: false },
-      { $set: { read: true } }
-    );
+    const unreadCount = await Message.countDocuments({ senderId: userToChatId, receiverId: myId, read: false });
+    
+    if (unreadCount > 0) {
+      await Message.updateMany(
+        { senderId: userToChatId, receiverId: myId, read: false },
+        { $set: { read: true } }
+      );
+      // Emit event so UI can instantly drop the unread badge
+      emitToUser(myId.toString(), "messagesRead", { userToChatId });
+      emitToUser(userToChatId.toString(), "messagesRead", { readerId: myId });
+    }
 
     res.status(200).json(messages);
   } catch (error) {
@@ -117,6 +124,7 @@ export const sendMessage = async (req, res) => {
     }
 
     emitToUser(receiverId, "newMessage", newMessage);
+    emitToUser(senderId.toString(), "newMessage", newMessage); // Đồng bộ cho các thiết bị khác của người gửi
 
     res.status(201).json(newMessage);
   } catch (error) {

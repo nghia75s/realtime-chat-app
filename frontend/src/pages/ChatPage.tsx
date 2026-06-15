@@ -5,6 +5,7 @@ import { MainChatArea } from "../cchat/chat/MainChatArea"
 import { RightInfoPanel } from "../cchat/chat/RightInfoPanel"
 import { useChatStore } from "../store/useChatStore"
 import NoConversationPlaceholder from "@/components/ui/NoConversationPlaceholder"
+import { JoinGroupModal } from "../cchat/chat/modals/JoinGroupModal"
 
 export default function ChatPage() {
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false)
@@ -38,6 +39,9 @@ export default function ChatPage() {
       {isRightSidebarOpen && selectedUser && (
         <RightInfoPanel chat={selectedUser} onRequestOpenImage={(messageId) => setRequestedImageMessageId(messageId)} />
       )}
+      
+      {/* Join Group Modal */}
+      <JoinGroupModal />
     </div>
   )
 }
