@@ -12,7 +12,7 @@ const getInitialTheme = (): Theme => {
   if (saved === "light" || saved === "dark") return saved
   return "dark"
 }
-
+// áp dụng theme lên giao diện
 const applyTheme = (theme: Theme) => {
   const html = document.documentElement
   if (theme === "dark") {
@@ -23,10 +23,10 @@ const applyTheme = (theme: Theme) => {
   localStorage.setItem("app-theme", theme)
 }
 
-// Apply theme ngay khi store được khởi tạo
+// chạy ngay lập tức khi file được import lần đầu
 const initialTheme = getInitialTheme()
 applyTheme(initialTheme)
-
+// store chính cho các component khác sử dụng
 export const useThemeStore = create<ThemeStore>((set) => ({
   theme: initialTheme,
   setTheme: (theme: Theme) => {

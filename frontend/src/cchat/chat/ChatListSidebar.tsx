@@ -18,38 +18,38 @@ import {
 
 const renderLastMessagePreview = (msg: any, isGroup: boolean, authUser: any, partnerName: string) => {
   if (!msg) return null;
-  
+
   const senderId = typeof msg.senderId === "object" ? msg.senderId?._id : msg.senderId;
   const isMe = senderId?.toString() === authUser?._id?.toString();
-  
+
   const senderPrefix = isMe ? "Bạn: " : (isGroup && msg.senderId?.fullname ? `${msg.senderId.fullname.split(" ").pop()}: ` : "");
-  
+
   if (msg.messageType === "task_assignment") {
     return `${senderPrefix}Có task mới được giao`;
   }
-  
+
   if (msg.messageType === "document") {
-    const senderName = isMe ? "Bạn" : partnerName; 
+    const senderName = isMe ? "Bạn" : partnerName;
     const displayName = isMe ? "Bạn" : (isGroup && msg.senderId?.fullname ? msg.senderId.fullname : senderName);
     return `${displayName} đã gửi đơn từ cần phê duyệt`;
   }
-  
+
   if (msg.messageType === "poll") {
     return `${senderPrefix}[Bình chọn] ${msg.pollPayload?.question || ""}`;
   }
-  
+
   if (msg.messageType === "note") {
     return `${senderPrefix}[Ghi chú] ${msg.notePayload?.content || msg.text || ""}`;
   }
-  
+
   if (msg.image && !msg.text) {
     return `${senderPrefix}[Hình ảnh]`;
   }
-  
+
   if (msg.file && !msg.text) {
     return `${senderPrefix}[File] ${msg.file.name || "Đính kèm"}`;
   }
-  
+
   return `${senderPrefix}${msg.text || ""}`;
 };
 
@@ -135,10 +135,10 @@ export function ChatListSidebar() {
               className="w-full rounded-md bg-chat-main py-[6px] pl-[30px] pr-3 text-[14px] text-chat-text outline-none placeholder:text-chat-muted focus:ring-1 focus:ring-[#0052cc] transition-all border border-chat-border"
             />
           </div>
-          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-chat-muted hover:bg-chat-hover transition-colors" title="Thêm bạn bè" onClick={() => navigate("/contacts") }>
+          <button className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-chat-muted hover:bg-chat-hover transition-colors" title="Thêm bạn bè" onClick={() => navigate("/contacts")}>
             <UserPlus className="h-[18px] w-[18px]" />
           </button>
-          <button 
+          <button
             onClick={() => setIsCreateGroupOpen(true)}
             className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-md text-chat-muted hover:bg-chat-hover transition-colors" title="Tạo nhóm"
           >
@@ -173,7 +173,7 @@ export function ChatListSidebar() {
 
       {/* Content List */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        
+
         {/* Tab Cá Nhân */}
         {activeTab === "personal" && (
           <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -210,19 +210,18 @@ export function ChatListSidebar() {
                     >
                       <div className="relative flex shrink-0">
                         <img src={chat.profilePicture || "/avatar.png"} alt={chat.fullname} className="w-[44px] h-[44px] rounded-full object-cover" />
-                        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-chat-sidebar transition-colors ${
-                          onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-chat-border"
-                        }`}></div>
+                        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-chat-sidebar transition-colors ${onlineUsers.includes(chat._id) ? "bg-green-500" : "bg-chat-border"
+                          }`}></div>
                       </div>
                       <div className="flex-1 min-w-0">
-                         <div className="flex justify-between items-start mb-0.5">
+                        <div className="flex justify-between items-start mb-0.5">
                           <div className="flex items-center flex-1 min-w-0 mr-2">
                             <h4 className={`font-semibold text-[15px] truncate ${unreadChats.includes(chat._id) ? "text-chat-text" : "text-chat-text/90"}`}>{chat.fullname}</h4>
                             {isPinned && <Pin className="h-3 w-3 text-[#1877F2] fill-current ml-2 shrink-0" />}
                             {isMuted && <span className="text-[11px] text-chat-muted ml-1.5 shrink-0" title="Đã tắt thông báo">🔕</span>}
                             {unreadChats.includes(chat._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
                           </div>
-                          
+
                           <div className="shrink-0 mt-0.5 relative flex items-center justify-end h-5 min-w-[50px]">
                             {timeStr && (
                               <span className={`text-[12px] text-chat-muted ${openMenuId === chat._id ? "hidden" : "group-hover:hidden"}`}>
@@ -329,7 +328,7 @@ export function ChatListSidebar() {
                             {isMuted && <span className="text-[11px] text-chat-muted ml-1.5 shrink-0" title="Đã tắt thông báo">🔕</span>}
                             {unreadGroups.includes(group._id) && <span className="w-2.5 h-2.5 bg-red-500 rounded-full ml-2 shrink-0"></span>}
                           </div>
-                          
+
                           <div className="shrink-0 mt-0.5 relative flex items-center justify-end h-5 min-w-[50px]">
                             {timeStr && (
                               <span className={`text-[12px] text-chat-muted ${openMenuId === group._id ? "hidden" : "group-hover:hidden"}`}>
