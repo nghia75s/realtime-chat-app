@@ -35,6 +35,21 @@ export const authService = {
     return res.data;
   },
 
+  verifyForgotOtp: async (email: string, otp: string) => {
+    const res = await axiosInstance.post("/auth/verify-forgot-otp", { email, otp });
+    return res.data;
+  },
+
+  resetPassword: async (email: string, resetToken: string, newPassword: string) => {
+    const res = await axiosInstance.post("/auth/reset-password", { email, resetToken, newPassword });
+    return res.data;
+  },
+  
+  sendResetLink: async (email: string) => {
+    const res = await axiosInstance.post("/auth/send-reset-link", { email });
+    return res.data;
+  },
+
   updateProfile: async (data: any) => {
     const res = await axiosInstance.put("/auth/update-profile", data);
     return res.data;

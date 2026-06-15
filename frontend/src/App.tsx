@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import LoginPage from "./pages/LoginPage"
 import SignupPage from "./pages/SignupPage"
+import ResetPasswordPage from "./pages/ResetPasswordPage"
 import ChatPage from "./pages/ChatPage"
 import { useAuthStore } from "./store/useAuthStore"
 import { useChatStore } from "./store/useChatStore"
@@ -55,6 +56,8 @@ function App() {
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={authUser ? <Navigate to="/chat" /> : <LoginPage />} />
         <Route path="/signup" element={authUser ? <Navigate to="/chat" /> : <SignupPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        
         <Route path="/chat" element={authUser ? (authUser.permissions?.viewChat !== false ? <ChatPage /> : <Navigate to="/login" />) : <Navigate to="/login" />} />
         <Route path="/contacts" element={authUser ? (authUser.permissions?.viewContacts ? <ContactsPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
         <Route path="/todo" element={authUser ? (authUser.permissions?.viewTasks ? <TasksPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />

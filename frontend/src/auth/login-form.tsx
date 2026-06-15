@@ -2,18 +2,14 @@ import React, { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Eye, EyeOff, Loader2, ArrowLeft, LoaderIcon, MessageCircle, ShieldCheck, Check, X } from "lucide-react"
+import { Eye, EyeOff, Loader2, ArrowLeft, LoaderIcon, MessageCircle } from "lucide-react"
+import toast from 'react-hot-toast'
 import { useAuthStore } from "@/store/useAuthStore"
+import { authService } from "@/services/authService"
 
-type ViewState = "login" | "2fa" | "forgot-password" | "reset-password"
-type OtpType = "signup" | "login"
+type ViewState = "login" | "2fa" | "forgot-password"
+type OtpType = "signup" | "login" | "forgot"
 
 export function LoginForm({
   className,
@@ -38,12 +34,6 @@ export function LoginForm({
   // Forgot Password States
   const [forgotEmail, setForgotEmail] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
-
-  // Reset Password States
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -134,21 +124,22 @@ export function LoginForm({
       setError("Vui lòng nhập địa chỉ email hợp lệ.")
       return
     }
-
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Send reset link email
+      await authService.sendResetLink(forgotEmail)
+      setForgotEmail(forgotEmail)
+      toast.success("Liên kết đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra email.")
+      setSuccessMessage("Liên kết đặt lại mật khẩu đã được gửi tới email của bạn.")
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        setError("Email chưa được đăng ký")
+      } else {
+        setError(error?.response?.data?.message || "Không thể gửi liên kết đặt lại. Vui lòng thử lại sau.")
+      }
+    } finally {
       setIsLoading(false)
-      setSuccessMessage("Xác nhận email thành công! Đang chuyển hướng...")
-      // Chuyển sang view đặt lại mật khẩu sau 1.5s
-      setTimeout(() => {
-        setSuccessMessage("")
-        setError("")
-        setNewPassword("")
-        setConfirmPassword("")
-        setView("reset-password")
-      }, 1500)
-    }, 1000)
+    }
   }
 
   return (
@@ -406,166 +397,37 @@ export function LoginForm({
             </form>
           )}
 
-          {view === "reset-password" && (
-            <form onSubmit={(e) => {
-              e.preventDefault()
-              setError("")
-              setSuccessMessage("")
-
-              if (!newPassword) {
-                setError("Vui lòng nhập mật khẩu mới.")
-                return
-              }
-              if (newPassword.length < 6) {
-                setError("Mật khẩu phải có ít nhất 6 ký tự.")
-                return
-              }
-              if (newPassword !== confirmPassword) {
-                setError("Mật khẩu xác nhận không khớp.")
-                return
-              }
-
-              setIsLoading(true)
-              // Simulate API call
-              setTimeout(() => {
-                setIsLoading(false)
-                setSuccessMessage("Đặt lại mật khẩu thành công!")
-                setTimeout(() => {
-                  setSuccessMessage("")
-                  setNewPassword("")
-                  setConfirmPassword("")
-                  setForgotEmail("")
-                  setView("login")
-                }, 2000)
-              }, 1000)
-            }} className="w-full">
+          {view === "forgot-password" && (
+            <form onSubmit={handleForgotSubmit} className="w-full">
               <div className="flex flex-col gap-5">
                 <div className="flex flex-col items-center gap-2 text-center mb-4">
                   {/* Overlapping logo speech bubbles */}
                   <div className="relative w-12 h-10 mb-2">
                     <div className="absolute top-0 left-0 w-7 h-7 rounded-full bg-[#38bdf8]/90 flex items-center justify-center shadow-[0_2px_10px_rgba(56,189,248,0.3)]">
-                      <ShieldCheck className="w-4 h-4 text-white" />
+                      <MessageCircle className="w-4 h-4 text-white" />
                     </div>
                     <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-[#6366f1]/90 flex items-center justify-center shadow-[0_2px_10px_rgba(99,102,241,0.3)]">
-                      <ShieldCheck className="w-4 h-4 text-white" />
+                      <MessageCircle className="w-4 h-4 text-white" />
                     </div>
                   </div>
-                  <h1 className="text-2xl font-bold text-white">Đặt lại mật khẩu</h1>
+                  <h1 className="text-2xl font-bold text-white">Khôi phục quyền truy cập</h1>
                   <p className="text-[14px] text-zinc-400 text-balance">
-                    Tạo mật khẩu mới cho tài khoản <span className="text-[#38bdf8] font-medium">{forgotEmail}</span>
+                    Nhập địa chỉ email của bạn để nhận liên kết đặt lại mật khẩu
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  {/* Mật khẩu mới */}
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="new-password" className="text-[14px] font-normal text-zinc-400">Mật khẩu mới</label>
-                    <div className="relative">
-                      <Input
-                        id="new-password"
-                        type={showNewPassword ? "text" : "password"}
-                        placeholder="Nhập mật khẩu mới"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        disabled={isLoading || successMessage !== ""}
-                        className={cn("bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 pl-3 pr-10 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full", error && !newPassword ? "border-red-500/50" : "")}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-                      >
-                        {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-
-                    {/* Password strength indicator */}
-                    {newPassword && (() => {
-                      const hasMinLength = newPassword.length >= 6;
-                      const hasUppercase = /[A-Z]/.test(newPassword);
-                      const hasNumber = /[0-9]/.test(newPassword);
-                      const hasSpecial = /[^A-Za-z0-9]/.test(newPassword);
-                      const score = [hasMinLength, hasUppercase, hasNumber, hasSpecial].filter(Boolean).length;
-                      const strengthLabel = score <= 1 ? "Yếu" : score === 2 ? "Trung bình" : score === 3 ? "Mạnh" : "Rất mạnh";
-                      const strengthColor = score <= 1 ? "bg-red-500" : score === 2 ? "bg-yellow-500" : score === 3 ? "bg-blue-500" : "bg-emerald-500";
-                      const strengthTextColor = score <= 1 ? "text-red-400" : score === 2 ? "text-yellow-400" : score === 3 ? "text-blue-400" : "text-emerald-400";
-
-                      return (
-                        <div className="mt-2 flex flex-col gap-2">
-                          {/* Strength bar */}
-                          <div className="flex gap-1.5">
-                            {[1, 2, 3, 4].map((level) => (
-                              <div
-                                key={level}
-                                className={cn(
-                                  "h-1.5 flex-1 rounded-full transition-all duration-300",
-                                  score >= level ? strengthColor : "bg-white/10"
-                                )}
-                              />
-                            ))}
-                          </div>
-                          <span className={cn("text-[12px] font-medium", strengthTextColor)}>{strengthLabel}</span>
-
-                          {/* Criteria checklist */}
-                          <div className="flex flex-col gap-1 mt-1">
-                            {[
-                              { ok: hasMinLength, label: "Ít nhất 6 ký tự" },
-                              { ok: hasUppercase, label: "Có chữ hoa (A-Z)" },
-                              { ok: hasNumber, label: "Có chữ số (0-9)" },
-                              { ok: hasSpecial, label: "Có ký tự đặc biệt (!@#...)" },
-                            ].map((rule) => (
-                              <div key={rule.label} className="flex items-center gap-1.5">
-                                {rule.ok ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : (
-                                  <X className="w-3.5 h-3.5 text-zinc-500" />
-                                )}
-                                <span className={cn("text-[12px]", rule.ok ? "text-emerald-400" : "text-zinc-500")}>{rule.label}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Xác nhận mật khẩu */}
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="confirm-password" className="text-[14px] font-normal text-zinc-400">Xác nhận mật khẩu</label>
-                    <div className="relative">
-                      <Input
-                        id="confirm-password"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Nhập lại mật khẩu mới"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        disabled={isLoading || successMessage !== ""}
-                        className={cn("bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 pl-3 pr-10 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full", confirmPassword && confirmPassword !== newPassword ? "border-red-500/50" : confirmPassword && confirmPassword === newPassword ? "border-emerald-500/50" : "")}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200"
-                      >
-                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                    {/* Match indicator */}
-                    {confirmPassword && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {confirmPassword === newPassword ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="text-[12px] text-emerald-400">Mật khẩu khớp</span>
-                          </>
-                        ) : (
-                          <>
-                            <X className="w-3.5 h-3.5 text-red-400" />
-                            <span className="text-[12px] text-red-400">Mật khẩu không khớp</span>
-                          </>
-                        )}
-                      </div>
-                    )}
+                    <label htmlFor="forgot-email" className="text-[14px] font-normal text-zinc-400">Địa chỉ Email</label>
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      placeholder="m@example.com"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      disabled={isLoading || successMessage !== ""}
+                      className={cn("bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 px-3 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full", error ? "border-red-500/50" : "")}
+                    />
                   </div>
                 </div>
 
@@ -585,7 +447,7 @@ export function LoginForm({
                     disabled={isLoading || successMessage !== ""}
                     className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-normal text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
                   >
-                    {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Đặt lại mật khẩu"}
+                    {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Gửi liên kết khôi phục"}
                   </Button>
 
                   <button
@@ -596,8 +458,6 @@ export function LoginForm({
                       setView("login")
                       setError("")
                       setSuccessMessage("")
-                      setNewPassword("")
-                      setConfirmPassword("")
                     }}
                   >
                     <ArrowLeft className="h-3.5 w-3.5" /> Quay lại đăng nhập

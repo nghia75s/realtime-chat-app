@@ -61,3 +61,35 @@ export const sendOtpEmail = async (email, otpCode, type = "email verification") 
     throw new Error("Không thể gửi email xác thực OTP");
   }
 };
+
+export const sendResetEmail = async (email, resetLink) => {
+  const transporter = createTransporter();
+
+  const mailOptions = {
+    from: `${ENV.EMAIL_FROM_NAME} <${ENV.EMAIL_FROM}>`,
+    to: email,
+    subject: "Yêu cầu đặt lại mật khẩu",
+    text: `Bạn hoặc ai đó đã yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Truy cập liên kết: ${resetLink}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
+        <h2 style="color: #1a73e8;">Yêu cầu đặt lại mật khẩu</h2>
+        <p>Chào bạn,</p>
+        <p>Bạn nhận được email này vì có yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+        <p>Nhấn vào nút bên dưới để đặt lại mật khẩu. Liên kết sẽ hết hạn sau 15 phút.</p>
+        <p style="text-align:center; margin: 20px 0;"><a href="${resetLink}" style="background:#1a73e8;color:white;padding:10px 18px;border-radius:6px;text-decoration:none;">Đặt lại mật khẩu</a></p>
+        <p>Nếu bạn không yêu cầu điều này, bạn có thể bỏ qua email này.</p>
+        <hr />
+        <p style="font-size: 14px; color: #666;">Nếu bạn gặp sự cố, vui lòng liên hệ bộ phận hỗ trợ của chúng tôi.</p>
+      </div>
+    `,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Reset email sent:", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Error sending reset email:", error);
+    throw new Error("Không thể gửi email đặt lại mật khẩu");
+  }
+};

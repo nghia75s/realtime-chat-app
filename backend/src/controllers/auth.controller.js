@@ -1,9 +1,11 @@
-import { sendOtpEmail } from "../emails/emailHandlers.js";
+import { sendOtpEmail, sendResetEmail } from "../emails/emailHandlers.js";
 import { generateToken, generateOtpCode, generateOtpExpiry } from "../lib/utils.js";
 import User from "../models/User.js";
 import Role from "../models/Role.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
+import crypto from "crypto";
+import { ENV } from "../lib/env.js";
 
 export const signup = async (req, res) => {
   const { fullname, email, password } = req.body;
@@ -168,6 +170,49 @@ export const sendotp = async (req, res) => {
   }
 };
 
+export const sendResetLink = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email là bắt buộc" });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Định dạng email không hợp lệ" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Email chưa được đăng ký" });
+    }
+
+    // generate reset token
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpiry = resetExpiry;
+    await user.save();
+
+    // Build a short server-side reset URL that redirects to the frontend.
+    const serverBase = ENV.SERVER_URL || `${req.protocol}://${req.get("host")}`;
+    const resetLink = `${serverBase.replace(/\/$/,"")}/api/auth/reset/${resetToken}`;
+
+    try {
+      await sendResetEmail(email, resetLink);
+      res.status(200).json({ message: "Liên kết đặt lại mật khẩu đã được gửi tới email của bạn." });
+    } catch (emailError) {
+      console.error("Failed to send reset email:", emailError);
+      res.status(500).json({ message: "Không thể gửi email đặt lại mật khẩu vào lúc này. Vui lòng thử lại sau." });
+    }
+  } catch (error) {
+    console.error("Error in sendResetLink controller:", error);
+    res.status(500).json({ message: "Không thể xử lý yêu cầu đặt lại mật khẩu" });
+  }
+};
+
 export const verifyotp = async (req, res) => {
   const { email, otp } = req.body;
 
@@ -222,6 +267,120 @@ export const verifyotp = async (req, res) => {
   } catch (error) {
     console.error("Error in verifyotp controller:", error);
     res.status(500).json({ message: "Không thể xác thực mã OTP" });
+  }
+};
+
+// Verify OTP for forgot-password flow and issue a short-lived reset token
+export const verifyForgotOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Email và mã OTP là bắt buộc" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Thông tin không hợp lệ" });
+    }
+
+    if (!user.otp || !user.otpExpiry) {
+      return res.status(400).json({ message: "Vui lòng yêu cầu gửi mã OTP trước" });
+    }
+
+    if (new Date() > user.otpExpiry) {
+      return res.status(400).json({ message: "Mã OTP đã hết hạn" });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Mã OTP không chính xác" });
+    }
+
+    // Clear existing OTP
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+
+    // Create reset token
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    const resetExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpiry = resetExpiry;
+
+    await user.save();
+
+    res.status(200).json({ message: "OTP hợp lệ", resetToken });
+  } catch (error) {
+    console.error("Error in verifyForgotOtp controller:", error);
+    res.status(500).json({ message: "Không thể xác thực mã OTP" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { email, resetToken, newPassword } = req.body;
+
+  if (!email || !resetToken || !newPassword) {
+    return res.status(400).json({ message: "Email, token và mật khẩu mới là bắt buộc" });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: "Mật khẩu phải có ít nhất 6 ký tự" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Thông tin không hợp lệ" });
+
+    if (!user.resetPasswordToken || !user.resetPasswordExpiry) {
+      return res.status(400).json({ message: "Vui lòng thực hiện xác thực mã OTP trước" });
+    }
+
+    if (user.resetPasswordToken !== resetToken) {
+      return res.status(400).json({ message: "Token không hợp lệ" });
+    }
+
+    if (new Date() > user.resetPasswordExpiry) {
+      return res.status(400).json({ message: "Token đã hết hạn" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(newPassword, salt);
+    user.password = hashed;
+
+    // clear reset fields
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiry = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: "Đổi mật khẩu thành công" });
+  } catch (error) {
+    console.error("Error in resetPassword controller:", error);
+    res.status(500).json({ message: "Không thể đổi mật khẩu" });
+  }
+};
+
+// Redirect endpoint: validate token, then redirect to frontend reset page
+export const redirectReset = async (req, res) => {
+  const { token } = req.params;
+
+  if (!token) return res.status(400).send("Token is required");
+
+  try {
+    const user = await User.findOne({ resetPasswordToken: token });
+    if (!user) return res.status(400).send("Invalid or expired token");
+
+    if (new Date() > user.resetPasswordExpiry) {
+      return res.status(400).send("Token đã hết hạn");
+    }
+
+    const clientUrl = ENV.CLIENT_URL || "http://localhost:5173";
+    const redirectTo = `${clientUrl.replace(/\/$/,"")}/reset-password?email=${encodeURIComponent(user.email)}&token=${encodeURIComponent(token)}`;
+
+    return res.redirect(302, redirectTo);
+  } catch (error) {
+    console.error("Error in redirectReset:", error);
+    return res.status(500).send("Server error");
   }
 };
 
