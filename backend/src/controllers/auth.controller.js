@@ -332,7 +332,7 @@ export const resetPassword = async (req, res) => {
     if (!user) return res.status(400).json({ message: "Thông tin không hợp lệ" });
 
     if (!user.resetPasswordToken || !user.resetPasswordExpiry) {
-      return res.status(400).json({ message: "Vui lòng thực hiện xác thực mã OTP trước" });
+      return res.status(400).json({ message: "Liên kết không hợp lệ hoặc đã được sử dụng" });
     }
 
     if (user.resetPasswordToken !== resetToken) {
