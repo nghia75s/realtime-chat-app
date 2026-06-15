@@ -4,6 +4,8 @@ import SignupPage from "./pages/SignupPage"
 import ChatPage from "./pages/ChatPage"
 import { useAuthStore } from "./store/useAuthStore"
 import { useChatStore } from "./store/useChatStore"
+import { useCallStore } from "./store/useCallStore"
+import { useGroupCallStore } from "./store/useGroupCallStore"
 import { useEffect } from "react"
 import PageLoader from "./components/ui/PageLoader"
 import ContactsPage from "./pages/ContactsPage"
@@ -14,6 +16,8 @@ import DocumentPage from "./cloud/DocumentPage"
 import JoinGroupPage from "./pages/JoinGroupPage"
 import GlobalAlerts from "./components/ui/GlobalAlerts"
 import { useThemeStore } from "./store/useThemeStore"
+import { CallOverlay } from "./cchat/chat/call/CallOverlay"
+import { GroupCallOverlay } from "./cchat/chat/call/GroupCallOverlay"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
@@ -29,7 +33,16 @@ function App() {
   useEffect(() => {
     if (authUser) {
       fetchUnreadSummary();
+      useCallStore.getState().subscribeToCalls();
+      useGroupCallStore.getState().subscribeToGroupCalls();
+    } else {
+      useCallStore.getState().unsubscribeFromCalls();
+      useGroupCallStore.getState().unsubscribeFromGroupCalls();
     }
+    return () => {
+      useCallStore.getState().unsubscribeFromCalls();
+      useGroupCallStore.getState().unsubscribeFromGroupCalls();
+    };
   }, [authUser]);
 
   if (isCheckingAuth) {
@@ -51,6 +64,8 @@ function App() {
         <Route path="/admin" element={authUser && authUser.permissions?.viewAdmin ? <AdminPage /> : <Navigate to="/chat" />} />
       </Routes>
       {authUser && <GlobalAlerts />}
+      {authUser && <CallOverlay />}
+      {authUser && <GroupCallOverlay />}
     </BrowserRouter>
   )
 }

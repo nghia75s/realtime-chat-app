@@ -9,6 +9,7 @@ import { JoinGroupModal } from "../cchat/chat/modals/JoinGroupModal"
 
 export default function ChatPage() {
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false)
+  const [requestedImageMessageId, setRequestedImageMessageId] = useState<string | null>(null)
 
   const { selectedUser } = useChatStore()
 
@@ -26,6 +27,8 @@ export default function ChatPage() {
           <MainChatArea
             isRightSidebarOpen={isRightSidebarOpen}
             onToggleRightSidebar={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+            requestedImageMessageId={requestedImageMessageId}
+            onConsumeRequestedImage={() => setRequestedImageMessageId(null)}
           />
         ) : (
           <NoConversationPlaceholder />
@@ -34,7 +37,7 @@ export default function ChatPage() {
 
       {/* Cột 4: Thông tin hội thoại */}
       {isRightSidebarOpen && selectedUser && (
-        <RightInfoPanel chat={selectedUser} />
+        <RightInfoPanel chat={selectedUser} onRequestOpenImage={(messageId) => setRequestedImageMessageId(messageId)} />
       )}
       
       {/* Join Group Modal */}
