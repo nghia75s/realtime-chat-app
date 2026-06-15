@@ -51,13 +51,8 @@ const messageSchema = new mongoose.Schema(
     // --- Document Message Fields ---
     messageType: {
       type: String,
-      enum: ["text", "file", "document", "task_assignment", "system", "call_log"],
+      enum: ["text", "file", "document", "task_assignment", "system"],
       default: "text",
-    },
-    callPayload: {
-      callType: { type: String, enum: ["voice", "video"] },
-      duration: { type: Number, default: 0 },
-      status: { type: String, enum: ["completed", "rejected", "missed", "cancelled"], default: "completed" },
     },
     documentPayload: {
       templateId: String,

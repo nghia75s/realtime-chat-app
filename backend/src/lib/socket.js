@@ -3,6 +3,7 @@ import http from "http";
 import express from "express";
 import { ENV } from "./env.js";
 import { socketAuthMiddleware } from "../middleware/socket.auth.middleware.js";
+import Group from "../models/Group.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -57,6 +58,21 @@ io.on("connection", (socket) => {
   // io.emit() is used to send events to all connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+  // Automatically join all group rooms the user is a member of
+  Group.find({ members: socket.userId })
+    .then(groups => {
+      groups.forEach(group => {
+        socket.join(`group_${group._id}`);
+        if (!groupSocketMap[group._id]) {
+          groupSocketMap[group._id] = [];
+        }
+        if (!groupSocketMap[group._id].includes(socket.id)) {
+          groupSocketMap[group._id].push(socket.id);
+        }
+      });
+    })
+    .catch(err => console.error("Error joining groups on connect:", err));
+
   // Group chat events
   socket.on("joinGroup", (groupId) => {
     socket.join(`group_${groupId}`);
@@ -95,63 +111,122 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Call events (WebRTC Signaling & UI Sync)
-  socket.on("call-user", (data) => {
-    const { receiverId, offer, callType } = data;
-    emitToUser(receiverId, "incoming-call", {
-      caller: {
-        _id: socket.userId,
-        fullname: socket.user?.fullname || "Người dùng",
-        profilePicture: socket.user?.profilePicture || "/avatar.png",
-      },
-      offer,
-      callType,
-    });
+  // --- CALLING EVENTS ---
+  socket.on("call-request", (data) => {
+    const { receiverId, groupId, type, isGroup } = data;
+    if (isGroup) {
+      socket.to(`group_${groupId}`).emit("incoming-call", {
+        callerInfo: socket.user,
+        groupId,
+        type,
+        isGroup: true
+      });
+    } else {
+      const receiverSocketId = getReceiverSocketId(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("incoming-call", {
+          callerInfo: socket.user,
+          type,
+          isGroup: false
+        });
+      }
+    }
   });
 
-  socket.on("answer-call", (data) => {
-    const { callerId, answer } = data;
-    emitToUser(callerId, "call-accepted", {
-      answer,
-    });
+  socket.on("call-accepted", (data) => {
+    const { callerId, groupId, isGroup } = data;
+    if (isGroup) {
+      socket.to(`group_${groupId}`).emit("call-accepted", {
+        accepterId: socket.userId,
+        isGroup: true,
+        groupId
+      });
+    } else {
+      const callerSocketId = getReceiverSocketId(callerId);
+      if (callerSocketId) {
+        io.to(callerSocketId).emit("call-accepted", {
+          accepterId: socket.userId
+        });
+      }
+    }
   });
 
-  socket.on("ice-candidate", (data) => {
-    const { targetId, candidate } = data;
-    emitToUser(targetId, "ice-candidate", {
-      candidate,
-      senderId: socket.userId,
-    });
+  socket.on("call-rejected", (data) => {
+    const { callerId, groupId, isGroup } = data;
+    if (isGroup) {
+      socket.to(`group_${groupId}`).emit("call-rejected", {
+        rejecterId: socket.userId,
+        isGroup: true,
+        groupId
+      });
+    } else {
+      const callerSocketId = getReceiverSocketId(callerId);
+      if (callerSocketId) {
+        io.to(callerSocketId).emit("call-rejected", {
+          rejecterId: socket.userId
+        });
+      }
+    }
   });
 
-  socket.on("end-call", (data) => {
-    const { targetId } = data;
-    emitToUser(targetId, "call-ended", {
-      senderId: socket.userId,
-    });
+  socket.on("call-ended", (data) => {
+    const { receiverId, groupId, isGroup } = data;
+    if (isGroup) {
+      socket.to(`group_${groupId}`).emit("call-ended", {
+        enderId: socket.userId,
+        isGroup: true,
+        groupId
+      });
+    } else {
+      // Có thể receiverId hoặc callerId, nên dùng both broadcast nếu cần, 
+      // nhưng hiện tại báo cho receiverId
+      const receiverSocketId = getReceiverSocketId(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("call-ended", {
+          enderId: socket.userId
+        });
+      }
+    }
   });
 
-  socket.on("reject-call", (data) => {
-    const { callerId } = data;
-    emitToUser(callerId, "call-rejected", {
-      senderId: socket.userId,
-    });
+  // --- WEBRTC SIGNALING ---
+  socket.on("webrtc-offer", (data) => {
+    const { targetId, offer, isGroup, groupId } = data;
+    const targetSocketId = getReceiverSocketId(targetId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("webrtc-offer", {
+        senderId: socket.userId,
+        offer,
+        isGroup,
+        groupId
+      });
+    }
   });
 
-  socket.on("toggle-camera", (data) => {
-    const { targetId, enabled } = data;
-    emitToUser(targetId, "peer-camera-toggled", {
-      enabled,
-      senderId: socket.userId,
-    });
+  socket.on("webrtc-answer", (data) => {
+    const { targetId, answer, isGroup, groupId } = data;
+    const targetSocketId = getReceiverSocketId(targetId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("webrtc-answer", {
+        senderId: socket.userId,
+        answer,
+        isGroup,
+        groupId
+      });
+    }
   });
 
-  socket.on("toggle-mic", (data) => {
-    const { targetId, enabled } = data;
-    emitToUser(targetId, "peer-mic-toggled", {
-      enabled,
-      senderId: socket.userId,
-    });
+  socket.on("webrtc-ice-candidate", (data) => {
+    const { targetId, candidate, isGroup, groupId } = data;
+    const targetSocketId = getReceiverSocketId(targetId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("webrtc-ice-candidate", {
+        senderId: socket.userId,
+        candidate,
+        isGroup,
+        groupId
+      });
+    }
   });
 
   // with socket.on we listen for events from clients

@@ -19,9 +19,10 @@ export default function DocumentPage() {
   const isGlobalAdmin = authUser?.email === "admin@gmail.com" || authUser?.role === "admin";
 
   const managedDept = useMemo(() => {
-    if (isGlobalAdmin) return DEPARTMENTS[5]; // Kỹ thuật
-    const me = users.find(u => u.email === authUser?.email);
-    if (me?.role === "director" || me?.role === "moderator") return me.department;
+    // if (isGlobalAdmin) return DEPARTMENTS[5]; // Kỹ thuật
+    if (authUser?.role === "director" || authUser?.role === "moderator" || authUser?.role === "admin") {
+      return authUser.department || users.find(u => u.email === authUser?.email)?.department || null;
+    }
     return null;
   }, [authUser, isGlobalAdmin, users]);
 

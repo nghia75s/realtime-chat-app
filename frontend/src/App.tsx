@@ -4,6 +4,8 @@ import SignupPage from "./pages/SignupPage"
 import ChatPage from "./pages/ChatPage"
 import { useAuthStore } from "./store/useAuthStore"
 import { useChatStore } from "./store/useChatStore"
+import { useCallStore } from "./store/useCallStore"
+import { useGroupCallStore } from "./store/useGroupCallStore"
 import { useEffect } from "react"
 import PageLoader from "./components/ui/PageLoader"
 import ContactsPage from "./pages/ContactsPage"
@@ -13,25 +15,14 @@ import AdminPage from "./admin/AdminPage"
 import DocumentPage from "./cloud/DocumentPage"
 import GlobalAlerts from "./components/ui/GlobalAlerts"
 import { useThemeStore } from "./store/useThemeStore"
-import ZaloCallModal from "./components/ui/ZaloCallModal"
-import { useCallStore } from "./store/useCallStore"
+import { CallOverlay } from "./cchat/chat/call/CallOverlay"
+import { GroupCallOverlay } from "./cchat/chat/call/GroupCallOverlay"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
-  const socket = useAuthStore((state) => state.socket);
   const { fetchUnreadSummary } = useChatStore();
   // Khởi tạo theme từ localStorage ngay khi App mount
   useThemeStore();
-
-  const { 
-    receiveCall, 
-    handleIncomingAnswer, 
-    handleIncomingIceCandidate, 
-    handleCallEnded, 
-    handleCallRejected,
-    setRemoteCameraEnabled,
-    setRemoteMicEnabled
-  } = useCallStore();
 
   useEffect(() => {
     checkAuth();
@@ -41,51 +32,17 @@ function App() {
   useEffect(() => {
     if (authUser) {
       fetchUnreadSummary();
+      useCallStore.getState().subscribeToCalls();
+      useGroupCallStore.getState().subscribeToGroupCalls();
+    } else {
+      useCallStore.getState().unsubscribeFromCalls();
+      useGroupCallStore.getState().unsubscribeFromGroupCalls();
     }
-  }, [authUser]);
-
-  // Socket call signaling listeners
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.on("incoming-call", ({ caller, offer, callType }) => {
-      receiveCall(caller, offer, callType);
-    });
-
-    socket.on("call-accepted", ({ answer }) => {
-      handleIncomingAnswer(answer);
-    });
-
-    socket.on("ice-candidate", ({ candidate }) => {
-      handleIncomingIceCandidate(candidate);
-    });
-
-    socket.on("call-ended", () => {
-      handleCallEnded();
-    });
-
-    socket.on("call-rejected", () => {
-      handleCallRejected();
-    });
-
-    socket.on("peer-camera-toggled", ({ enabled }) => {
-      setRemoteCameraEnabled(enabled);
-    });
-
-    socket.on("peer-mic-toggled", ({ enabled }) => {
-      setRemoteMicEnabled(enabled);
-    });
-
     return () => {
-      socket.off("incoming-call");
-      socket.off("call-accepted");
-      socket.off("ice-candidate");
-      socket.off("call-ended");
-      socket.off("call-rejected");
-      socket.off("peer-camera-toggled");
-      socket.off("peer-mic-toggled");
+      useCallStore.getState().unsubscribeFromCalls();
+      useGroupCallStore.getState().unsubscribeFromGroupCalls();
     };
-  }, [socket, receiveCall, handleIncomingAnswer, handleIncomingIceCandidate, handleCallEnded, handleCallRejected, setRemoteCameraEnabled, setRemoteMicEnabled]);
+  }, [authUser]);
 
   if (isCheckingAuth) {
     return <PageLoader />
@@ -105,7 +62,8 @@ function App() {
         <Route path="/admin" element={authUser && authUser.permissions?.viewAdmin ? <AdminPage /> : <Navigate to="/chat" />} />
       </Routes>
       {authUser && <GlobalAlerts />}
-      <ZaloCallModal />
+      {authUser && <CallOverlay />}
+      {authUser && <GroupCallOverlay />}
     </BrowserRouter>
   )
 }

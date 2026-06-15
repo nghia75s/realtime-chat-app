@@ -111,8 +111,22 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     isContactsLoading: false,
     isGroupsLoading: false,
     isMessagesLoading: false,
-    unreadChats: JSON.parse(localStorage.getItem("unreadChats") || "[]"),
-    unreadGroups: JSON.parse(localStorage.getItem("unreadGroups") || "[]"),
+    unreadChats: (() => {
+        try {
+            const val = localStorage.getItem("unreadChats");
+            return val && val !== "undefined" ? JSON.parse(val) : [];
+        } catch (e) {
+            return [];
+        }
+    })(),
+    unreadGroups: (() => {
+        try {
+            const val = localStorage.getItem("unreadGroups");
+            return val && val !== "undefined" ? JSON.parse(val) : [];
+        } catch (e) {
+            return [];
+        }
+    })(),
     setActiveTab: (tab) => set({ activeTab: tab }),
     addUnreadChat: (userId) => set((state) => {
         if (!state.unreadChats.includes(userId)) {
