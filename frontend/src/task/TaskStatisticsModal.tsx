@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { X, PieChartIcon, User, TrendingUp, CheckCircle2, Clock, XCircle, Calendar, FileText, ChevronLeft, ChevronRight } from "lucide-react"
+import { X, PieChartIcon, User, TrendingUp, CheckCircle2, Clock, XCircle, Calendar, FileText, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts"
 import type { TaskItem } from "@/store/useTaskStore"
 
@@ -12,7 +12,17 @@ interface TaskStatisticsModalProps {
 export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModalProps) {
   const [empPage, setEmpPage] = useState(1);
   const [taskPage, setTaskPage] = useState(1);
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const ITEMS_PER_PAGE = 5;
+
+  const toggleTaskExpanded = (taskId: string) => {
+    setExpandedTasks(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
 
   // Overall Stats
   const totalTasks = tasks.length;
@@ -311,27 +321,39 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                             </div>
                           </td>
                           <td className="px-5 py-4 align-top">
-                            <div className="flex flex-col gap-3">
-                              {task.assignees.length > 0 ? task.assignees.map((a, i) => {
-                                if (!a || !a.user) return null;
-                                return (
-                                <div key={a.user._id || i} className="flex items-start justify-between bg-chat-main border border-chat-border rounded-md p-2">
-                                  <div className="flex items-center gap-2">
-                                    <img src={a.user.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover" />
-                                    <div className="flex flex-col">
-                                      <span className="text-[13px] font-medium text-chat-text">{a.user.fullname}</span>
-                                      {a.personalNote && <span className="text-[11px] text-chat-muted italic line-clamp-1">Note: {a.personalNote}</span>}
+                            <div className="flex flex-col gap-2">
+                              <button 
+                                onClick={() => toggleTaskExpanded(task._id)}
+                                className="flex items-center gap-1.5 text-[13px] font-medium text-chat-text hover:text-[#0052cc] transition-colors w-fit bg-chat-hover px-2 py-1 rounded-md border border-chat-border"
+                              >
+                                {task.assignees.length} thành viên tham gia 
+                                {expandedTasks.has(task._id) ? <ChevronUp className="w-4 h-4 text-chat-muted" /> : <ChevronDown className="w-4 h-4 text-chat-muted" />}
+                              </button>
+                              
+                              {expandedTasks.has(task._id) && (
+                                <div className="flex flex-col gap-3 mt-1">
+                                  {task.assignees.length > 0 ? task.assignees.map((a, i) => {
+                                    if (!a || !a.user) return null;
+                                    return (
+                                    <div key={a.user._id || i} className="flex items-start justify-between bg-chat-main border border-chat-border rounded-md p-2">
+                                      <div className="flex items-center gap-2">
+                                        <img src={a.user.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover" />
+                                        <div className="flex flex-col">
+                                          <span className="text-[13px] font-medium text-chat-text">{a.user.fullname}</span>
+                                          {a.personalNote && <span className="text-[11px] text-chat-muted italic line-clamp-1">Note: {a.personalNote}</span>}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center shrink-0 ml-2">
+                                        {a.status === "done" && <span className="bg-green-500/10 text-green-500 px-2 py-0.5 rounded text-[11px] font-medium">Đã nộp</span>}
+                                        {a.status === "submitted" && <span className="bg-[#0052cc]/10 text-[#0052cc] px-2 py-0.5 rounded text-[11px] font-medium">Chờ duyệt</span>}
+                                        {a.status === "rejected" && <span className="bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-[11px] font-medium">Làm lại</span>}
+                                        {a.status === "pending" && <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-[11px] font-medium">Đang làm</span>}
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center shrink-0 ml-2">
-                                    {a.status === "done" && <span className="bg-green-500/10 text-green-500 px-2 py-0.5 rounded text-[11px] font-medium">Đã nộp</span>}
-                                    {a.status === "submitted" && <span className="bg-[#0052cc]/10 text-[#0052cc] px-2 py-0.5 rounded text-[11px] font-medium">Chờ duyệt</span>}
-                                    {a.status === "rejected" && <span className="bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-[11px] font-medium">Làm lại</span>}
-                                    {a.status === "pending" && <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-[11px] font-medium">Đang làm</span>}
-                                  </div>
+                                  )}) : (
+                                    <span className="text-[12px] text-chat-muted italic">Không có người nhận</span>
+                                  )}
                                 </div>
-                              )}) : (
-                                <span className="text-[12px] text-chat-muted italic">Không có người nhận</span>
                               )}
                             </div>
                           </td>
