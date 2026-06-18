@@ -357,10 +357,22 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
     }
   }
 
+  const validateFileSize = (file: File) => {
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_SIZE) {
+      toast.error(`File "${file.name}" quá lớn (giới hạn 10MB).`, { duration: 4000 });
+      if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+      if (imageInputRef.current) imageInputRef.current.value = "";
+      return false;
+    }
+    return true;
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
+    if (!validateFileSize(file)) return;
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -373,6 +385,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!validateFileSize(file)) return;
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -393,6 +406,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
       if (item.kind !== "file") continue;
       const file = item.getAsFile();
       if (!file) continue;
+      if (!validateFileSize(file)) return;
 
       e.preventDefault();
       if (file.type.startsWith("image/")) {
@@ -428,6 +442,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
 
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
+    if (!validateFileSize(file)) return;
 
     if (file.type.startsWith("image/")) {
       const reader = new FileReader();
@@ -1037,7 +1052,7 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
                   <img
                     src={imageMessages[imageModalIndex].image}
                     alt={`Ảnh ${imageModalIndex + 1}`}
-                    className="w-full object-contain shadow-2xl"
+                    className="max-w-full max-h-[80vh] object-contain shadow-2xl mx-auto"
                     style={{
                       transform: `translate(${imageOffset.x}px, ${imageOffset.y}px) scale(${imageZoom})`,
                       transition: isPanning ? 'none' : 'transform 0.2s ease',

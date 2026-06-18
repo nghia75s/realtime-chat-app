@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react"
-import { ChevronLeft, Paperclip, Clock, X, Send, Edit2, BarChart2 } from "lucide-react"
+import { ChevronLeft, Paperclip, Clock, X, Send, Edit2, BarChart2, CheckCircle2 } from "lucide-react"
 import type { TaskItem } from "@/store/useTaskStore"
 import { useTaskStore } from "@/store/useTaskStore"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -42,10 +42,16 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
   const [showAssigneesList, setShowAssigneesList] = useState(false);
   const [showProgressPanel, setShowProgressPanel] = useState(false);
 
-  const getStatusBadge = (status: TaskItem['status']) => {
-    switch (status) {
+  const isAssignee = task.assignees.some(a => a.user?._id === authUser?._id);
+  const isOverdue = new Date() > new Date(task.deadline);
+
+  const getStatusBadge = (task: TaskItem) => {
+    if ((task.status === "pending" || task.status === "rejected") && isOverdue) {
+      return <span className="bg-red-500/20 text-red-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><Clock className="w-4 h-4" /> Quá hạn</span>;
+    }
+    switch (task.status) {
       case "done":
-        return <span className="bg-green-500/20 text-green-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><Clock className="w-4 h-4" /> Hoàn thành</span>;
+        return <span className="bg-green-500/20 text-green-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><CheckCircle2 className="w-4 h-4" /> Hoàn thành</span>;
       case "pending":
       default:
         return <span className="bg-amber-500/20 text-amber-500 px-3 py-1.5 rounded-md text-[13px] font-semibold flex items-center gap-1.5 w-max"><Clock className="w-4 h-4" /> Đang chờ</span>;
@@ -80,9 +86,6 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
     setIsEditing(false);
   }
 
-  const isAssignee = task.assignees.some(a => a.user?._id === authUser?._id);
-  const isOverdue = new Date() > new Date(task.deadline);
-
   return (
     <div className="flex-1 flex flex-col bg-chat-main h-full overflow-hidden text-chat-text">
 
@@ -101,7 +104,7 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {getStatusBadge(task.status)}
+            {getStatusBadge(task)}
             <button
               onClick={() => setShowProgressPanel(p => !p)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-semibold border transition-all duration-200 ${showProgressPanel
@@ -149,13 +152,13 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-chat-muted text-[13px]">Deadline</span>
-              <span className={`text-[14px] font-medium px-2 py-1 rounded flex items-center gap-1.5 ${isOverdue && task.status !== 'done'
+              <span className={`text-[14px] font-medium px-2 py-1 rounded flex items-center gap-1.5 ${isOverdue && (task.status === "pending" || task.status === "rejected")
                 ? 'text-red-400 bg-red-500/10 border border-red-500/20'
                 : 'text-[#ebaa16] bg-[#ebaa16]/10'
                 }`}>
-                {isOverdue && task.status !== 'done' && <Clock className="w-3.5 h-3.5" />}
+                {isOverdue && (task.status === "pending" || task.status === "rejected") && <Clock className="w-3.5 h-3.5" />}
                 {new Date(task.deadline).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
-                {isOverdue && task.status !== 'done' && <span className="text-[11px] font-bold">· QUÁ HẠN</span>}
+                {isOverdue && (task.status === "pending" || task.status === "rejected") && <span className="text-[11px] font-bold">· QUÁ HẠN</span>}
               </span>
             </div>
           </div>
@@ -240,7 +243,16 @@ export function TaskDetail({ role, task, onBack }: TaskDetailProps) {
                     rows={2}
                   />
                   <div className="flex items-center justify-between border-t border-chat-border pt-3">
-                    <input type="file" ref={fileInputRef} onChange={(e) => setReportFile(e.target.files?.[0] || null)} className="hidden" />
+                    <input type="file" ref={fileInputRef} onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && file.size > 10 * 1024 * 1024) {
+                        toast.error("File tải lên quá lớn (giới hạn 10MB).", { duration: 4000 });
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                        setReportFile(null);
+                        return;
+                      }
+                      setReportFile(file || null);
+                    }} className="hidden" />
                     <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-[13px] text-chat-muted hover:text-chat-text px-2 py-1 rounded hover:bg-chat-hover transition-colors"><Paperclip className="w-4 h-4" /> Đính kèm file</button>
                     <button type="submit" disabled={!reportText.trim() && !reportFile} className="flex items-center gap-2 text-[13px] font-medium bg-[#0052cc] hover:bg-[#0052cc]/90 text-white px-4 py-2 rounded shadow-sm disabled:opacity-50 transition-colors"><Send className="w-4 h-4" /> Nộp bản thảo</button>
                   </div>

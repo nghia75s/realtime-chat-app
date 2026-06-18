@@ -451,8 +451,18 @@ export const updateGroupSettings = async (req, res) => {
             return res.status(404).json({ message: "Group not found." });
         }
 
-        if (group.createdBy.toString() !== userId.toString() && (!group.admins || !group.admins.some(adminId => adminId.toString() === userId.toString()))) {
+        const isCreator = group.createdBy.toString() === userId.toString();
+        const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+        const canChangeNameAndAvatar = group.settings?.memberPermissions?.changeNameAndAvatar !== false;
+
+        // If trying to change settings, must be creator or admin
+        if (settings && !isCreator && !isAdmin) {
             return res.status(403).json({ message: "Only group creator and admins can update group settings." });
+        }
+
+        // If trying to change name or picture, check canChangeNameAndAvatar
+        if ((name || groupPicture) && !isCreator && !isAdmin && !canChangeNameAndAvatar) {
+            return res.status(403).json({ message: "You don't have permission to change group name and avatar." });
         }
 
         const updateData = {};
@@ -478,6 +488,11 @@ export const updateGroupSettings = async (req, res) => {
             { $set: updateData }, 
             { new: true }
         ).populate("members", "-password").populate("createdBy", "-password");
+
+        // Notify all members
+        updatedGroup.members.forEach(member => {
+            emitToUser(member._id.toString(), "groupUpdated", updatedGroup);
+        });
 
         res.status(200).json(updatedGroup);
     } catch (error) {

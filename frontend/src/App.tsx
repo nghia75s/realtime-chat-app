@@ -19,6 +19,7 @@ import GlobalAlerts from "./components/ui/GlobalAlerts"
 import { useThemeStore } from "./store/useThemeStore"
 import { CallOverlay } from "./cchat/chat/call/CallOverlay"
 import { GroupCallOverlay } from "./cchat/chat/call/GroupCallOverlay"
+import { Toaster } from "react-hot-toast"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
@@ -69,6 +70,7 @@ function App() {
       {authUser && <GlobalAlerts />}
       {authUser && <CallOverlay />}
       {authUser && <GroupCallOverlay />}
+      <Toaster position="top-center" />
     </BrowserRouter>
   )
 }

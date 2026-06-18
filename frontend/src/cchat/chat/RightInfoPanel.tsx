@@ -15,7 +15,7 @@ import {
 import { useAuthStore } from "@/store/useAuthStore"
 import { useChatStore } from "@/store/useChatStore"
 
-export function RightInfoPanel({ chat }: { chat: any }) {
+export function RightInfoPanel({ chat, onRequestOpenImage }: { chat: any; onRequestOpenImage?: (messageId: string) => void }) {
   const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board" | "admins" | "pending_members" | "search">("info")
   const [archiveTab, setArchiveTab] = useState<"media" | "file" | "link">("media")
   const [isBoardOpen, setIsBoardOpen] = useState(false)
@@ -109,7 +109,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
   }
 
   if (view === "archive") {
-    return <ArchivePanel initialTab={archiveTab} onBack={() => setView("info")} onMediaClick={onRequestOpenImage} />
+    return <ArchivePanel initialTab={archiveTab} onBack={() => setView("info")} onMediaClick={onRequestOpenImage} onMessageClick={handleScrollToMessage} isGroup={isGroup} />
   }
 
   if (view === "management") {

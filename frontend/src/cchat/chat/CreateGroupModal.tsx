@@ -30,6 +30,12 @@ export function CreateGroupModal({ isOpen, onClose }: CreateGroupModalProps) {
     if (!file) return
     if (!file.type.startsWith("image/")) return
 
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast.error("Vui lòng chọn ảnh có dung lượng nhỏ hơn 5MB")
+      if (fileInputRef.current) fileInputRef.current.value = ""
+      return
+    }
+
     const reader = new FileReader()
     reader.onloadend = () => setGroupAvatar(reader.result as string)
     reader.readAsDataURL(file)

@@ -97,8 +97,8 @@ export const chatService = {
     return res.data;
   },
 
-  updateGroupSettings: async (groupId: string, settings: any) => {
-    const res = await axiosInstance.put(`groups/groups/${groupId}/settings`, { settings });
+  updateGroupSettings: async (groupId: string, payload: any) => {
+    const res = await axiosInstance.put(`groups/groups/${groupId}/settings`, payload);
     return res.data;
   },
 

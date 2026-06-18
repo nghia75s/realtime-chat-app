@@ -26,19 +26,24 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
   });
 
   const stats = {
-    pending: displayedTasks.filter(t => t.status === "pending").length,
+    pending: displayedTasks.filter(t => t.status === "pending" && new Date() <= new Date(t.deadline)).length,
+    overdue: displayedTasks.filter(t => (t.status === "pending" || t.status === "rejected") && new Date() > new Date(t.deadline)).length,
     done: displayedTasks.filter(t => t.status === "done").length,
-    rejected: displayedTasks.filter(t => (t.status as string) === "rejected").length,
+    rejected: displayedTasks.filter(t => (t.status as string) === "rejected" && new Date() <= new Date(t.deadline)).length,
   };
 
   const chartData = [
     { name: 'Đang chờ', value: stats.pending, color: '#f59e0b' },
+    { name: 'Quá hạn', value: stats.overdue, color: '#f43f5e' },
     { name: 'Hoàn thành', value: stats.done, color: '#10b981' },
     { name: 'Cần làm lại', value: stats.rejected, color: '#ef4444' },
   ].filter(d => d.value > 0);
 
-  const getStatusBadge = (status: TaskItem['status'] | string) => {
-    switch (status) {
+  const getStatusBadge = (task: TaskItem) => {
+    if ((task.status === "pending" || task.status === "rejected") && new Date() > new Date(task.deadline)) {
+      return <span className="bg-red-500/20 text-red-500 px-2 py-1 rounded-[4px] text-[12px] font-semibold flex items-center gap-1 w-max"><Clock className="w-3 h-3" /> Quá hạn</span>;
+    }
+    switch (task.status) {
       case "pending": return <span className="bg-amber-500/20 text-amber-500 px-2 py-1 rounded-[4px] text-[12px] font-semibold flex items-center gap-1 w-max"><Clock className="w-3 h-3" /> Đang chờ</span>;
       case "done": return <span className="bg-green-500/20 text-green-500 px-2 py-1 rounded-[4px] text-[12px] font-semibold flex items-center gap-1 w-max"><CheckCircle2 className="w-3 h-3" /> Hoàn thành</span>;
       case "rejected": return <span className="bg-red-500/20 text-red-500 px-2 py-1 rounded-[4px] text-[12px] font-semibold flex items-center gap-1 w-max"><XCircle className="w-3 h-3" /> Cần làm lại</span>;
@@ -151,7 +156,7 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
                 <h3 className="text-[16px] font-semibold text-chat-text group-hover:text-[#0052cc] transition-colors pr-2 line-clamp-2 leading-tight">
                   {task.title}
                 </h3>
-                {getStatusBadge(task.status)}
+                {getStatusBadge(task)}
               </div>
 
               <div className="text-[14px] text-chat-muted line-clamp-2 mb-4 flex-1">
@@ -176,7 +181,11 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
                   <div className="flex items-center justify-end text-[12px] text-chat-muted">
                     Tạo: {new Date(task.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                   </div>
-                  <div className="flex items-center text-[12px] text-[#ebaa16] font-medium bg-[#ebaa16]/10 px-2 py-1 rounded">
+                  <div className={`flex items-center text-[12px] font-medium px-2 py-1 rounded ${
+                    (task.status === "pending" || task.status === "rejected") && new Date() > new Date(task.deadline)
+                      ? "text-red-500 bg-red-500/10"
+                      : "text-[#ebaa16] bg-[#ebaa16]/10"
+                  }`}>
                     Hạn: {new Date(task.deadline).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                   </div>
                 </div>
