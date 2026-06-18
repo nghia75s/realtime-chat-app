@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Search, UserPlus, Users as GroupIcon, ChevronDown, Pin, MoreHorizontal } from "lucide-react"
+import { Search, UserPlus, Users as GroupIcon, Pin, MoreHorizontal } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
 import { useAuthStore } from "@/store/useAuthStore"
 import UsersLoadingSkeleton from "@/components/ui/UsersLoadingSkeleton"
@@ -163,10 +163,6 @@ export function ChatListSidebar() {
               Nhóm
               {unreadGroups.length > 0 && <span className="absolute top-0 -right-2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_4px_rgba(239,68,68,0.8)]"></span>}
             </button>
-          </div>
-          <div className="flex items-center gap-1 text-chat-muted cursor-pointer hover:text-chat-text pb-2 transition-colors">
-            <span className="text-[13px]">Phân loại</span>
-            <ChevronDown className="h-[14px] w-[14px]" />
           </div>
         </div>
       </div>

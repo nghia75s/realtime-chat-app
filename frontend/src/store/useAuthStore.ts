@@ -164,10 +164,26 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   updateProfile: async (data) => {
     try {
       const resData = await authService.updateProfile(data);
-      set({ authUser: resData });
-      toast.success("Profile updated successfully.");
+      const currentAuthUser = get().authUser;
+      if (currentAuthUser) {
+        set({
+          authUser: {
+            ...currentAuthUser,
+            fullname: resData.fullname,
+            email: resData.email,
+            profilePicture: resData.profilePicture,
+            role: resData.role,
+            department: resData.department,
+            phoneNumber: resData.phoneNumber,
+            age: resData.age,
+            gender: resData.gender,
+            dateOfBirth: resData.dateOfBirth,
+          }
+        });
+      }
+      toast.success("Cập nhật thành công.");
     } catch (error: any) {
-      const message = error?.response?.data?.message || "Profile update failed. Please try again.";
+      const message = error?.response?.data?.message || "Cập nhật thất bại. Vui lòng thử lại.";
       toast.error(message);
     }
   },
