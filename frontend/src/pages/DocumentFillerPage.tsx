@@ -329,6 +329,7 @@ export default function DocumentFillerPage() {
                       type={field.type}
                       value={formData[field.id] || ""}
                       onChange={(e) => handleInputChange(field.id, e.target.value)}
+                      min={field.type === "date" ? new Date().toISOString().split("T")[0] : undefined}
                       className="w-full bg-chat-main border border-chat-border rounded-lg px-4 py-3 text-[14px] text-chat-text outline-none focus:border-[#0052cc] transition-colors [&::-webkit-calendar-picker-indicator]:filter-invert"
                       placeholder={`Nhập ${field.label.toLowerCase()}...`}
                     />

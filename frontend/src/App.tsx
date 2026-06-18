@@ -58,7 +58,7 @@ function App() {
         <Route path="/login" element={authUser ? <Navigate to="/chat" /> : <LoginPage />} />
         <Route path="/signup" element={authUser ? <Navigate to="/chat" /> : <SignupPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        
+
         <Route path="/chat" element={authUser ? (authUser.permissions?.viewChat !== false ? <ChatPage /> : <Navigate to="/login" />) : <Navigate to="/login" />} />
         <Route path="/contacts" element={authUser ? (authUser.permissions?.viewContacts ? <ContactsPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
         <Route path="/todo" element={authUser ? (authUser.permissions?.viewTasks ? <TasksPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />

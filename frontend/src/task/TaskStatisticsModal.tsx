@@ -39,7 +39,7 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
   ].filter(d => d.value > 0);
 
   // Performance Stats (Manager Only)
-  const employeeStats: Record<string, { fullname: string; profilePicture: string; total: number; done: number; pending: number; rejected: number }> = {};
+  const employeeStats: Record<string, { fullname: string; profilePicture: string; total: number; done: number; pending: number; rejected: number; overdue: number }> = {};
 
   if (role === "manager") {
     tasks.forEach(task => {
@@ -54,12 +54,21 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
             done: 0,
             pending: 0,
             rejected: 0,
+            overdue: 0,
           };
         }
         employeeStats[uid].total += 1;
-        if (assignee.status === "done") employeeStats[uid].done += 1;
-        else if (assignee.status === "rejected") employeeStats[uid].rejected += 1;
-        else employeeStats[uid].pending += 1;
+        const isOverdue = new Date() > new Date(task.deadline);
+        
+        if (assignee.status === "done") {
+          employeeStats[uid].done += 1;
+        } else if (isOverdue && (assignee.status === "pending" || assignee.status === "rejected")) {
+          employeeStats[uid].overdue += 1;
+        } else if (assignee.status === "rejected") {
+          employeeStats[uid].rejected += 1;
+        } else {
+          employeeStats[uid].pending += 1;
+        }
       });
     });
   }
@@ -237,7 +246,8 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                         <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                         <Bar dataKey="done" name="Hoàn thành" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
                         <Bar dataKey="pending" name="Đang chờ" stackId="a" fill="#f59e0b" />
-                        <Bar dataKey="rejected" name="Làm lại" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="rejected" name="Làm lại" stackId="a" fill="#ef4444" />
+                        <Bar dataKey="overdue" name="Quá hạn" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -263,21 +273,26 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                             <div style={{ width: `${getPercentage(emp.done, emp.total)}%` }} className="h-full bg-[#10b981]"></div>
                             <div style={{ width: `${getPercentage(emp.pending, emp.total)}%` }} className="h-full bg-[#f59e0b]"></div>
                             <div style={{ width: `${getPercentage(emp.rejected, emp.total)}%` }} className="h-full bg-[#ef4444]"></div>
+                            <div style={{ width: `${getPercentage(emp.overdue, emp.total)}%` }} className="h-full bg-[#f43f5e]"></div>
                           </div>
                         </div>
 
-                        <div className="flex gap-4 w-[200px] justify-end">
-                          <div className="flex flex-col items-center">
+                        <div className="flex gap-4 w-[260px] justify-end">
+                          <div className="flex flex-col items-center w-[50px]">
                             <span className="text-[16px] font-semibold text-[#10b981]">{emp.done}</span>
-                            <span className="text-[11px] text-chat-muted">Đã xong</span>
+                            <span className="text-[11px] text-chat-muted text-center leading-tight">Đã xong</span>
                           </div>
-                          <div className="flex flex-col items-center">
+                          <div className="flex flex-col items-center w-[50px]">
                             <span className="text-[16px] font-semibold text-[#f59e0b]">{emp.pending}</span>
-                            <span className="text-[11px] text-chat-muted">Đang chờ</span>
+                            <span className="text-[11px] text-chat-muted text-center leading-tight">Đang chờ</span>
                           </div>
-                          <div className="flex flex-col items-center">
+                          <div className="flex flex-col items-center w-[50px]">
                             <span className="text-[16px] font-semibold text-[#ef4444]">{emp.rejected}</span>
-                            <span className="text-[11px] text-chat-muted">Làm lại</span>
+                            <span className="text-[11px] text-chat-muted text-center leading-tight">Làm lại</span>
+                          </div>
+                          <div className="flex flex-col items-center w-[50px]">
+                            <span className="text-[16px] font-semibold text-[#f43f5e]">{emp.overdue}</span>
+                            <span className="text-[11px] text-chat-muted text-center leading-tight">Quá hạn</span>
                           </div>
                         </div>
                       </div>
