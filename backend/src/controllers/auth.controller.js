@@ -241,10 +241,15 @@ export const verifyotp = async (req, res) => {
     user.emailVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
+    
+    // Generate new session token
+    const sessionToken = crypto.randomBytes(20).toString("hex");
+    user.sessionToken = sessionToken;
+    
     await user.save();
 
     // Generate JWT token
-    const token = generateToken(user._id, res);
+    const token = generateToken(user._id, sessionToken, res);
 
     const roleDoc = await Role.findOne({ id: user.role });
     const permissions = roleDoc ? roleDoc.permissions : {};
@@ -412,10 +417,15 @@ export const verifyLoginOtp = async (req, res) => {
     // Clear login OTP
     user.loginOtp = undefined;
     user.loginOtpExpiry = undefined;
+    
+    // Generate new session token
+    const sessionToken = crypto.randomBytes(20).toString("hex");
+    user.sessionToken = sessionToken;
+
     await user.save();
 
     // Generate JWT token
-    const token = generateToken(user._id, res);
+    const token = generateToken(user._id, sessionToken, res);
 
     const roleDoc = await Role.findOne({ id: user.role });
     const permissions = roleDoc ? roleDoc.permissions : {};

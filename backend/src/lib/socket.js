@@ -10,7 +10,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: [ENV.CLIENT_URL],
+    origin: [ENV.CLIENT_URL, "https://f3f5-2405-4802-ee-9a90-cc18-27a7-68ad-7cbb.ngrok-free.app"],
     credentials: true,
   },
 });

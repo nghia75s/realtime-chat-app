@@ -82,6 +82,10 @@ const userSchema = new mongoose.Schema(
     loginOtpExpiry: {
       type: Date,
     },
+    sessionToken: {
+      type: String,
+      default: "",
+    },
     pinnedChats: [{
       type: mongoose.Schema.Types.ObjectId,
       refPath: 'pinnedChatsModel' // Can be User or Group

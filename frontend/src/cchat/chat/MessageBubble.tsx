@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useAuthStore } from "@/store/useAuthStore"
 import { useChatStore } from "@/store/useChatStore"
 import { useMessageActionStore } from "@/store/useMessageActionStore"
-import { Reply, Forward, Copy, Info, Trash2, RotateCcw, MoreHorizontal, CheckSquare, Square, CornerUpRight, Pin } from "lucide-react"
+import { Reply, Forward, Copy, Info, Trash2, RotateCcw, MoreHorizontal, CheckSquare, Square, CornerUpRight, Pin, Phone, PhoneMissed } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { MessageBubbleProps } from "@/store/useMessageBubbleStore.ts"
@@ -43,6 +43,9 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
   })
 
   const fileExtension = msg.file?.name?.split(".").pop()?.toUpperCase() || "FILE"
+
+  const isCallMessage = msg.text?.startsWith("📞 Cuộc gọi");
+  const isMissedCall = msg.text?.includes("nhỡ") || msg.text?.includes("từ chối") || msg.text?.includes("bị hủy");
 
   // --- SYSTEM MESSAGE RENDERER ---
   if (msg.messageType === "system") {
@@ -297,37 +300,53 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
                     </div>
                   )}
  
-                  <p className="leading-[1.5] whitespace-pre-wrap break-words">
-                    {msg.text.split(/(https?:\/\/[^\s]+|www\.[^\s]+)/g).map((part: string, i: number) => {
-                      const isLink = part.match(/^(https?:\/\/[^\s]+|www\.[^\s]+)/i);
-                      if (isLink) {
-                        const href = part.startsWith("www.") ? `http://${part}` : part;
-                        return (
-                          <a
-                            key={i}
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`underline ${isMe ? 'text-blue-200 hover:text-white' : 'text-blue-400 hover:text-blue-300'} transition-colors`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (href.includes(window.location.origin + "/join/")) {
-                                const inviteCode = href.split("/join/")[1];
-                                if (inviteCode) {
-                                  useChatStore.getState().setJoinModalCode(inviteCode);
-                                  return;
+                  {isCallMessage ? (
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-full ${isMissedCall ? "bg-red-500/20 text-red-500" : (isMe ? "bg-white/20 text-white" : "bg-green-500/20 text-green-600 dark:text-green-400")}`}>
+                        {isMissedCall ? <PhoneMissed className="w-5 h-5" /> : <Phone className="w-5 h-5" />}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[15px]">{isMissedCall ? msg.text.replace("📞 ", "") : "Cuộc gọi đã kết thúc"}</span>
+                        {!isMissedCall && (
+                          <span className={`text-[13px] font-medium mt-0.5 ${isMe ? "text-blue-100" : "text-zinc-500 dark:text-[#a1a1a1]"}`}>
+                            {msg.text.match(/\((.*?)\)/)?.[1] || ""}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="leading-[1.5] whitespace-pre-wrap break-words">
+                      {msg.text.split(/(https?:\/\/[^\s]+|www\.[^\s]+)/g).map((part: string, i: number) => {
+                        const isLink = part.match(/^(https?:\/\/[^\s]+|www\.[^\s]+)/i);
+                        if (isLink) {
+                          const href = part.startsWith("www.") ? `http://${part}` : part;
+                          return (
+                            <a
+                              key={i}
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`underline ${isMe ? 'text-blue-200 hover:text-white' : 'text-blue-400 hover:text-blue-300'} transition-colors`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (href.includes(window.location.origin + "/join/")) {
+                                  const inviteCode = href.split("/join/")[1];
+                                  if (inviteCode) {
+                                    useChatStore.getState().setJoinModalCode(inviteCode);
+                                    return;
+                                  }
                                 }
-                              }
-                              setExternalLink(href);
-                            }}
-                          >
-                            {part}
-                          </a>
-                        );
-                      }
-                      return part;
-                    })}
-                  </p>
+                                setExternalLink(href);
+                              }}
+                            >
+                              {part}
+                            </a>
+                          );
+                        }
+                        return part;
+                      })}
+                    </p>
+                  )}
                   <div className={`flex items-center justify-end gap-1.5 text-[10.5px] mt-0.5 ${isMe ? "text-blue-200" : "text-zinc-500 dark:text-[#818181]"}`}>
                     <span>{timeStr}</span>
                   </div>

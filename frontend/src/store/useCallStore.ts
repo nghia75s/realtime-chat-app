@@ -25,6 +25,7 @@ interface CallStore {
   callDuration: number; // in seconds
   callStartTime: number | null; // timestamp
   callTimerInterval: NodeJS.Timeout | null;
+  ringingTimeout: NodeJS.Timeout | null;
 
   availableCameras: MediaDeviceInfo[];
   selectedCameraId: string | null;
@@ -71,6 +72,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
   callDuration: 0,
   callStartTime: null,
   callTimerInterval: null,
+  ringingTimeout: null,
 
   availableCameras: [],
   selectedCameraId: null,
@@ -93,7 +95,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
         localStream: stream,
         receiverId: receiver._id,
         isGroupCall: false,
-        callStartTime: Date.now(),
+        callStartTime: null,
         callDuration: 0,
       });
 
@@ -104,14 +106,16 @@ export const useCallStore = create<CallStore>((set, get) => ({
       if (videoDevices.length > 0) {
         set({ selectedCameraId: videoDevices[0].deviceId });
       }
+      
+      // Auto hangup after 40s of ringing
+      const timeoutId = setTimeout(() => {
+        if (get().callStatus === "ringing") {
+          toast.error("Không có người trả lời");
+          get().endCall();
+        }
+      }, 40000);
 
-      // Start call timer for caller
-      const interval = setInterval(() => {
-        set(state => ({
-          callDuration: Math.floor((Date.now() - (state.callStartTime || Date.now())) / 1000)
-        }));
-      }, 1000);
-      set({ callTimerInterval: interval });
+      set({ ringingTimeout: timeoutId });
 
       const socket = useAuthStore.getState().socket;
       if (socket) {
@@ -128,16 +132,25 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   receiveCall: (callerInfo, type) => {
+    const timeoutId = setTimeout(() => {
+      if (get().callStatus === "ringing") {
+        get().clearCall();
+      }
+    }, 40000);
+
     set({
       isReceivingCall: true,
       callerInfo,
       callType: type,
-      callStatus: "ringing"
+      callStatus: "ringing",
+      ringingTimeout: timeoutId
     });
   },
 
   acceptCall: async () => {
-    const { callType, callerInfo } = get();
+    const { callType, callerInfo, ringingTimeout } = get();
+    if (ringingTimeout) clearTimeout(ringingTimeout);
+    
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: callType === "video",
@@ -150,6 +163,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
         localStream: stream,
         callStartTime: Date.now(),
         callDuration: 0,
+        ringingTimeout: null,
       });
 
       // Lấy danh sách camera sau khi đã được cấp quyền
@@ -215,9 +229,14 @@ export const useCallStore = create<CallStore>((set, get) => ({
     }
 
     // Save call log to chat
-    if (targetId && authUser && callDuration > 0) {
-      const durationStr = formatDuration(callDuration);
-      const callLogMessage = `📞 Cuộc gọi đã kết thúc (${durationStr})`;
+    if (targetId && authUser) {
+      let callLogMessage = "";
+      if (callDuration > 0) {
+        const durationStr = formatDuration(callDuration);
+        callLogMessage = `📞 Cuộc gọi đã kết thúc (${durationStr})`;
+      } else {
+        callLogMessage = `📞 Cuộc gọi nhỡ`;
+      }
       
       chatService.sendMessage(targetId, {
         text: callLogMessage,
@@ -231,11 +250,14 @@ export const useCallStore = create<CallStore>((set, get) => ({
   },
 
   clearCall: () => {
-    const { localStream, remoteStream, peerConnection, callTimerInterval } = get();
+    const { localStream, remoteStream, peerConnection, callTimerInterval, ringingTimeout } = get();
     
     // Stop the timer
     if (callTimerInterval) {
       clearInterval(callTimerInterval);
+    }
+    if (ringingTimeout) {
+      clearTimeout(ringingTimeout);
     }
     
     if (localStream) {
@@ -263,6 +285,7 @@ export const useCallStore = create<CallStore>((set, get) => ({
       callDuration: 0,
       callStartTime: null,
       callTimerInterval: null,
+      ringingTimeout: null,
     });
   },
 
@@ -342,9 +365,22 @@ export const useCallStore = create<CallStore>((set, get) => ({
       if (data.isGroup) return;
 
       // Caller receives this when Callee accepts
-      const { callStatus } = get();
+      const { callStatus, ringingTimeout } = get();
       if (callStatus === "idle") return;
-      set({ callStatus: "connected" });
+      if (ringingTimeout) clearTimeout(ringingTimeout);
+      
+      const interval = setInterval(() => {
+        set(state => ({
+          callDuration: Math.floor((Date.now() - (state.callStartTime || Date.now())) / 1000)
+        }));
+      }, 1000);
+
+      set({ 
+        callStatus: "connected", 
+        ringingTimeout: null, 
+        callStartTime: Date.now(),
+        callTimerInterval: interval 
+      });
 
       const { localStream } = get();
 
@@ -406,6 +442,15 @@ export const useCallStore = create<CallStore>((set, get) => ({
     socket.off("call-rejected");
     socket.on("call-rejected", () => {
       toast.error("Người dùng đang bận hoặc đã từ chối");
+      
+      const { receiverId } = get();
+      if (receiverId) {
+        chatService.sendMessage(receiverId, {
+          text: `📞 Cuộc gọi từ chối`,
+          type: "text"
+        }).catch(e => console.error(e));
+      }
+
       get().clearCall();
     });
 

@@ -45,6 +45,7 @@ interface AuthStore {
   verifyOtp: (data: any) => Promise<void>;
   verifyLoginOtp: (data: any) => Promise<void>;
   logout: () => Promise<void>;
+  forceLogout: () => void;
   updateProfile: (data: any) => Promise<void>;
   pinChat: (chatId: string) => Promise<void>;
   muteChat: (chatId: string, mutedUntil?: string | null) => Promise<void>;
@@ -154,11 +155,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       await authService.logout();
       set({ authUser: null });
       get().disconnectSocket();
-      toast.success("Logged out successfully.");
     } catch (error) {
       console.log("Error during logout:", error);
-      toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
+      // Still log them out locally even if server fails
+      set({ authUser: null });
+      get().disconnectSocket();
     }
+  },
+
+  forceLogout: () => {
+    set({ authUser: null });
+    get().disconnectSocket();
+    window.location.href = "/login";
   },
 
   updateProfile: async (data) => {

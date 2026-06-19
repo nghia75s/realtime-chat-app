@@ -14,6 +14,11 @@ export const protectRoute = async (req, res, next) => {
     const user = await User.findById(decoded.userId).select("-password").lean();
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Single active session check
+    if (decoded.sessionToken !== user.sessionToken) {
+      return res.status(401).json({ message: "Phiên đăng nhập đã hết hạn hoặc bạn đã đăng nhập ở thiết bị khác" });
+    }
+
     if (!user.isActive) {
       return res.status(403).json({ message: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." });
     }
