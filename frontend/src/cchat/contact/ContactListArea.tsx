@@ -1,5 +1,5 @@
 import { useChatStore } from "@/store/useChatStore"
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from 'react-router-dom'
 import { User, Search, Filter, ArrowDownUp, MoreHorizontal, ChevronDown } from "lucide-react"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -8,7 +8,7 @@ function ContactList() {
   const { getAllcontacts, allContacts, setSelectedUser, isUsersLoading } = useChatStore()
   const navigate = useNavigate()
   const { onlineUsers } = useAuthStore()
-  
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
   useEffect(() => {
     getAllcontacts()
@@ -23,7 +23,7 @@ function ContactList() {
     const sorted = [...allContacts].sort((a, b) => {
       const nameA = a.fullname || "";
       const nameB = b.fullname || "";
-      return nameA.localeCompare(nameB);
+      return sortOrder === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
     });
 
     sorted.forEach((contact) => {
@@ -39,12 +39,12 @@ function ContactList() {
     });
 
     return groups;
-  }, [allContacts]);
+  }, [allContacts, sortOrder]);
 
   const sortedLetters = Object.keys(groupedContacts).sort((a, b) => {
     if (a === "#") return 1;
     if (b === "#") return -1;
-    return a.localeCompare(b);
+    return sortOrder === "asc" ? a.localeCompare(b) : b.localeCompare(a);
   });
 
   return (
@@ -72,13 +72,12 @@ function ContactList() {
               />
             </div>
             
-            <button className="flex items-center gap-6 px-3 py-1.5 rounded-md bg-chat-sidebar border border-chat-border text-[13px] text-chat-text hover:bg-chat-hover transition-colors">
-              <span className="flex items-center gap-2"><ArrowDownUp className="h-4 w-4 text-chat-muted" /> Tên (A - Z)</span>
-              <ChevronDown className="h-4 w-4 text-chat-muted" />
-            </button>
-            <button className="flex items-center gap-6 px-3 py-1.5 rounded-md bg-chat-sidebar border border-chat-border text-[13px] text-chat-text hover:bg-chat-hover transition-colors">
-               <span className="flex items-center gap-2"><Filter className="h-4 w-4 text-chat-muted" /> Tất cả</span>
-               <ChevronDown className="h-4 w-4 text-chat-muted" />
+            <button 
+              onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-chat-sidebar border border-chat-border text-[13px] text-chat-text hover:bg-chat-hover transition-colors"
+            >
+              <ArrowDownUp className="h-4 w-4 text-chat-muted" />
+              <span>{sortOrder === "asc" ? "Tên (A - Z)" : "Tên (Z - A)"}</span>
             </button>
           </div>
         </div>

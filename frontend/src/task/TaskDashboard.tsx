@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Search, Filter, Calendar, Plus, Clock, CheckCircle2, XCircle, PieChart as PieChartIcon } from "lucide-react"
+import { Search, Filter, Calendar, Plus, Clock, CheckCircle2, XCircle, PieChart as PieChartIcon, ChevronDown } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import type { TaskItem } from "@/store/useTaskStore"
 import { useAuthStore } from "@/store/useAuthStore"
@@ -16,13 +16,31 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
   const { authUser } = useAuthStore();
   const [filterStr, setFilterStr] = useState("");
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [timeSort, setTimeSort] = useState("newest");
 
   const displayedTasks = tasks.filter(t => {
     // Role filter
     if (role === "employee" && !t.assignees.some(a => a.user._id === authUser?._id)) return false;
     // Search string filter
     if (filterStr && !t.title.toLowerCase().includes(filterStr.toLowerCase())) return false;
+    
+    // Status filter
+    if (statusFilter !== "all") {
+      const isOverdue = (t.status === "pending" || t.status === "rejected") && new Date() > new Date(t.deadline);
+      if (statusFilter === "overdue" && !isOverdue) return false;
+      if (statusFilter === "pending" && (t.status !== "pending" || isOverdue)) return false;
+      if (statusFilter === "done" && t.status !== "done") return false;
+      if (statusFilter === "rejected" && (t.status !== "rejected" || isOverdue)) return false;
+    }
+    
     return true;
+  }).sort((a, b) => {
+    if (timeSort === "newest") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (timeSort === "oldest") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (timeSort === "deadline_asc") return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    if (timeSort === "deadline_desc") return new Date(b.deadline).getTime() - new Date(a.deadline).getTime();
+    return 0;
   });
 
   const stats = {
@@ -65,13 +83,36 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
             />
           </div>
 
-          <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-chat-sidebar border border-chat-border text-[14px] text-chat-text/90 hover:bg-chat-hover transition-colors">
-            <Filter className="w-4 h-4 text-chat-muted" /> Trạng thái
-          </button>
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="appearance-none flex items-center gap-2 px-3 py-2 pl-9 pr-9 rounded-md bg-chat-sidebar border border-chat-border text-[14px] text-chat-text/90 hover:bg-chat-hover transition-colors outline-none cursor-pointer focus:border-[#0052cc]"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="pending">Đang chờ</option>
+              <option value="done">Hoàn thành</option>
+              <option value="overdue">Quá hạn</option>
+              <option value="rejected">Cần làm lại</option>
+            </select>
+            <Filter className="w-4 h-4 text-chat-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-chat-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
 
-          <button className="flex items-center gap-2 px-3 py-2 rounded-md bg-chat-sidebar border border-chat-border text-[14px] text-chat-text/90 hover:bg-chat-hover transition-colors">
-            <Calendar className="w-4 h-4 text-chat-muted" /> Thời gian
-          </button>
+          <div className="relative">
+            <select
+              value={timeSort}
+              onChange={(e) => setTimeSort(e.target.value)}
+              className="appearance-none flex items-center gap-2 px-3 py-2 pl-9 pr-9 rounded-md bg-chat-sidebar border border-chat-border text-[14px] text-chat-text/90 hover:bg-chat-hover transition-colors outline-none cursor-pointer focus:border-[#0052cc]"
+            >
+              <option value="newest">Mới nhất</option>
+              <option value="oldest">Cũ nhất</option>
+              <option value="deadline_asc">Gần hạn nhất</option>
+              <option value="deadline_desc">Hạn xa nhất</option>
+            </select>
+            <Calendar className="w-4 h-4 text-chat-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-chat-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

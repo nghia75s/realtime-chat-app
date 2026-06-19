@@ -4,10 +4,10 @@ import { useChatStore } from "@/store/useChatStore";
 import { useCloudStore } from "@/store/useCloudStore";
 import type { DocumentItem, DocCategory } from "@/store/useCloudStore";
 import { Folder, Loader } from "lucide-react";
-import { CloudSidebar } from "./CloudSidebar";
-import { CloudHeader } from "./CloudHeader";
-import { CategoryGrid } from "./CategoryGrid";
-import { DocumentList } from "./DocumentList";
+import { CloudSidebar } from "../cloud/CloudSidebar";
+import { CloudHeader } from "../cloud/CloudHeader";
+import { CategoryGrid } from "../cloud/CategoryGrid";
+import { DocumentList } from "../cloud/DocumentList";
 
 export default function DocumentPage() {
 
@@ -74,12 +74,12 @@ export default function DocumentPage() {
         if (msg.image) {
           let sizeLabel = "Không rõ";
           if (msg.image.startsWith("data:image")) {
-             const base64Str = msg.image.split(",")[1];
-             if (base64Str) {
-                 const sizeBytes = base64Str.length * 0.75 - (base64Str.endsWith("==") ? 2 : base64Str.endsWith("=") ? 1 : 0);
-                 if (sizeBytes > 1024 * 1024) sizeLabel = (sizeBytes / 1024 / 1024).toFixed(1) + " MB";
-                 else sizeLabel = (sizeBytes / 1024).toFixed(1) + " KB";
-             }
+            const base64Str = msg.image.split(",")[1];
+            if (base64Str) {
+              const sizeBytes = base64Str.length * 0.75 - (base64Str.endsWith("==") ? 2 : base64Str.endsWith("=") ? 1 : 0);
+              if (sizeBytes > 1024 * 1024) sizeLabel = (sizeBytes / 1024 / 1024).toFixed(1) + " MB";
+              else sizeLabel = (sizeBytes / 1024).toFixed(1) + " KB";
+            }
           }
           docs.push({
             id: msg._id || `img_${idx}`,

@@ -7,6 +7,7 @@ export function ContactGroupsArea() {
   const { getMyGroups, groups, setSelectedUser, isGroupsLoading } = useChatStore()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState("")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
   useEffect(() => {
     getMyGroups()
@@ -26,7 +27,7 @@ export function ContactGroupsArea() {
     const sorted = [...filteredGroups].sort((a, b) => {
       const nameA = a.name || "";
       const nameB = b.name || "";
-      return nameA.localeCompare(nameB);
+      return sortOrder === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
     });
 
     sorted.forEach((group) => {
@@ -42,12 +43,12 @@ export function ContactGroupsArea() {
     });
 
     return groupDict;
-  }, [filteredGroups]);
+  }, [filteredGroups, sortOrder]);
 
   const sortedLetters = Object.keys(groupedGroups).sort((a, b) => {
     if (a === "#") return 1;
     if (b === "#") return -1;
-    return a.localeCompare(b);
+    return sortOrder === "asc" ? a.localeCompare(b) : b.localeCompare(a);
   });
 
   return (
@@ -78,13 +79,13 @@ export function ContactGroupsArea() {
               />
             </div>
             
-            <button className="flex items-center gap-6 px-3 py-1.5 rounded-md border border-chat-border text-[13px] text-chat-text hover:bg-chat-hover transition-colors" style={{ background: 'var(--chat-bg-sidebar)' }}>
-              <span className="flex items-center gap-2"><ArrowDownUp className="h-4 w-4 text-chat-muted" /> Tên (A - Z)</span>
-              <ChevronDown className="h-4 w-4 text-chat-muted" />
-            </button>
-            <button className="flex items-center gap-6 px-3 py-1.5 rounded-md border border-chat-border text-[13px] text-chat-text hover:bg-chat-hover transition-colors" style={{ background: 'var(--chat-bg-sidebar)' }}>
-               <span className="flex items-center gap-2"><Filter className="h-4 w-4 text-chat-muted" /> Tất cả</span>
-               <ChevronDown className="h-4 w-4 text-chat-muted" />
+            <button 
+              onClick={() => setSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-chat-border text-[13px] text-chat-text hover:bg-chat-hover transition-colors" 
+              style={{ background: 'var(--chat-bg-sidebar)' }}
+            >
+              <ArrowDownUp className="h-4 w-4 text-chat-muted" />
+              <span>{sortOrder === "asc" ? "Tên (A - Z)" : "Tên (Z - A)"}</span>
             </button>
           </div>
         </div>
