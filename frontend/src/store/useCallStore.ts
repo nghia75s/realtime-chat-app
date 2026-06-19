@@ -24,8 +24,8 @@ interface CallStore {
   isGroupCall: boolean;
   callDuration: number; // in seconds
   callStartTime: number | null; // timestamp
-  callTimerInterval: NodeJS.Timeout | null;
-  ringingTimeout: NodeJS.Timeout | null;
+  callTimerInterval: ReturnType<typeof setInterval> | null;
+  ringingTimeout: ReturnType<typeof setTimeout> | null;
 
   availableCameras: MediaDeviceInfo[];
   selectedCameraId: string | null;

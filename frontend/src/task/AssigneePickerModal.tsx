@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { X, Search, UserPlus, Users } from "lucide-react"
 import { useChatStore } from "@/store/useChatStore"
+import { useAuthStore } from "@/store/useAuthStore"
 
 type PickerTab = "individual" | "group";
 
@@ -26,10 +27,12 @@ export function AssigneePickerModal({
   allSelected,
   onClose,
 }: AssigneePickerModalProps) {
-  const { allContacts, getAllcontacts, groups, getMyGroups } = useChatStore()
+  const { allContacts, getAllcontacts } = useChatStore()
+  const { authUser } = useAuthStore()
   const [pickerTab, setPickerTab] = useState<PickerTab>("individual")
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [allGroups, setAllGroups] = useState<any[]>([])
 
   const toggleExpandGroup = (groupId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -43,20 +46,57 @@ export function AssigneePickerModal({
 
   useEffect(() => {
     if (allContacts.length === 0) getAllcontacts()
-    if (groups.length === 0) getMyGroups()
+    
+    // Fetch ALL groups for task assignment, not just the ones the user is in
+    import("@/services/chatService").then(({ chatService }) => {
+      chatService.getAllGroups().then(data => {
+        setAllGroups(data);
+      }).catch(err => console.error("Failed to fetch all groups", err));
+    });
   }, [])
 
-  const filteredContacts = allContacts.filter(c =>
+  // 1. Role-based filtering
+  let availableContacts = allContacts;
+  let availableGroups = allGroups;
+
+  if (authUser?.role === "moderator") {
+    availableContacts = allContacts.filter(c => c.department === authUser.department);
+    availableGroups = allGroups.filter((g: any) => {
+      const members = g.members || [];
+      if (members.length === 0) return false;
+      return members.every((mId: any) => {
+        const id = typeof mId === "string" ? mId : mId._id;
+        if (id === authUser._id) return true; // authUser is in their own department
+        const contact = allContacts.find(c => c._id === id);
+        return contact && contact.department === authUser.department;
+      });
+    });
+  } else if (authUser?.role === "admin") {
+    availableContacts = allContacts.filter(c => c.role === "admin");
+    availableGroups = allGroups.filter((g: any) => {
+      const members = g.members || [];
+      if (members.length === 0) return false;
+      return members.every((mId: any) => {
+        const id = typeof mId === "string" ? mId : mId._id;
+        if (id === authUser._id) return true; // authUser is an admin
+        const contact = allContacts.find(c => c._id === id);
+        return contact && contact.role === "admin";
+      });
+    });
+  }
+
+  // 2. Search query filtering
+  const filteredContacts = availableContacts.filter(c =>
     c.fullname.toLowerCase().includes(searchQuery.toLowerCase())
   )
-  const filteredGroups = groups.filter((g: any) =>
+  const filteredGroups = availableGroups.filter((g: any) =>
     g.name?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-[680px] bg-chat-sidebar rounded-xl border border-chat-border shadow-2xl flex flex-col animate-in slide-in-from-bottom-4 duration-200">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-chat-border">
           <h2 className="text-[16px] font-semibold text-chat-text">Chọn người / nhóm nhận việc</h2>
@@ -77,9 +117,8 @@ export function AssigneePickerModal({
                 setPickerTab(tab);
                 setSearchQuery("");
               }}
-              className={`flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium transition-colors border-b-2 ${
-                pickerTab === tab ? "border-[#0052cc] text-chat-text" : "border-transparent text-chat-muted hover:text-chat-text"
-              }`}
+              className={`flex items-center gap-2 px-5 py-2.5 text-[14px] font-medium transition-colors border-b-2 ${pickerTab === tab ? "border-[#0052cc] text-chat-text" : "border-transparent text-chat-muted hover:text-chat-text"
+                }`}
             >
               <Icon className="w-4 h-4" /> {label}
             </button>
@@ -110,9 +149,8 @@ export function AssigneePickerModal({
                       className="flex items-center gap-3 p-2 hover:bg-chat-hover rounded-md cursor-pointer transition-colors group"
                     >
                       <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                          isSelected ? "bg-[#0052cc] border-[#0052cc]" : "border-chat-border group-hover:border-[#0052cc]"
-                        }`}
+                        className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected ? "bg-[#0052cc] border-[#0052cc]" : "border-chat-border group-hover:border-[#0052cc]"
+                          }`}
                       >
                         {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                       </div>
@@ -130,13 +168,13 @@ export function AssigneePickerModal({
                 filteredGroups.map((g: any) => {
                   const isSelected = selectedGroups.includes(g._id);
                   const isExpanded = expandedGroups.has(g._id);
-                  
+
                   // Get members info
                   const memberIds = g.members || [];
                   // Members can be objects with _id or just string IDs
                   const mappedMembers = memberIds.map((m: any) => {
                     const id = typeof m === "string" ? m : m._id;
-                    return allContacts.find(c => c._id === id) || { _id: id, fullname: "Unknown", profilePicture: "/avatar.png" };
+                    return allContacts.find(c => c._id === id) || { _id: id, fullname: "You", profilePicture: "/avatar.png" };
                   });
 
                   return (
@@ -146,9 +184,8 @@ export function AssigneePickerModal({
                         className="flex items-center gap-3 p-2 hover:bg-chat-hover rounded-md cursor-pointer transition-colors group"
                       >
                         <div
-                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${
-                            isSelected ? "bg-[#0052cc] border-[#0052cc]" : "border-chat-border group-hover:border-[#0052cc]"
-                          }`}
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${isSelected ? "bg-[#0052cc] border-[#0052cc]" : "border-chat-border group-hover:border-[#0052cc]"
+                            }`}
                         >
                           {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                         </div>
@@ -163,18 +200,18 @@ export function AssigneePickerModal({
                           <p className="text-[14px] text-chat-text/90 group-hover:text-chat-text transition-colors">{g.name}</p>
                           <p className="text-[11px] text-chat-muted">{g.members?.length || 0} thành viên</p>
                         </div>
-                        <div 
+                        <div
                           onClick={(e) => toggleExpandGroup(g._id, e)}
                           className="p-1.5 hover:bg-black/10 dark:hover:bg-white/10 rounded-full text-chat-muted transition-colors"
                         >
                           {isExpanded ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6" /></svg>
                           ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                           )}
                         </div>
                       </div>
-                      
+
                       {isExpanded && mappedMembers.length > 0 && (
                         <div className="flex flex-col gap-1 pl-10 pr-2 pb-2">
                           {mappedMembers.map((member: any) => (

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react"
 import { Search, Eye, Users, UserCheck, UserX, ShieldCheck } from "lucide-react"
-import { ROLE_COLORS, DEPARTMENTS, useAdminStore } from "@/store/useAdminStore"
+import { ROLE_COLORS, useAdminStore } from "@/store/useAdminStore"
 import type { AdminUser } from "@/store/useAdminStore"
 import UserDetailPanel from "./UserDetailPanel"
 import { useAuthStore } from "@/store/useAuthStore"
 
 export default function UserManagement() {
-  const { users, stats, pagination, isLoading, fetchUsers, updateUserRole, updateUserDepartment } = useAdminStore()
+  const { users, departments, stats, pagination, isLoading, fetchUsers, fetchDepartments, updateUserRole, updateUserDepartment } = useAdminStore()
   const [searchQuery, setSearchQuery] = useState("")
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null)
   const [updatingDeptId, setUpdatingDeptId] = useState<string | null>(null)
@@ -15,7 +15,8 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers(1)
-  }, [fetchUsers])
+    if (departments.length === 0) fetchDepartments()
+  }, [fetchUsers, fetchDepartments])
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
@@ -179,9 +180,9 @@ export default function UserManagement() {
                         className="w-[120px] bg-transparent text-xs font-semibold text-chat-text border cursor-pointer outline-none transition-colors py-1.5 px-2 rounded-full hover:border-chat-border border-transparent focus:border-[#0052cc] disabled:opacity-50"
                       >
                         <option value="" className="bg-chat-sidebar text-chat-text">Chưa xếp phòng</option>
-                        {DEPARTMENTS.map((dept) => (
-                          <option key={dept} value={dept} className="bg-chat-sidebar text-chat-text">
-                            {dept}
+                        {departments.map((dept) => (
+                          <option key={dept._id} value={dept.name} className="bg-chat-sidebar text-chat-text">
+                            {dept.name}
                           </option>
                         ))}
                       </select>

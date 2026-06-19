@@ -64,23 +64,27 @@ export interface Role {
   };
 }
 
-export const DEPARTMENTS = [
-  "Phòng Giám đốc",
-  "Phòng Kinh doanh",
-  "Phòng Marketing",
-  "Phòng Hành chính Nhân sự",
-  "Phòng Kế toán Tài chính",
-  "Phòng Kỹ thuật",
-];
+export interface Department {
+  _id: string;
+  name: string;
+  description: string;
+  managerId?: string | null;
+  createdAt: string;
+}
 
 interface AdminStore {
   users: AdminUser[];
   roles: Role[];
+  departments: Department[];
   stats: AdminStats | null;
   pagination: PaginationState;
   isLoading: boolean;
 
   fetchUsers: (page?: number, limit?: number) => Promise<void>;
+  fetchDepartments: () => Promise<void>;
+  createDepartment: (name: string, description: string) => Promise<void>;
+  updateDepartmentData: (id: string, name: string, description: string, managerId?: string | null) => Promise<void>;
+  deleteDepartment: (id: string) => Promise<void>;
   fetchRoles: () => Promise<void>;
   updateUserRole: (id: string, role: AdminUser["role"]) => Promise<void>;
   updateUserDepartment: (id: string, department: string) => Promise<void>;
@@ -92,6 +96,7 @@ interface AdminStore {
 export const useAdminStore = create<AdminStore>((set, get) => ({
   users: [],
   roles: [],
+  departments: [],
   stats: null,
   pagination: { currentPage: 1, totalPages: 1, totalItems: 0 },
   isLoading: false,
@@ -109,6 +114,56 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       toast.error(err.response?.data?.message || "Không thể tải danh sách người dùng");
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  fetchDepartments: async () => {
+    try {
+      const data = await adminService.fetchDepartments();
+      set({ departments: data });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Không thể tải danh sách phòng ban");
+    }
+  },
+
+  createDepartment: async (name, description) => {
+    try {
+      const data = await adminService.createDepartment(name, description);
+      set(state => ({ departments: [...state.departments, data.department] }));
+      toast.success(data.message);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Lỗi tạo phòng ban");
+      throw err;
+    }
+  },
+
+  updateDepartmentData: async (id, name, description, managerId) => {
+    try {
+      const data = await adminService.updateDepartment(id, name, description, managerId);
+      set(state => ({
+        departments: state.departments.map(d => d._id === id ? data.department : d)
+      }));
+      // Refresh users if department name changed to update their department strings
+      get().fetchUsers(get().pagination.currentPage);
+      toast.success(data.message);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Lỗi cập nhật phòng ban");
+      throw err;
+    }
+  },
+
+  deleteDepartment: async (id) => {
+    try {
+      const data = await adminService.deleteDepartment(id);
+      set(state => ({
+        departments: state.departments.filter(d => d._id !== id)
+      }));
+      // Refresh users to clear their department
+      get().fetchUsers(get().pagination.currentPage);
+      toast.success(data.message);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Lỗi xóa phòng ban");
+      throw err;
     }
   },
 

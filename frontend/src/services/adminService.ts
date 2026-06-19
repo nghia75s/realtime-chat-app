@@ -35,5 +35,25 @@ export const adminService = {
   updateUserProfileAdmin: async (id: string, data: Partial<AdminUser> & { profilePicture?: string }) => {
     const res = await axiosInstance.put(`/admin/users/${id}`, data);
     return res.data;
+  },
+
+  fetchDepartments: async () => {
+    const res = await axiosInstance.get("/admin/departments");
+    return res.data;
+  },
+
+  createDepartment: async (name: string, description: string) => {
+    const res = await axiosInstance.post("/admin/departments", { name, description });
+    return res.data;
+  },
+
+  updateDepartment: async (id: string, name: string, description: string, managerId?: string | null) => {
+    const res = await axiosInstance.put(`/admin/departments/${id}`, { name, description, managerId });
+    return res.data;
+  },
+
+  deleteDepartment: async (id: string) => {
+    const res = await axiosInstance.delete(`/admin/departments/${id}`);
+    return res.data;
   }
 };

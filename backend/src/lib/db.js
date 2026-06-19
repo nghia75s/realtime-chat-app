@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { ENV } from "./env.js";
 import Role from "../models/Role.js";
 import User from "../models/User.js";
+import Department from "../models/Department.js";
 import bcrypt from "bcryptjs";
 
 const seedAdmin = async () => {
@@ -60,7 +61,41 @@ const seedRoles = async () => {
       },
     ];
     await Role.insertMany(defaultRoles);
+    await Role.insertMany(defaultRoles);
     console.log("Default roles seeded successfully.");
+  }
+};
+
+const seedDepartments = async () => {
+  try {
+    const DEPARTMENTS = [
+      "Phòng Giám đốc",
+      "Phòng Kinh doanh",
+      "Phòng Marketing",
+      "Phòng Hành chính Nhân sự",
+      "Phòng Kế toán Tài chính",
+      "Phòng Kỹ thuật",
+      "Phòng quản trị hệ thống"
+    ];
+
+    for (const name of DEPARTMENTS) {
+      const existing = await Department.findOne({ name });
+      if (!existing) {
+        await Department.create({ name, description: `Mô tả cho ${name}` });
+        console.log(`Created department: ${name}`);
+      }
+    }
+
+    // Migrate all admin users to "Phòng quản trị hệ thống"
+    const updateResult = await User.updateMany(
+      { role: "admin" },
+      { department: "Phòng quản trị hệ thống" }
+    );
+    if (updateResult.modifiedCount > 0) {
+      console.log(`Migrated ${updateResult.modifiedCount} admin users to "Phòng quản trị hệ thống".`);
+    }
+  } catch (error) {
+    console.error("Error seeding departments:", error.message);
   }
 };
 
@@ -72,6 +107,7 @@ export const connectDB = async () => {
     const conn = await mongoose.connect(ENV.MONGO_URI);
     console.log(`MONGODB CONNECTED: ${conn.connection.host} (DB: ${conn.connection.name})`);
     await seedRoles();
+    await seedDepartments();
     await seedAdmin();
   } catch (error) {
     console.error("Error connection to MONGODB:", error);

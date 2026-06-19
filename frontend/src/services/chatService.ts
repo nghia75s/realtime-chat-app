@@ -22,6 +22,11 @@ export const chatService = {
     return res.data;
   },
 
+  getAllGroups: async () => {
+    const res = await axiosInstance.get("groups/all-groups");
+    return res.data;
+  },
+
   getGroupMessageByUserId: async (groupId: string) => {
     const res = await axiosInstance.get(`groups/groups/${groupId}/messages`);
     return res.data;

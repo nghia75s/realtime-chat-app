@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import Role from "../models/Role.js";
+import Department from "../models/Department.js";
 import { emitToUser } from "../lib/socket.js";
 import cloudinary from "../lib/cloudinary.js";
 
@@ -222,6 +223,100 @@ export const updateUserProfileAdmin = async (req, res) => {
     res.status(200).json({ message: "Cập nhật thông tin nhân viên thành công", user: updatedUser });
   } catch (error) {
     console.error("Error in updateUserProfileAdmin:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// GET /api/admin/departments
+export const getAllDepartments = async (req, res) => {
+  try {
+    const departments = await Department.find().sort({ createdAt: 1 });
+    res.status(200).json(departments);
+  } catch (error) {
+    console.error("Error in getAllDepartments:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// POST /api/admin/departments
+export const createDepartment = async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    if (!name) {
+      return res.status(400).json({ message: "Tên phòng ban là bắt buộc" });
+    }
+    
+    const existing = await Department.findOne({ name });
+    if (existing) {
+      return res.status(400).json({ message: "Phòng ban này đã tồn tại" });
+    }
+
+    const newDept = new Department({ name, description });
+    await newDept.save();
+
+    res.status(201).json({ message: "Tạo phòng ban thành công", department: newDept });
+  } catch (error) {
+    console.error("Error in createDepartment:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// PUT /api/admin/departments/:id
+export const updateDepartment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, managerId } = req.body;
+
+    const department = await Department.findById(id);
+    if (!department) {
+      return res.status(404).json({ message: "Không tìm thấy phòng ban" });
+    }
+
+    if (name && name !== department.name) {
+      const existing = await Department.findOne({ name });
+      if (existing) {
+        return res.status(400).json({ message: "Tên phòng ban này đã tồn tại" });
+      }
+
+      // Update all users with old department name
+      await User.updateMany({ department: department.name }, { department: name });
+      department.name = name;
+    }
+
+    if (description !== undefined) {
+      department.description = description;
+    }
+
+    if (managerId !== undefined) {
+      department.managerId = managerId || null;
+    }
+
+    await department.save();
+
+    res.status(200).json({ message: "Cập nhật phòng ban thành công", department });
+  } catch (error) {
+    console.error("Error in updateDepartment:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// DELETE /api/admin/departments/:id
+export const deleteDepartment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const department = await Department.findById(id);
+    if (!department) {
+      return res.status(404).json({ message: "Không tìm thấy phòng ban" });
+    }
+
+    // Move all users in this department to 'Chưa phân phòng ban'
+    await User.updateMany({ department: department.name }, { department: "Chưa phân phòng ban" });
+
+    await department.deleteOne();
+
+    res.status(200).json({ message: "Xóa phòng ban thành công" });
+  } catch (error) {
+    console.error("Error in deleteDepartment:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };

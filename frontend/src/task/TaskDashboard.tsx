@@ -24,7 +24,7 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
     if (role === "employee" && !t.assignees.some(a => a.user._id === authUser?._id)) return false;
     // Search string filter
     if (filterStr && !t.title.toLowerCase().includes(filterStr.toLowerCase())) return false;
-    
+
     // Status filter
     if (statusFilter !== "all") {
       const isOverdue = (t.status === "pending" || t.status === "rejected") && new Date() > new Date(t.deadline);
@@ -33,7 +33,7 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
       if (statusFilter === "done" && t.status !== "done") return false;
       if (statusFilter === "rejected" && (t.status !== "rejected" || isOverdue)) return false;
     }
-    
+
     return true;
   }).sort((a, b) => {
     if (timeSort === "newest") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -122,7 +122,7 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
           >
             <PieChartIcon className="w-4 h-4" /> Thống kê
           </button>
-          
+
           {(authUser?.permissions?.editTasks || authUser?.permissions?.viewAdmin) && (
             <button
               onClick={onOpenCreate}
@@ -223,11 +223,10 @@ export function TaskDashboard({ role, tasks, onOpenCreate, onOpenDetail }: TaskD
                   <div className="flex items-center justify-end text-[12px] text-chat-muted">
                     Tạo: {new Date(task.createdAt).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                   </div>
-                  <div className={`flex items-center text-[12px] font-medium px-2 py-1 rounded ${
-                    (task.status === "pending" || task.status === "rejected") && new Date() > new Date(task.deadline)
+                  <div className={`flex items-center text-[12px] font-medium px-2 py-1 rounded ${(task.status === "pending" || task.status === "rejected") && new Date() > new Date(task.deadline)
                       ? "text-red-500 bg-red-500/10"
                       : "text-[#ebaa16] bg-[#ebaa16]/10"
-                  }`}>
+                    }`}>
                     Hạn: {new Date(task.deadline).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" })}
                   </div>
                 </div>

@@ -8,30 +8,45 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { useAdminStore, DEPARTMENTS, ROLE_LABELS } from "@/store/useAdminStore";
-import type { AdminUser } from "@/store/useAdminStore";
+import { useAdminStore, ROLE_LABELS } from "@/store/useAdminStore";
+import type { AdminUser, Department } from "@/store/useAdminStore";
+import { toast } from "react-hot-toast";
+
 export default function DepartmentManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
   const [expandedDeptId, setExpandedDeptId] = useState<string | null>(null);
+  const [selectedDept, setSelectedDept] = useState<Department | null>(null);
 
-  const { users, fetchUsers } = useAdminStore();
+  // Form states
+  const [deptName, setDeptName] = useState("");
+  const [deptDesc, setDeptDesc] = useState("");
+  const [deptManagerId, setDeptManagerId] = useState("");
+
+  const { users, departments, fetchUsers, fetchDepartments, createDepartment, updateDepartmentData, deleteDepartment } = useAdminStore();
 
   useEffect(() => {
-    // Nếu chưa có users, load trang 1 (có thể truyền limit lớn hơn để lấy full nếu cần)
     if (users.length === 0) {
       fetchUsers(1, 100);
     }
-  }, [users.length, fetchUsers]);
+    if (departments.length === 0) {
+      fetchDepartments();
+    }
+  }, [users.length, departments.length, fetchUsers, fetchDepartments]);
 
-  const toggleDept = (deptName: string) => {
-    setExpandedDeptId(expandedDeptId === deptName ? null : deptName);
+  const toggleDept = (deptId: string) => {
+    setExpandedDeptId(expandedDeptId === deptId ? null : deptId);
   };
 
-  // Lấy danh sách lãnh đạo (Admin hoặc Giám đốc)
   const leaders = users.filter(u => u.role === 'director');
 
-  // Helper tìm trưởng phòng (người có role cao nhất trong phòng, ưu tiên director > moderator > admin (admin thường là hệ thống))
-  const getManager = (deptMembers: AdminUser[]) => {
+  const getManager = (dept: Department | null, deptMembers: AdminUser[]) => {
+    if (dept && dept.managerId) {
+      const explicitManager = deptMembers.find(u => u._id === dept.managerId);
+      if (explicitManager) return explicitManager;
+    }
     if (deptMembers.length === 0) return null;
     const directors = deptMembers.filter(u => u.role === 'director');
     if (directors.length > 0) return directors[0];
@@ -39,18 +54,65 @@ export default function DepartmentManagement() {
     if (moderators.length > 0) return moderators[0];
     const admins = deptMembers.filter(u => u.role === 'admin');
     if (admins.length > 0) return admins[0];
-    return null; // Nếu chỉ có user thường thì ko ai làm trưởng phòng
+    return null;
+  };
+
+  const handleAddSubmit = async () => {
+    if (!deptName.trim()) return toast.error("Vui lòng nhập tên phòng ban");
+    try {
+      await createDepartment(deptName, deptDesc);
+      setIsAddModalOpen(false);
+      setDeptName("");
+      setDeptDesc("");
+    } catch (error) {
+      // Error handled in store
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!selectedDept) return;
+    if (!deptName.trim()) return toast.error("Vui lòng nhập tên phòng ban");
+    try {
+      await updateDepartmentData(selectedDept._id, deptName, deptDesc, deptManagerId || null);
+      setIsEditModalOpen(false);
+      setSelectedDept(null);
+    } catch (error) {}
+  };
+
+  const handleDeleteSubmit = async () => {
+    if (!selectedDept) return;
+    try {
+      await deleteDepartment(selectedDept._id);
+      setIsDeleteModalOpen(false);
+      setSelectedDept(null);
+    } catch (error) {}
+  };
+
+  const openEditModal = (dept: Department, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDept(dept);
+    setDeptName(dept.name);
+    setDeptDesc(dept.description);
+    setDeptManagerId(dept.managerId || "");
+    setIsEditModalOpen(true);
+  };
+
+  const openDeleteModal = (dept: Department, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDept(dept);
+    setIsDeleteModalOpen(true);
   };
 
   return (
     <div className="flex flex-col h-full bg-chat-main">
-      {/* Header */}
       <div className="px-6 py-4 border-b border-chat-border flex items-center justify-between shrink-0">
         <div>
           <h2 className="text-xl font-bold text-chat-text">Phòng Ban</h2>
           <p className="text-sm text-chat-muted">Quản lý cơ cấu tổ chức và nhân sự theo phòng ban</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} className="bg-[#0052cc] hover:bg-[#0052cc]/90 text-white">
+        <Button onClick={() => {
+          setDeptName(""); setDeptDesc(""); setIsAddModalOpen(true);
+        }} className="bg-[#0052cc] hover:bg-[#0052cc]/90 text-white">
           Thêm Phòng Ban Mới
         </Button>
       </div>
@@ -58,7 +120,7 @@ export default function DepartmentManagement() {
       <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
         <div className="max-w-5xl mx-auto space-y-6">
 
-          {/* Ban Lãnh Đạo & Trưởng Phòng */}
+          {/* Ban Lãnh Đạo */}
           <div className="bg-chat-sidebar border border-chat-border rounded-xl overflow-hidden shadow-sm">
             <div className="p-4 border-b border-chat-border flex items-center gap-2 bg-chat-hover/20">
               <Crown className="w-5 h-5 text-yellow-500" />
@@ -85,37 +147,29 @@ export default function DepartmentManagement() {
             </div>
           </div>
 
-          {/* Danh sách 7 phòng ban */}
-          {DEPARTMENTS.map(deptName => {
-            const isExpanded = expandedDeptId === deptName;
-            // Những người có department === deptName. Hoặc null/"" sẽ vào "Chưa phân phòng ban"
-            const deptMembers = users.filter(u => {
-              if (deptName === "Chưa phân phòng ban") {
-                return !u.department || u.department === "" || u.department === "Chưa xếp phòng";
-              }
-              return u.department === deptName;
-            });
-            const manager = getManager(deptMembers);
+          {/* Danh sách phòng ban */}
+          {departments.map(dept => {
+            const isExpanded = expandedDeptId === dept._id;
+            const deptMembers = users.filter(u => u.department === dept.name);
+            const manager = getManager(dept, deptMembers);
 
             return (
-              <div key={deptName} className="bg-chat-sidebar border border-chat-border rounded-xl overflow-hidden shadow-sm transition-all duration-200">
-                {/* Accordion Header */}
+              <div key={dept._id} className="bg-chat-sidebar border border-chat-border rounded-xl overflow-hidden shadow-sm transition-all duration-200">
                 <div
                   className="p-5 flex items-center justify-between bg-chat-hover/10 border-b border-chat-border cursor-pointer hover:bg-chat-hover/30 select-none group"
-                  onClick={() => toggleDept(deptName)}
+                  onClick={() => toggleDept(dept._id)}
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-lg bg-chat-hover flex items-center justify-center shrink-0">
                       <Building className="w-6 h-6 text-[#0052cc]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-chat-text">{deptName}</h3>
+                      <h3 className="text-lg font-bold text-chat-text">{dept.name}</h3>
                       <p className="text-sm text-chat-muted mt-0.5">{deptMembers.length} nhân sự</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-6">
-                    {/* Manager Info (Mini) */}
                     <div className="hidden md:flex items-center gap-3 text-right">
                       <div>
                         <p className="text-[11px] text-chat-muted font-medium uppercase tracking-wider">Trưởng Phòng</p>
@@ -127,10 +181,10 @@ export default function DepartmentManagement() {
                     <div className="w-[1px] h-8 bg-chat-border hidden md:block"></div>
 
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-chat-muted hover:text-[#0052cc] hover:bg-chat-hover rounded-md transition-colors" title="Chỉnh sửa" onClick={(e) => e.stopPropagation()}>
+                      <button className="p-2 text-chat-muted hover:text-[#0052cc] hover:bg-chat-hover rounded-md transition-colors" title="Chỉnh sửa" onClick={(e) => openEditModal(dept, e)}>
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-chat-muted hover:text-red-500 hover:bg-chat-hover rounded-md transition-colors" title="Xóa" onClick={(e) => e.stopPropagation()}>
+                      <button className="p-2 text-chat-muted hover:text-red-500 hover:bg-chat-hover rounded-md transition-colors" title="Xóa" onClick={(e) => openDeleteModal(dept, e)}>
                         <Trash2 className="w-4 h-4" />
                       </button>
                       <div className="p-1 ml-2 text-chat-muted">
@@ -140,16 +194,12 @@ export default function DepartmentManagement() {
                   </div>
                 </div>
 
-                {/* Accordion Body */}
                 {isExpanded && (
                   <div className="bg-chat-main/50 animate-in slide-in-from-top-2 duration-200">
                     <div className="p-3 border-b border-chat-border flex items-center justify-between">
                       <h4 className="font-semibold text-chat-text flex items-center gap-2 text-sm ml-2">
                         <UsersIcon className="w-4 h-4 text-chat-muted" /> Danh sách nhân sự
                       </h4>
-                      <Button variant="outline" size="sm" className="h-8 border-chat-border text-chat-text hover:bg-chat-hover">
-                        Thêm nhân sự
-                      </Button>
                     </div>
 
                     <div className="divide-y divide-chat-border">
@@ -171,7 +221,6 @@ export default function DepartmentManagement() {
                             <span className="px-2.5 py-1 bg-chat-hover text-chat-text text-xs font-medium rounded">
                               {ROLE_LABELS[member.role] || "N/A"}
                             </span>
-                            <button className="text-chat-muted hover:text-[#0052cc] text-sm font-medium">Chuyển</button>
                           </div>
                         </div>
                       ))}
@@ -186,10 +235,65 @@ export default function DepartmentManagement() {
               </div>
             );
           })}
+          
+          {/* Chưa phân phòng ban */}
+          {(() => {
+            const unassigned = users.filter(u => !u.department || u.department === "" || u.department === "Chưa xếp phòng" || u.department === "Chưa phân phòng ban");
+            if (unassigned.length === 0) return null;
+            const isExpanded = expandedDeptId === "unassigned";
+
+            return (
+              <div className="bg-chat-sidebar border border-chat-border rounded-xl overflow-hidden shadow-sm transition-all duration-200 opacity-70 mt-6">
+                <div
+                  className="p-5 flex items-center justify-between bg-chat-hover/10 border-b border-chat-border cursor-pointer hover:bg-chat-hover/30 select-none group"
+                  onClick={() => toggleDept("unassigned")}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-chat-hover flex items-center justify-center shrink-0">
+                      <Building className="w-6 h-6 text-chat-muted" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-chat-text">Chưa phân phòng ban</h3>
+                      <p className="text-sm text-chat-muted mt-0.5">{unassigned.length} nhân sự</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 ml-2 text-chat-muted">
+                      {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                    </div>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="bg-chat-main/50 animate-in slide-in-from-top-2 duration-200">
+                    <div className="divide-y divide-chat-border">
+                      {unassigned.map((member) => (
+                        <div key={member._id} className="flex items-center justify-between p-4 hover:bg-chat-hover/50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <img src={member.profilePicture || "/avatar.png"} alt={member.fullname} className="w-10 h-10 rounded-full object-cover" />
+                            <div>
+                              <p className="font-medium text-chat-text text-[15px]">{member.fullname}</p>
+                              <p className="text-sm text-chat-muted">{member.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="px-2.5 py-1 bg-chat-hover text-chat-text text-xs font-medium rounded">
+                              {ROLE_LABELS[member.role] || "N/A"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
         </div>
       </div>
 
-      {/* Add Department Modal */}
+      {/* Add Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="bg-chat-sidebar border-chat-border text-chat-text sm:max-w-[425px]">
           <DialogHeader>
@@ -197,17 +301,19 @@ export default function DepartmentManagement() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex flex-col gap-2">
-              <label htmlFor="name" className="text-sm font-medium text-chat-muted">Tên phòng ban</label>
+              <label className="text-sm font-medium text-chat-muted">Tên phòng ban</label>
               <input
-                id="name"
+                value={deptName}
+                onChange={e => setDeptName(e.target.value)}
                 className="bg-chat-main border border-chat-border rounded-md p-2 text-chat-text focus:outline-none focus:border-[#0052cc]"
                 placeholder="VD: Phòng Marketing"
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label htmlFor="desc" className="text-sm font-medium text-chat-muted">Mô tả</label>
+              <label className="text-sm font-medium text-chat-muted">Mô tả</label>
               <textarea
-                id="desc"
+                value={deptDesc}
+                onChange={e => setDeptDesc(e.target.value)}
                 className="bg-chat-main border border-chat-border rounded-md p-2 text-chat-text focus:outline-none focus:border-[#0052cc] h-20 resize-none"
                 placeholder="Mô tả chức năng của phòng ban..."
               />
@@ -217,8 +323,76 @@ export default function DepartmentManagement() {
             <Button variant="outline" onClick={() => setIsAddModalOpen(false)} className="border-chat-border text-chat-text hover:bg-chat-hover">
               Hủy
             </Button>
-            <Button onClick={() => setIsAddModalOpen(false)} className="bg-[#0052cc] hover:bg-[#0052cc]/90 text-white">
+            <Button onClick={handleAddSubmit} className="bg-[#0052cc] hover:bg-[#0052cc]/90 text-white">
               Tạo mới
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="bg-chat-sidebar border-chat-border text-chat-text sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-chat-text">Chỉnh Sửa Phòng Ban</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-chat-muted">Tên phòng ban</label>
+              <input
+                value={deptName}
+                onChange={e => setDeptName(e.target.value)}
+                className="bg-chat-main border border-chat-border rounded-md p-2 text-chat-text focus:outline-none focus:border-[#0052cc]"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-chat-muted">Mô tả</label>
+              <textarea
+                value={deptDesc}
+                onChange={e => setDeptDesc(e.target.value)}
+                className="bg-chat-main border border-chat-border rounded-md p-2 text-chat-text focus:outline-none focus:border-[#0052cc] h-20 resize-none"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-chat-muted">Trưởng phòng</label>
+              <select
+                value={deptManagerId}
+                onChange={e => setDeptManagerId(e.target.value)}
+                className="bg-chat-main border border-chat-border rounded-md p-2 text-chat-text focus:outline-none focus:border-[#0052cc] cursor-pointer"
+              >
+                <option value="">Chọn tự động (hoặc không có)</option>
+                {users.filter(u => u.department === selectedDept?.name).map(u => (
+                  <option key={u._id} value={u._id}>{u.fullname}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)} className="border-chat-border text-chat-text hover:bg-chat-hover">
+              Hủy
+            </Button>
+            <Button onClick={handleEditSubmit} className="bg-[#0052cc] hover:bg-[#0052cc]/90 text-white">
+              Lưu thay đổi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="bg-chat-sidebar border-chat-border text-chat-text sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-chat-text">Xóa Phòng Ban</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-chat-muted">
+            Bạn có chắc chắn muốn xóa phòng ban <strong>{selectedDept?.name}</strong> không? Các nhân sự trong phòng ban này sẽ được chuyển thành trạng thái "Chưa phân phòng ban". Hành động này không thể hoàn tác.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} className="border-chat-border text-chat-text hover:bg-chat-hover">
+              Hủy
+            </Button>
+            <Button onClick={handleDeleteSubmit} className="bg-red-600 hover:bg-red-700 text-white">
+              Xác nhận xóa
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,6 +2,7 @@ import express from 'express';
 import {
     createGroup,
     getMyGroups,
+    getAllGroups,
     getGroupDetail,
     updateGroup,
     deleteGroup,
@@ -30,6 +31,7 @@ router.use(protectRoute);
 
 router.post("/groups", createGroup);
 router.get("/groups", getMyGroups);
+router.get("/all-groups", getAllGroups);
 router.get("/groups/:id", getGroupDetail);
 router.put("/groups/:id", updateGroup);
 router.put("/groups/:id/settings", updateGroupSettings);

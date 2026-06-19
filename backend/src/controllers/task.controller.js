@@ -171,6 +171,21 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ message: "Phải có ít nhất một người được giao việc" });
     }
 
+    const assigneesDocs = await User.find({ _id: { $in: allAssigneeIds } });
+
+    // Role-based validation
+    if (req.user.role === "moderator") {
+      const invalidUsers = assigneesDocs.filter((u) => u.department !== req.user.department);
+      if (invalidUsers.length > 0) {
+        return res.status(403).json({ message: "Quản lý chỉ có thể giao việc cho nhân viên cùng phòng ban" });
+      }
+    } else if (req.user.role === "admin") {
+      const invalidUsers = assigneesDocs.filter((u) => u.role !== "admin");
+      if (invalidUsers.length > 0) {
+        return res.status(403).json({ message: "Quản trị viên chỉ có thể giao việc cho các quản trị viên khác" });
+      }
+    }
+
     // Format assignees với personalNote
     const formattedAssignees = allAssigneeIds.map((userId) => ({
       user: userId,
@@ -204,7 +219,6 @@ export const createTask = async (req, res) => {
     const clientUrl = ENV.CLIENT_URL || "http://localhost:5173";
     const creatorName = req.user.fullname;
 
-    const assigneesDocs = await User.find({ _id: { $in: allAssigneeIds } });
     const promises = assigneesDocs.map(async (assigneeDoc) => {
       const assigneeId = assigneeDoc._id.toString();
       const dateStr = new Date(deadline).toLocaleDateString("vi-VN");

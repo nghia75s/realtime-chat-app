@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react"
 import { Mail, Calendar, Phone, User as UserIcon, Camera, Save, Building } from "lucide-react"
 import { toast } from "react-hot-toast"
 import type { AdminUser } from "@/store/useAdminStore"
-import { DEPARTMENTS } from "@/store/useAdminStore"
+import { useAdminStore } from "@/store/useAdminStore"
 
 export interface EditUserFields {
   fullname: string;
@@ -210,8 +210,8 @@ export function UserDetailEdit({ user, onSave, onCancel, isLoading }: UserDetail
                 className="bg-transparent border-none outline-none text-sm text-chat-text w-full cursor-pointer focus:ring-0"
               >
                 <option value="" className="bg-chat-sidebar text-chat-text">Chưa xếp phòng</option>
-                {DEPARTMENTS.map((dept) => (
-                  <option key={dept} value={dept} className="bg-chat-sidebar text-chat-text">{dept}</option>
+                {useAdminStore.getState().departments.map((dept) => (
+                  <option key={dept._id} value={dept.name} className="bg-chat-sidebar text-chat-text">{dept.name}</option>
                 ))}
               </select>
             </div>

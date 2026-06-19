@@ -1,6 +1,6 @@
 import express from "express";
 import User from "../models/User.js";
-import { getAllUsers, updateUserRole, updateUserStatus, updateUserDepartment, getAllRoles, updateRolePermissions, updateUserProfileAdmin } from "../controllers/admin.controller.js";
+import { getAllUsers, updateUserRole, updateUserStatus, updateUserDepartment, getAllRoles, updateRolePermissions, updateUserProfileAdmin, getAllDepartments, createDepartment, updateDepartment, deleteDepartment } from "../controllers/admin.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
@@ -23,5 +23,10 @@ router.patch("/users/:id/department", updateUserDepartment);
 
 router.get("/roles", getAllRoles);
 router.patch("/roles/:id/permissions", updateRolePermissions);
+
+router.get("/departments", getAllDepartments);
+router.post("/departments", createDepartment);
+router.put("/departments/:id", updateDepartment);
+router.delete("/departments/:id", deleteDepartment);
 
 export default router;

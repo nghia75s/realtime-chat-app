@@ -85,6 +85,20 @@ export const getMyGroups = async (req, res) => {
     }
 };
 
+export const getAllGroups = async (req, res) => {
+    try {
+        // Fetch all groups in the system (only needed fields for task assignment)
+        const groups = await Group.find()
+            .populate("members", "fullname department role profilePicture")
+            .populate("createdBy", "fullname");
+            
+        res.status(200).json(groups);
+    } catch (error) {
+        console.log("Error in getAllGroups controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 export const sendGroupMessage = async (req, res) => {
     try {
         const { text, image, file, replyTo } = req.body;
