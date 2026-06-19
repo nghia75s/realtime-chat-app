@@ -542,7 +542,8 @@ export function MainChatArea({ isRightSidebarOpen, onToggleRightSidebar, request
 
               const hideHeader = prevMsg &&
                 (prevMsg.senderId?._id || prevMsg.senderId) === (msg.senderId?._id || msg.senderId) &&
-                !isDifferentDate;
+                !isDifferentDate &&
+                (new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 60000);
 
               const dateDivider = isDifferentDate ? (
                 <div className="flex justify-center my-4">

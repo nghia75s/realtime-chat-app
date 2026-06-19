@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { toast } from "react-hot-toast"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -11,32 +12,89 @@ import {
 import {
   Settings as SettingsIcon,
   Lock,
-  RefreshCcw,
   Brush,
   Bell,
   Monitor,
-  Laptop
+  Laptop,
+  Eye,
+  EyeOff
 } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { settingActions } from "../actions/settingActions"
 import { useThemeStore } from "@/store/useThemeStore"
+import { useAuthStore } from "@/store/useAuthStore"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type TabType = "general" | "appearance" | "notifications";
+type TabType = "general" | "appearance" | "notifications" | "security";
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("general")
   const [language, setLanguage] = useState<"vi" | "en">("vi")
   const { theme, setTheme } = useThemeStore() // lấy theme hiện tại + hàm đổi theme
+  const { changePassword } = useAuthStore()
+
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  const checkPasswordStrength = (password: string) => {
+    if (!password) return 0;
+    let s = 0;
+    if (password.length >= 8) s++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) s++;
+    if (/\d/.test(password)) s++;
+    if (/[^a-zA-Z\d]/.test(password)) s++;
+    return s;
+  }
+  const strength = checkPasswordStrength(newPassword);
+
+  const getStrengthLabel = (s: number) => {
+    if (s === 0) return { label: "", color: "bg-zinc-200 dark:bg-zinc-700" };
+    if (s === 1) return { label: "Yếu", color: "bg-red-500" };
+    if (s === 2) return { label: "Trung bình", color: "bg-yellow-500" };
+    if (s === 3) return { label: "Khá", color: "bg-blue-500" };
+    return { label: "Mạnh", color: "bg-green-500" };
+  }
+  const { label: strengthLabel, color: strengthColor } = getStrengthLabel(strength);
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+    if (strength < 2) {
+      toast.error("Vui lòng chọn mật khẩu mạnh hơn!");
+      return;
+    }
+    try {
+      await changePassword({ currentPassword, newPassword });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      // Error is handled in store
+    }
+  }
 
   const tabs = [
     { id: "general", icon: SettingsIcon, label: "Cài đặt chung" },
     { id: "appearance", icon: Brush, label: "Giao diện" },
     { id: "notifications", icon: Bell, label: "Thông báo" },
+    { id: "security", icon: Lock, label: "Bảo mật" },
   ] as const;
 
   return (
@@ -223,6 +281,103 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                     </div>
                   </RadioGroup>
+                </div>
+              </div>
+            )}
+
+            {/* --- TAB BẢO MẬT --- */}
+            {activeTab === "security" && (
+              <div className="flex flex-col gap-8 animate-in fade-in duration-200 w-full pt-1 max-w-md">
+                <div className="flex flex-col gap-4">
+                  <h3 className="font-semibold text-[15px] mb-1">Đổi mật khẩu</h3>
+
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <Label className="text-[13px] text-chat-text mb-1.5 block">Mật khẩu hiện tại</Label>
+                      <div className="relative">
+                        <Input
+                          type={showCurrentPassword ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="Nhập mật khẩu hiện tại"
+                          className="bg-chat-sidebar border-chat-border h-10 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-chat-muted hover:text-chat-text"
+                        >
+                          {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-[13px] text-chat-text mb-1.5 block">Mật khẩu mới</Label>
+                      <div className="relative">
+                        <Input
+                          type={showNewPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Nhập mật khẩu mới"
+                          className="bg-chat-sidebar border-chat-border h-10 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-chat-muted hover:text-chat-text"
+                        >
+                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {newPassword.length > 0 && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 flex gap-1 h-1.5">
+                            {[1, 2, 3, 4].map((level) => (
+                              <div
+                                key={level}
+                                className={`flex-1 rounded-full ${strength >= level ? strengthColor : 'bg-zinc-200 dark:bg-zinc-700'
+                                  } transition-colors duration-300`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[12px] font-medium min-w-[70px] text-right" style={{ color: strength > 0 ? 'var(--chat-text)' : 'transparent' }}>
+                            {strengthLabel}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label className="text-[13px] text-chat-text mb-1.5 block">Xác nhận mật khẩu mới</Label>
+                      <div className="relative">
+                        <Input
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Xác nhận mật khẩu mới"
+                          className="bg-chat-sidebar border-chat-border h-10 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-chat-muted hover:text-chat-text"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      onClick={handleChangePassword}
+                      className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white"
+                      disabled={!currentPassword || !newPassword || !confirmPassword || strength < 2 || newPassword !== confirmPassword}
+                    >
+                      Cập nhật mật khẩu
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}

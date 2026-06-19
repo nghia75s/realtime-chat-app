@@ -396,7 +396,14 @@ export const recallMessage = async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
-    const message = await Message.findById(id);
+    let message = await Message.findById(id);
+    let isGroup = false;
+
+    if (!message) {
+      message = await GroupMessage.findById(id);
+      isGroup = true;
+    }
+
     if (!message) return res.status(404).json({ message: "Message not found" });
 
     // Only sender can recall
@@ -407,14 +414,59 @@ export const recallMessage = async (req, res) => {
     message.isRecalled = true;
     await message.save();
 
-    // Emit to both sender and receiver
     const payload = { messageId: message._id, isRecalled: true };
-    emitToUser(message.senderId.toString(), "messageRecalled", payload);
-    emitToUser(message.receiverId.toString(), "messageRecalled", payload);
+
+    if (isGroup) {
+      const group = await mongoose.model("Group").findById(message.groupId);
+      if (group) {
+        group.members.forEach((memberId) => {
+          emitToUser(memberId.toString(), "messageRecalled", payload);
+        });
+      }
+    } else {
+      // Emit to both sender and receiver
+      emitToUser(message.senderId.toString(), "messageRecalled", payload);
+      emitToUser(message.receiverId.toString(), "messageRecalled", payload);
+    }
 
     res.status(200).json(message);
   } catch (error) {
     console.error("Error in recallMessage:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// PUT /api/messages/:id/admin-delete
+export const adminDeleteMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const message = await GroupMessage.findById(id);
+    if (!message) return res.status(404).json({ message: "Message not found or not a group message" });
+
+    const group = await mongoose.model("Group").findById(message.groupId);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    const isCreator = group.createdBy.toString() === userId.toString();
+    const isAdmin = group.admins && group.admins.some(adminId => adminId.toString() === userId.toString());
+
+    if (!isCreator && !isAdmin) {
+      return res.status(403).json({ message: "You don't have permission to delete this message" });
+    }
+
+    message.deletedByAdmin = true;
+    await message.save();
+
+    const payload = { messageId: message._id, deletedByAdmin: true };
+
+    group.members.forEach((memberId) => {
+      emitToUser(memberId.toString(), "messageAdminDeleted", payload);
+    });
+
+    res.status(200).json(message);
+  } catch (error) {
+    console.error("Error in adminDeleteMessage:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -425,7 +477,11 @@ export const deleteMessage = async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
-    const message = await Message.findById(id);
+    let message = await Message.findById(id);
+    if (!message) {
+      message = await GroupMessage.findById(id);
+    }
+
     if (!message) return res.status(404).json({ message: "Message not found" });
 
     if (!message.deletedBy.includes(userId)) {

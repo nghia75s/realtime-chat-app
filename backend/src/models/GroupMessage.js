@@ -44,6 +44,10 @@ const groupMessageSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
     },
+    deletedByAdmin: {
+        type: Boolean,
+        default: false,
+    },
     isForwarded: {
         type: Boolean,
         default: false,

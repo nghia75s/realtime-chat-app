@@ -78,7 +78,12 @@ export const chatService = {
   },
 
   recallMessage: async (messageId: string) => {
-    const res = await axiosInstance.put(`messages/${messageId}/recall`);
+    const res = await axiosInstance.put(`/messages/${messageId}/recall`);
+    return res.data;
+  },
+
+  adminDeleteMessage: async (messageId: string) => {
+    const res = await axiosInstance.put(`/messages/${messageId}/admin-delete`);
     return res.data;
   },
 

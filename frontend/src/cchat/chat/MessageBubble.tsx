@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean, onAvatarClick?: (user: any) => void }) {
   const { msg, onImageLoad, onImageClick, onAvatarClick, senderAvatar, senderName, isGroupChat, onReply, onForward, hideHeader, canPin = true, isAdminMsg = false, highlightAdminMessages = false } = props
   const { authUser } = useAuthStore()
-  const { recallMessage, deleteMessage, pinMessage } = useChatStore()
+  const { recallMessage, deleteMessage, pinMessage, adminDeleteMessage, selectedUser } = useChatStore()
   const { 
     isSelectionMode, 
     toggleMessageSelection, 
@@ -37,6 +37,18 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
   const isSelected = selectedMessageIds.includes(msg._id)
   const isRecalled = msg.isRecalled === true
   const isForwarded = msg.isForwarded === true
+  const isDeletedByAdmin = msg.deletedByAdmin === true
+
+  const authId = authUser?._id?.toString()
+  const creatorIdRaw = selectedUser?.createdBy
+  const creatorId = typeof creatorIdRaw === 'object' ? creatorIdRaw?._id?.toString() : creatorIdRaw?.toString()
+  
+  const isGroupCreator = isGroupChat && authId && creatorId && authId === creatorId
+  const isGroupAdmin = isGroupChat && authId && selectedUser?.admins?.some((admin: any) => {
+    const adminId = typeof admin === 'object' ? admin?._id?.toString() : admin?.toString()
+    return adminId === authId
+  })
+  const canAdminDelete = isGroupCreator || isGroupAdmin
 
   const timeStr = new Date(msg.createdAt).toLocaleTimeString(undefined, {
     hour: "2-digit", minute: "2-digit",
@@ -92,6 +104,15 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
     }
   }
 
+  const handleAdminDelete = async () => {
+    try {
+      await adminDeleteMessage(msg._id);
+      toast.success("Đã xóa tin nhắn (Quản trị)");
+    } catch (error) {
+      // Error handled in store
+    }
+  }
+
   const toggleSelect = () => {
     toggleMessageSelection(msg._id, msg)
   }
@@ -132,7 +153,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
         )}
 
         {/* Quick Action Bar (Tin của MÌNH) */}
-        {isMe && !isSelectionMode && !isRecalled && (
+        {isMe && !isSelectionMode && !isRecalled && !isDeletedByAdmin && (
           <QuickActionBar 
             msg={msg} 
             isMe={isMe} 
@@ -144,8 +165,10 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
             onDetails={() => openDetailsModal(msg)}
             onRecall={handleRecall}
             onDelete={handleDelete}
+            onAdminDelete={handleAdminDelete}
             onPin={handlePin}
             canPin={canPin}
+            canAdminDelete={canAdminDelete}
             onDropdownChange={setIsDropdownOpen}
           />
         )}
@@ -165,7 +188,12 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
           )}
 
           {/* --- Trạng thái THU HỒI --- */}
-          {isRecalled ? (
+          {isDeletedByAdmin ? (
+            <div className={`px-4 py-2.5 rounded-xl text-[14px] italic border ${isMe ? "border-zinc-300 dark:border-[#3a3b3e] bg-zinc-100 dark:bg-[#2b2d31]/50 text-zinc-500 dark:text-[#a1a1a1]" : "border-zinc-300 dark:border-[#3a3b3e] bg-zinc-100 dark:bg-[#2b2d31]/50 text-zinc-500 dark:text-[#a1a1a1]"}`}>
+              Tin nhắn đã bị xóa bởi quản trị viên
+              <div className="text-[10px] mt-1 text-right opacity-70">{timeStr}</div>
+            </div>
+          ) : isRecalled ? (
             <div className={`px-4 py-2.5 rounded-xl text-[14px] italic border ${isMe ? "border-zinc-300 dark:border-[#3a3b3e] bg-zinc-100 dark:bg-[#2b2d31]/50 text-zinc-500 dark:text-[#a1a1a1]" : "border-zinc-300 dark:border-[#3a3b3e] bg-zinc-100 dark:bg-[#2b2d31]/50 text-zinc-500 dark:text-[#a1a1a1]"}`}>
               Tin nhắn đã được thu hồi
               <div className="text-[10px] mt-1 text-right opacity-70">{timeStr}</div>
@@ -357,7 +385,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
         </div>
 
         {/* Quick Action Bar (Tin của NGƯỜI KHÁC) */}
-        {!isMe && !isSelectionMode && !isRecalled && (
+        {!isMe && !isSelectionMode && !isRecalled && !isDeletedByAdmin && (
           <QuickActionBar 
             msg={msg} 
             isMe={isMe} 
@@ -369,8 +397,10 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
             onDetails={() => openDetailsModal(msg)}
             onRecall={handleRecall}
             onDelete={handleDelete}
+            onAdminDelete={handleAdminDelete}
             onPin={handlePin}
             canPin={canPin}
+            canAdminDelete={canAdminDelete}
             onDropdownChange={setIsDropdownOpen}
           />
         )}
@@ -380,7 +410,7 @@ export function MessageBubble(props: MessageBubbleProps & { hideHeader?: boolean
 }
 
 // === Component Thanh Nút Tương Tác ===
-function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectMany, onDetails, onRecall, onDelete, onPin, canPin, onDropdownChange }: any) {
+function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectMany, onDetails, onRecall, onDelete, onAdminDelete, onPin, canPin, canAdminDelete, onDropdownChange }: any) {
   return (
     <div className={`flex items-center gap-0.5 ${isMe ? "mr-1.5" : "ml-1.5"} transition-opacity duration-150 ${show ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
       <TooltipProvider delayDuration={200}>
@@ -449,6 +479,11 @@ function QuickActionBar({ msg, isMe, show, onReply, onForward, onCopy, onSelectM
             {isMe && (
               <DropdownMenuItem onClick={onRecall} className="cursor-pointer text-red-400 hover:text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-400 py-2">
                 <RotateCcw className="w-4 h-4 mr-2" /> Thu hồi
+              </DropdownMenuItem>
+            )}
+            {!isMe && canAdminDelete && (
+              <DropdownMenuItem onClick={onAdminDelete} className="cursor-pointer text-red-400 hover:text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-400 py-2">
+                <Trash2 className="w-4 h-4 mr-2" /> Xóa (Quản trị)
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={onDelete} className="cursor-pointer text-red-400 hover:text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-400 py-2">

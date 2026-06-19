@@ -1,5 +1,5 @@
 import express from "express";
-import { signup, login, logout, updateProfile, sendotp, verifyotp, verifyLoginOtp, pinChat, muteChat, verifyForgotOtp, resetPassword, sendResetLink, redirectReset } from "../controllers/auth.controller.js";
+import { signup, login, logout, updateProfile, sendotp, verifyotp, verifyLoginOtp, pinChat, muteChat, verifyForgotOtp, resetPassword, sendResetLink, redirectReset, changePassword } from "../controllers/auth.controller.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
@@ -17,6 +17,7 @@ router.post("/send-reset-link", sendResetLink);
 router.get("/reset/:token", redirectReset);
 
 router.put("/update-profile", protectRoute, updateProfile);
+router.put("/change-password", protectRoute, changePassword);
 router.post("/pin-chat", protectRoute, pinChat);
 router.post("/mute-chat", protectRoute, muteChat);
 

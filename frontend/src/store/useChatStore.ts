@@ -52,6 +52,7 @@ interface ChatStore {
     sendDocumentMessage: (receiverId: string, documentPayload: DocumentPayload) => Promise<any>;
     replyDocumentMessage: (messageId: string, status: "approved" | "rejected", note?: string) => Promise<any>;
     recallMessage: (messageId: string) => Promise<any>;
+    adminDeleteMessage: (messageId: string) => Promise<any>;
     deleteMessage: (messageId: string) => Promise<any>;
     forwardMessage: (messageId: string, receiverIds: string[], note?: string) => Promise<any>;
     updateGroupSettings: (groupId: string, settings: any) => Promise<any>;
@@ -489,6 +490,27 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 messages: state.messages.map((m) =>
                     m._id === messageId ? { ...m, isRecalled } : m
                 ),
+                groups: state.groups.map(g => 
+                    g.lastMessage?._id === messageId ? { ...g, lastMessage: { ...g.lastMessage, isRecalled } } : g
+                ),
+                chats: state.chats.map(c => 
+                    c.lastMessage?._id === messageId ? { ...c, lastMessage: { ...c.lastMessage, isRecalled } } : c
+                )
+            }));
+        });
+
+        socket.off("messageAdminDeleted");
+        socket.on("messageAdminDeleted", ({ messageId, deletedByAdmin }: { messageId: string; deletedByAdmin: boolean }) => {
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? { ...m, deletedByAdmin } : m
+                ),
+                groups: state.groups.map(g => 
+                    g.lastMessage?._id === messageId ? { ...g, lastMessage: { ...g.lastMessage, deletedByAdmin } } : g
+                ),
+                chats: state.chats.map(c => 
+                    c.lastMessage?._id === messageId ? { ...c, lastMessage: { ...c.lastMessage, deletedByAdmin } } : c
+                )
             }));
         });
 
@@ -545,6 +567,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         socket?.off("documentReplied");
         socket?.off("docApprovalNotif");
         socket?.off("messageRecalled");
+        socket?.off("messageAdminDeleted");
     },
     fetchUnreadSummary: async () => {
         try {
@@ -628,11 +651,38 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             set((state) => ({
                 messages: state.messages.map((m) =>
                     m._id === messageId ? { ...m, isRecalled: true } : m
+                ),
+                groups: state.groups.map(g => 
+                    g.lastMessage?._id === messageId ? { ...g, lastMessage: { ...g.lastMessage, isRecalled: true } } : g
+                ),
+                chats: state.chats.map(c => 
+                    c.lastMessage?._id === messageId ? { ...c, lastMessage: { ...c.lastMessage, isRecalled: true } } : c
                 )
             }));
             return data;
         } catch (error: any) {
             toast.error(error.response?.data?.message || "Lỗi thu hồi tin nhắn");
+            throw error;
+        }
+    },
+
+    adminDeleteMessage: async (messageId) => {
+        try {
+            const data = await chatService.adminDeleteMessage(messageId);
+            set((state) => ({
+                messages: state.messages.map((m) =>
+                    m._id === messageId ? { ...m, deletedByAdmin: true } : m
+                ),
+                groups: state.groups.map(g => 
+                    g.lastMessage?._id === messageId ? { ...g, lastMessage: { ...g.lastMessage, deletedByAdmin: true } } : g
+                ),
+                chats: state.chats.map(c => 
+                    c.lastMessage?._id === messageId ? { ...c, lastMessage: { ...c.lastMessage, deletedByAdmin: true } } : c
+                )
+            }));
+            return data;
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi xóa tin nhắn (quản trị)");
             throw error;
         }
     },

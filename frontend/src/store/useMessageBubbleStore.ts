@@ -44,6 +44,9 @@ export interface Message {
   };
   isRecalled?: boolean;
   isForwarded?: boolean;
+  deletedByAdmin?: boolean;
+  isPinned?: boolean;
+  pinnedBy?: string | MessageSender;
   replyTo?: any;
   messageType?: "text" | "file" | "document" | "task_assignment" | "system";
   documentPayload?: DocumentPayload;

@@ -49,6 +49,7 @@ interface AuthStore {
   updateProfile: (data: any) => Promise<void>;
   pinChat: (chatId: string) => Promise<void>;
   muteChat: (chatId: string, mutedUntil?: string | null) => Promise<void>;
+  changePassword: (data: any) => Promise<void>;
   connectSocket: () => void;
   disconnectSocket: () => void;
   roleChangeAlert: { oldRole: string, newRole: string } | null;
@@ -219,6 +220,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } catch (error) {
       console.log("Error muting chat:", error);
       toast.error("Không thể cấu hình thông báo.");
+    }
+  },
+
+  changePassword: async (data: any) => {
+    try {
+      const resData = await authService.changePassword(data);
+      toast.success(resData.message || "Đổi mật khẩu thành công.");
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Đổi mật khẩu thất bại.";
+      toast.error(message);
+      throw error;
     }
   },
 

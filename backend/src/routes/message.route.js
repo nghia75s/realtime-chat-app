@@ -9,6 +9,7 @@ import {
   sendDocumentMessage,
   replyDocumentMessage,
   recallMessage,
+  adminDeleteMessage,
   deleteMessage,
   forwardMessage,
   pinMessage,
@@ -36,6 +37,7 @@ router.post("/send/:id", sendMessage);
 router.post("/send-document/:id", sendDocumentMessage);
 router.patch("/:id/document-reply", replyDocumentMessage);
 router.put("/:id/recall", recallMessage);
+router.put("/:id/admin-delete", adminDeleteMessage);
 router.put("/:id/delete", deleteMessage);
 
 // Poll & Note Routes

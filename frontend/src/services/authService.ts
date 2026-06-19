@@ -63,5 +63,10 @@ export const authService = {
   muteChat: async (chatId: string, mutedUntil?: string | null) => {
     const res = await axiosInstance.post("/auth/mute-chat", { chatId, mutedUntil });
     return res.data;
+  },
+
+  changePassword: async (data: any) => {
+    const res = await axiosInstance.put("/auth/change-password", data);
+    return res.data;
   }
 };
