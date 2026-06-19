@@ -382,7 +382,7 @@ export function LoginForm({
 
                   <button
                     type="button"
-                    disabled={isLoading || successMessage !== ""}
+                    disabled={isLoading}
                     className="w-full text-zinc-400 hover:text-zinc-200 mt-2 text-[14px] flex items-center justify-center gap-1.5 transition-colors"
                     onClick={() => {
                       setView("login")
@@ -397,75 +397,6 @@ export function LoginForm({
             </form>
           )}
 
-          {view === "forgot-password" && (
-            <form onSubmit={handleForgotSubmit} className="w-full">
-              <div className="flex flex-col gap-5">
-                <div className="flex flex-col items-center gap-2 text-center mb-4">
-                  {/* Overlapping logo speech bubbles */}
-                  <div className="relative w-12 h-10 mb-2">
-                    <div className="absolute top-0 left-0 w-7 h-7 rounded-full bg-[#38bdf8]/90 flex items-center justify-center shadow-[0_2px_10px_rgba(56,189,248,0.3)]">
-                      <MessageCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-[#6366f1]/90 flex items-center justify-center shadow-[0_2px_10px_rgba(99,102,241,0.3)]">
-                      <MessageCircle className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  <h1 className="text-2xl font-bold text-white">Khôi phục quyền truy cập</h1>
-                  <p className="text-[14px] text-zinc-400 text-balance">
-                    Nhập địa chỉ email của bạn để nhận liên kết đặt lại mật khẩu
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="forgot-email" className="text-[14px] font-normal text-zinc-400">Địa chỉ Email</label>
-                    <Input
-                      id="forgot-email"
-                      type="email"
-                      placeholder="m@example.com"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      disabled={isLoading || successMessage !== ""}
-                      className={cn("bg-black/35 border border-white/10 text-white placeholder:text-zinc-600 rounded-lg py-2.5 px-3 text-[15px] focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/50 transition-all outline-none w-full", error ? "border-red-500/50" : "")}
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <p className="text-[14px] rounded-md bg-red-500/10 text-red-400 font-medium p-2.5 text-center border border-red-500/20">{error}</p>
-                )}
-
-                {successMessage && (
-                  <p className="text-[14px] rounded-md bg-emerald-500/10 text-emerald-400 font-medium p-2.5 text-center border border-emerald-500/20">
-                    {successMessage}
-                  </p>
-                )}
-
-                <div className="flex flex-col gap-2.5">
-                  <Button
-                    type="submit"
-                    disabled={isLoading || successMessage !== ""}
-                    className="w-full bg-gradient-to-r from-[#1d4ed8] to-[#7c3aed] text-white rounded-lg py-2.5 font-normal text-[16px] hover:from-[#2563eb] hover:to-[#8b5cf6] transition-all shadow-md focus:outline-none flex items-center justify-center"
-                  >
-                    {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Gửi liên kết khôi phục"}
-                  </Button>
-
-                  <button
-                    type="button"
-                    disabled={isLoading || successMessage !== ""}
-                    className="w-full text-zinc-400 hover:text-zinc-200 mt-2 text-[14px] flex items-center justify-center gap-1.5 transition-colors"
-                    onClick={() => {
-                      setView("login")
-                      setError("")
-                      setSuccessMessage("")
-                    }}
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" /> Quay lại đăng nhập
-                  </button>
-                </div>
-              </div>
-            </form>
-          )}
         </div>
 
         {/* Right Column: Visual illustration panel */}

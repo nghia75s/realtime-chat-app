@@ -26,18 +26,20 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
 
   // Overall Stats
   const totalTasks = tasks.length;
-  const pendingTasks = tasks.filter(t => t.status === "pending").length;
+  const pendingTasks = tasks.filter(t => t.status === "pending" && new Date() <= new Date(t.deadline)).length;
+  const overdueTasks = tasks.filter(t => t.status !== "done" && new Date() > new Date(t.deadline)).length;
   const doneTasks = tasks.filter(t => t.status === "done").length;
-  const rejectedTasks = tasks.filter(t => (t.status as string) === "rejected").length;
+  const rejectedTasks = tasks.filter(t => (t.status as string) === "rejected" && new Date() <= new Date(t.deadline)).length;
 
   const overviewChartData = [
     { name: 'Đang chờ', value: pendingTasks, color: '#f59e0b' },
+    { name: 'Quá hạn', value: overdueTasks, color: '#f43f5e' },
     { name: 'Hoàn thành', value: doneTasks, color: '#10b981' },
     { name: 'Cần làm lại', value: rejectedTasks, color: '#ef4444' },
   ].filter(d => d.value > 0);
 
   // Performance Stats (Manager Only)
-  const employeeStats: Record<string, { fullname: string; profilePicture: string; total: number; done: number; pending: number; rejected: number }> = {};
+  const employeeStats: Record<string, { fullname: string; profilePicture: string; total: number; done: number; pending: number; rejected: number; overdue: number }> = {};
 
   if (role === "manager") {
     tasks.forEach(task => {
@@ -52,12 +54,21 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
             done: 0,
             pending: 0,
             rejected: 0,
+            overdue: 0,
           };
         }
         employeeStats[uid].total += 1;
-        if (assignee.status === "done") employeeStats[uid].done += 1;
-        else if (assignee.status === "rejected") employeeStats[uid].rejected += 1;
-        else employeeStats[uid].pending += 1;
+        const isOverdue = new Date() > new Date(task.deadline);
+        
+        if (assignee.status === "done") {
+          employeeStats[uid].done += 1;
+        } else if (isOverdue && (assignee.status === "pending" || assignee.status === "rejected")) {
+          employeeStats[uid].overdue += 1;
+        } else if (assignee.status === "rejected") {
+          employeeStats[uid].rejected += 1;
+        } else {
+          employeeStats[uid].pending += 1;
+        }
       });
     });
   }
@@ -81,14 +92,14 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
       <div className="flex items-center justify-between px-5 py-3 border-t border-chat-border bg-chat-sidebar">
         <span className="text-[12px] text-chat-muted">Trang {currentPage} / {totalPages}</span>
         <div className="flex items-center gap-2">
-          <button 
+          <button
             disabled={currentPage === 1}
             onClick={() => setPage(currentPage - 1)}
             className="p-1.5 rounded-md hover:bg-chat-hover border border-chat-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-chat-text"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <button 
+          <button
             disabled={currentPage === totalPages}
             onClick={() => setPage(currentPage + 1)}
             className="p-1.5 rounded-md hover:bg-chat-hover border border-chat-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-chat-text"
@@ -103,7 +114,7 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-[1100px] max-w-[95vw] h-[90vh] bg-chat-sidebar rounded-xl border border-chat-border shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-chat-border shrink-0 bg-chat-sidebar relative z-10 shadow-sm">
           <div className="flex items-center gap-3">
@@ -125,7 +136,7 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-chat-main space-y-6">
-          
+
           {/* Section 1: Overall Stats */}
           <div className="flex gap-6">
             <div className="w-1/3 bg-chat-sidebar border border-chat-border rounded-xl p-5 shadow-sm flex flex-col relative overflow-hidden">
@@ -146,6 +157,15 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                   <div>
                     <div className="text-[13px] text-chat-muted">Đang chờ</div>
                     <div className="text-[18px] font-semibold text-chat-text">{pendingTasks}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] text-chat-muted">Quá hạn</div>
+                    <div className="text-[18px] font-semibold text-chat-text">{overdueTasks}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -209,7 +229,7 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                   <User className="w-4 h-4 text-[#0052cc]" /> Hiệu suất nhân viên
                 </h3>
               </div>
-              
+
               {performanceData.length > 0 ? (
                 <div className="flex flex-col">
                   {/* Chart for Performance */}
@@ -226,7 +246,8 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                         <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                         <Bar dataKey="done" name="Hoàn thành" stackId="a" fill="#10b981" radius={[0, 0, 4, 4]} />
                         <Bar dataKey="pending" name="Đang chờ" stackId="a" fill="#f59e0b" />
-                        <Bar dataKey="rejected" name="Làm lại" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="rejected" name="Làm lại" stackId="a" fill="#ef4444" />
+                        <Bar dataKey="overdue" name="Quá hạn" stackId="a" fill="#f43f5e" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -242,7 +263,7 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                             <span className="text-[12px] text-chat-muted">{emp.total} công việc</span>
                           </div>
                         </div>
-                        
+
                         <div className="flex-1 flex flex-col gap-2 px-8">
                           <div className="flex justify-between text-[12px] text-chat-muted">
                             <span>Tỉ lệ hoàn thành: <span className="font-medium text-[#10b981]">{getPercentage(emp.done, emp.total)}%</span></span>
@@ -252,21 +273,26 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                             <div style={{ width: `${getPercentage(emp.done, emp.total)}%` }} className="h-full bg-[#10b981]"></div>
                             <div style={{ width: `${getPercentage(emp.pending, emp.total)}%` }} className="h-full bg-[#f59e0b]"></div>
                             <div style={{ width: `${getPercentage(emp.rejected, emp.total)}%` }} className="h-full bg-[#ef4444]"></div>
+                            <div style={{ width: `${getPercentage(emp.overdue, emp.total)}%` }} className="h-full bg-[#f43f5e]"></div>
                           </div>
                         </div>
 
-                        <div className="flex gap-4 w-[200px] justify-end">
-                          <div className="flex flex-col items-center">
+                        <div className="flex gap-4 w-[260px] justify-end">
+                          <div className="flex flex-col items-center w-[50px]">
                             <span className="text-[16px] font-semibold text-[#10b981]">{emp.done}</span>
-                            <span className="text-[11px] text-chat-muted">Đã xong</span>
+                            <span className="text-[11px] text-chat-muted text-center leading-tight">Đã xong</span>
                           </div>
-                          <div className="flex flex-col items-center">
+                          <div className="flex flex-col items-center w-[50px]">
                             <span className="text-[16px] font-semibold text-[#f59e0b]">{emp.pending}</span>
-                            <span className="text-[11px] text-chat-muted">Đang chờ</span>
+                            <span className="text-[11px] text-chat-muted text-center leading-tight">Đang chờ</span>
                           </div>
-                          <div className="flex flex-col items-center">
+                          <div className="flex flex-col items-center w-[50px]">
                             <span className="text-[16px] font-semibold text-[#ef4444]">{emp.rejected}</span>
-                            <span className="text-[11px] text-chat-muted">Làm lại</span>
+                            <span className="text-[11px] text-chat-muted text-center leading-tight">Làm lại</span>
+                          </div>
+                          <div className="flex flex-col items-center w-[50px]">
+                            <span className="text-[16px] font-semibold text-[#f43f5e]">{emp.overdue}</span>
+                            <span className="text-[11px] text-chat-muted text-center leading-tight">Quá hạn</span>
                           </div>
                         </div>
                       </div>
@@ -291,7 +317,7 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                   <FileText className="w-4 h-4 text-[#0052cc]" /> Chi tiết hiệu suất từng công việc
                 </h3>
               </div>
-              
+
               <div className="flex flex-col">
                 <div className="overflow-x-auto custom-scrollbar">
                   <table className="w-full text-left border-collapse">
@@ -308,10 +334,11 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                           <td className="px-5 py-4 align-top w-[30%]">
                             <div className="font-medium text-chat-text line-clamp-2">{task.title}</div>
                             <div className="text-[12px] text-chat-muted mt-1 flex items-center gap-1">
-                              Trạng thái chung: 
-                              {task.status === "done" ? <span className="text-green-500 font-medium">Hoàn thành</span> : 
-                               (task.status === "rejected" ? <span className="text-red-500 font-medium">Cần làm lại</span> : 
-                               <span className="text-amber-500 font-medium">Đang chờ</span>)}
+                              Trạng thái chung:
+                              {task.status === "done" ? <span className="text-green-500 font-medium">Hoàn thành</span> :
+                                (task.status === "rejected" && new Date() <= new Date(task.deadline) ? <span className="text-red-500 font-medium">Cần làm lại</span> :
+                                  (new Date() > new Date(task.deadline) ? <span className="text-red-500 font-medium">Quá hạn</span> :
+                                    <span className="text-amber-500 font-medium">Đang chờ</span>))}
                             </div>
                           </td>
                           <td className="px-5 py-4 align-top whitespace-nowrap">
@@ -322,35 +349,37 @@ export function TaskStatisticsModal({ tasks, role, onClose }: TaskStatisticsModa
                           </td>
                           <td className="px-5 py-4 align-top">
                             <div className="flex flex-col gap-2">
-                              <button 
+                              <button
                                 onClick={() => toggleTaskExpanded(task._id)}
                                 className="flex items-center gap-1.5 text-[13px] font-medium text-chat-text hover:text-[#0052cc] transition-colors w-fit bg-chat-hover px-2 py-1 rounded-md border border-chat-border"
                               >
-                                {task.assignees.length} thành viên tham gia 
+                                {task.assignees.length} thành viên tham gia
                                 {expandedTasks.has(task._id) ? <ChevronUp className="w-4 h-4 text-chat-muted" /> : <ChevronDown className="w-4 h-4 text-chat-muted" />}
                               </button>
-                              
+
                               {expandedTasks.has(task._id) && (
                                 <div className="flex flex-col gap-3 mt-1">
                                   {task.assignees.length > 0 ? task.assignees.map((a, i) => {
                                     if (!a || !a.user) return null;
                                     return (
-                                    <div key={a.user._id || i} className="flex items-start justify-between bg-chat-main border border-chat-border rounded-md p-2">
-                                      <div className="flex items-center gap-2">
-                                        <img src={a.user.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover" />
-                                        <div className="flex flex-col">
-                                          <span className="text-[13px] font-medium text-chat-text">{a.user.fullname}</span>
-                                          {a.personalNote && <span className="text-[11px] text-chat-muted italic line-clamp-1">Note: {a.personalNote}</span>}
+                                      <div key={a.user._id || i} className="flex items-start justify-between bg-chat-main border border-chat-border rounded-md p-2">
+                                        <div className="flex items-center gap-2">
+                                          <img src={a.user.profilePicture || "/avatar.png"} className="w-6 h-6 rounded-full object-cover" />
+                                          <div className="flex flex-col">
+                                            <span className="text-[13px] font-medium text-chat-text">{a.user.fullname}</span>
+                                            {a.personalNote && <span className="text-[11px] text-chat-muted italic line-clamp-1">Note: {a.personalNote}</span>}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center shrink-0 ml-2">
+                                          {a.status === "done" && <span className="bg-green-500/10 text-green-500 px-2 py-0.5 rounded text-[11px] font-medium">Đã nộp</span>}
+                                          {a.status === "submitted" && <span className="bg-[#0052cc]/10 text-[#0052cc] px-2 py-0.5 rounded text-[11px] font-medium">Chờ duyệt</span>}
+                                          {a.status === "rejected" && new Date() <= new Date(task.deadline) && <span className="bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-[11px] font-medium">Làm lại</span>}
+                                          {(a.status === "pending" || a.status === "rejected") && new Date() > new Date(task.deadline) && <span className="bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-[11px] font-medium">Quá hạn</span>}
+                                          {a.status === "pending" && new Date() <= new Date(task.deadline) && <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-[11px] font-medium">Đang làm</span>}
                                         </div>
                                       </div>
-                                      <div className="flex items-center shrink-0 ml-2">
-                                        {a.status === "done" && <span className="bg-green-500/10 text-green-500 px-2 py-0.5 rounded text-[11px] font-medium">Đã nộp</span>}
-                                        {a.status === "submitted" && <span className="bg-[#0052cc]/10 text-[#0052cc] px-2 py-0.5 rounded text-[11px] font-medium">Chờ duyệt</span>}
-                                        {a.status === "rejected" && <span className="bg-red-500/10 text-red-500 px-2 py-0.5 rounded text-[11px] font-medium">Làm lại</span>}
-                                        {a.status === "pending" && <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-[11px] font-medium">Đang làm</span>}
-                                      </div>
-                                    </div>
-                                  )}) : (
+                                    )
+                                  }) : (
                                     <span className="text-[12px] text-chat-muted italic">Không có người nhận</span>
                                   )}
                                 </div>

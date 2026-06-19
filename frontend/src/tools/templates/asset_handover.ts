@@ -9,10 +9,17 @@ export const assetHandoverTemplate: DocumentTemplate = {
     { id: "fromDepartment", label: "Phòng ban bàn giao", type: "text" },
     { id: "toName", label: "Người nhận", type: "text" },
     { id: "toDepartment", label: "Phòng ban nhận", type: "text" },
-    { id: "assetName", label: "Tên tài sản / thiết bị", type: "text" },
-    { id: "assetCode", label: "Mã tài sản", type: "text" },
-    { id: "quantity", label: "Số lượng", type: "number" },
-    { id: "condition", label: "Tình trạng tài sản", type: "text" },
+    { 
+      id: "assetList", 
+      label: "Danh sách tài sản bàn giao", 
+      type: "table",
+      columns: [
+        { id: "assetName", label: "Tên tài sản / thiết bị", type: "text" },
+        { id: "assetCode", label: "Mã tài sản", type: "text" },
+        { id: "quantity", label: "Số lượng", type: "number" },
+        { id: "condition", label: "Tình trạng", type: "text" }
+      ]
+    },
     { id: "notes", label: "Ghi chú", type: "textarea" },
   ],
   templateContent: `
@@ -54,27 +61,7 @@ export const assetHandoverTemplate: DocumentTemplate = {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style="border:1px solid #ccc;padding:8px;text-align:center;">1</td>
-              <td style="border:1px solid #ccc;padding:8px;">{{assetName}}</td>
-              <td style="border:1px solid #ccc;padding:8px;text-align:center;">{{assetCode}}</td>
-              <td style="border:1px solid #ccc;padding:8px;text-align:center;">{{quantity}}</td>
-              <td style="border:1px solid #ccc;padding:8px;text-align:center;">{{condition}}</td>
-            </tr>
-            <tr>
-              <td style="border:1px solid #ccc;padding:8px;text-align:center;color:#aaa;">2</td>
-              <td style="border:1px solid #ccc;padding:8px;">&nbsp;</td>
-              <td style="border:1px solid #ccc;padding:8px;">&nbsp;</td>
-              <td style="border:1px solid #ccc;padding:8px;">&nbsp;</td>
-              <td style="border:1px solid #ccc;padding:8px;">&nbsp;</td>
-            </tr>
-            <tr>
-              <td style="border:1px solid #ccc;padding:8px;text-align:center;color:#aaa;">3</td>
-              <td style="border:1px solid #ccc;padding:8px;">&nbsp;</td>
-              <td style="border:1px solid #ccc;padding:8px;">&nbsp;</td>
-              <td style="border:1px solid #ccc;padding:8px;">&nbsp;</td>
-              <td style="border:1px solid #ccc;padding:8px;">&nbsp;</td>
-            </tr>
+            {{assetList}}
           </tbody>
         </table>
       </div>

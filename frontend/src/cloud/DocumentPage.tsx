@@ -1,66 +1,63 @@
 import { useState, useMemo, useEffect } from "react";
 import { PrimarySidebar } from "../cchat/sidebar/PrimarySidebar";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
-import { mockDocs, type DocCategory } from "./data";
-import { Folder, Image as ImageIcon, Link as LinkIcon, FileText, File, Download, ExternalLink, ChevronLeft, Search, Loader } from "lucide-react";
-
-interface DocumentItem {
-  id: string;
-  name: string;
-  category: DocCategory;
-  date: string;
-  size?: string;
-  url?: string;
-  status?: "pending" | "approved" | "rejected";
-}
+import { useCloudStore } from "@/store/useCloudStore";
+import type { DocumentItem, DocCategory } from "@/store/useCloudStore";
+import { Folder, Loader } from "lucide-react";
+import { CloudSidebar } from "./CloudSidebar";
+import { CloudHeader } from "./CloudHeader";
+import { CategoryGrid } from "./CategoryGrid";
+import { DocumentList } from "./DocumentList";
 
 export default function DocumentPage() {
-  const { authUser } = useAuthStore();
-  const { allContacts, messages, isContactsLoading, isMessagesLoading, getAllcontacts, getMessagesByUserId } = useChatStore();
+
+  const { allContacts, messages, isMessagesLoading, getAllcontacts, getMessagesByUserId } = useChatStore();
+
+  const activeCategory = useCloudStore(state => state.activeCategory);
+  const setActiveCategory = useCloudStore(state => state.setActiveCategory);
+  const searchQuery = useCloudStore(state => state.searchQuery);
+  const setSearchQuery = useCloudStore(state => state.setSearchQuery);
+
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     getAllcontacts();
   }, [getAllcontacts]);
 
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<DocCategory | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const selectedUser = useMemo(() => {
+    return allContacts.find(u => u._id === selectedUserId) || null;
+  }, [allContacts, selectedUserId]);
 
-  // Lọc contact dựa trên search query
-  const filteredContacts = useMemo(() => {
-    return allContacts.filter(contact =>
-      contact.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.email?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [allContacts, searchQuery]);
-
-  const selectedUser = filteredContacts.find(u => u._id === selectedUserId);
+  const handleSelectUser = (userId: string) => {
+    setSelectedUserId(userId);
+    setActiveCategory(null);
+    getMessagesByUserId(userId);
+  };
 
   // Extract documents từ messages
   const extractedDocuments = useMemo(() => {
     const docs: DocumentItem[] = [];
-    
+
     if (selectedUserId) {
       // Lấy messages với selected user
-      const userMessages = messages.filter(msg => 
+      const userMessages = messages.filter(msg =>
         (msg.senderId?._id === selectedUserId || msg.senderId === selectedUserId) ||
         (msg.receiverId?._id === selectedUserId || msg.receiverId === selectedUserId)
       );
 
       // Extract documents từ messages
       userMessages.forEach((msg, idx) => {
+        // Files/Images/Links
         if (msg.file) {
           const fileName = msg.file.name || `document_${idx}`;
           const ext = fileName.split('.').pop()?.toLowerCase() || '';
           let category: DocCategory = 'files';
-          
-          // Phân loại dựa trên extension
+
           if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) {
             category = 'images';
-          } else if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'json'].includes(ext)) {
+          } else if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'json', 'zip', 'rar'].includes(ext)) {
             category = 'files';
-          } else if (['http', 'www', 'ftp'].some(prefix => msg.file.url?.includes(prefix))) {
+          } else if (['http', 'www', 'ftp'].some(prefix => msg.file?.url?.includes(prefix))) {
             category = 'links';
           }
 
@@ -73,6 +70,41 @@ export default function DocumentPage() {
             url: msg.file.url,
           });
         }
+
+        if (msg.image) {
+          let sizeLabel = "Không rõ";
+          if (msg.image.startsWith("data:image")) {
+             const base64Str = msg.image.split(",")[1];
+             if (base64Str) {
+                 const sizeBytes = base64Str.length * 0.75 - (base64Str.endsWith("==") ? 2 : base64Str.endsWith("=") ? 1 : 0);
+                 if (sizeBytes > 1024 * 1024) sizeLabel = (sizeBytes / 1024 / 1024).toFixed(1) + " MB";
+                 else sizeLabel = (sizeBytes / 1024).toFixed(1) + " KB";
+             }
+          }
+          docs.push({
+            id: msg._id || `img_${idx}`,
+            name: `Hình ảnh`,
+            category: "images",
+            date: new Date(msg.createdAt).toLocaleDateString('vi-VN'),
+            size: sizeLabel,
+            url: msg.image,
+          });
+        }
+
+        // Forms (Đơn từ)
+        if (msg.documentPayload) {
+          docs.push({
+            id: msg._id || `form_${idx}`,
+            name: msg.documentPayload.templateName || "Biểu mẫu",
+            category: "forms",
+            date: new Date(msg.createdAt).toLocaleDateString('vi-VN'),
+            status: msg.documentReplyData?.status || "pending",
+            htmlContent: msg.documentPayload.htmlContent,
+            isTask: false
+          });
+        }
+
+        // Removed tasks as requested
       });
     }
 
@@ -83,7 +115,6 @@ export default function DocumentPage() {
     return extractedDocuments.filter(d => !activeCategory || d.category === activeCategory);
   }, [extractedDocuments, activeCategory]);
 
-  // Count documents theo category
   const docCounts = useMemo(() => {
     return {
       files: extractedDocuments.filter(d => d.category === 'files').length,
@@ -97,57 +128,12 @@ export default function DocumentPage() {
     <div className="flex h-screen w-screen overflow-hidden bg-chat-main text-chat-text font-sans">
       <PrimarySidebar activeTab="cloud" />
 
-      {/* Sidebar contact */}
-      <div className="w-[300px] bg-chat-sidebar border-r border-chat-border flex flex-col shrink-0 z-10">
-        <div className="p-4 border-b border-chat-border shrink-0">
-          <h2 className="text-lg font-bold text-chat-text">Tài liệu Trao đổi</h2>
-          <p className="text-[13px] text-chat-muted mt-0.5">Tin nhắn & File</p>
-        </div>
-
-        <div className="p-3 border-b border-chat-border">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-chat-muted" />
-            <input
-              type="text"
-              placeholder="Tìm liên hệ..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-chat-main border border-chat-border rounded-md pl-9 pr-3 py-1.5 text-sm text-chat-text focus:outline-none focus:border-[#0052cc]"
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-          {isContactsLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader className="w-4 h-4 animate-spin text-chat-muted" />
-            </div>
-          ) : filteredContacts.length === 0 ? (
-            <div className="text-center py-4 text-chat-muted text-sm">
-              Không có liên hệ
-            </div>
-          ) : (
-            filteredContacts.map((contact) => (
-              <button
-                key={contact._id}
-                onClick={() => {
-                  setSelectedUserId(contact._id);
-                  setActiveCategory(null);
-                  getMessagesByUserId(contact._id);
-                }}
-                className={`w-full flex items-center gap-3 p-3 rounded-md transition-colors ${selectedUserId === contact._id ? "bg-chat-active text-chat-text font-semibold" : "hover:bg-chat-hover text-chat-text/90"
-                  }`}
-              >
-                <img src={contact.profilePicture || "/avatar.png"} alt={contact.fullname} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                <div className="text-left flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{contact.fullname}</p>
-                  <p className="text-[12px] text-chat-muted truncate">{contact.email}</p>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+      <CloudSidebar
+        selectedUserId={selectedUserId}
+        onSelectUser={handleSelectUser}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden flex flex-col relative bg-chat-main">
@@ -160,148 +146,21 @@ export default function DocumentPage() {
           </div>
         ) : (
           <>
-            {/* Header */}
-            <div className="h-[60px] border-b border-chat-border flex items-center px-6 shrink-0 bg-chat-header/50 backdrop-blur-md">
-              {activeCategory ? (
-                <button
-                  onClick={() => setActiveCategory(null)}
-                  className="flex items-center gap-2 text-chat-muted hover:text-chat-text transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  <span className="font-medium">Quay lại danh mục</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.fullname} className="w-8 h-8 rounded-full object-cover" />
-                  <div>
-                    <h2 className="font-bold text-chat-text text-sm">{selectedUser.fullname}</h2>
-                    <p className="text-xs text-chat-muted">Tài liệu trao đổi</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CloudHeader
+              activeCategory={activeCategory}
+              onBack={() => setActiveCategory(null)}
+              selectedUser={selectedUser}
+            />
 
-            {/* Content body */}
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               {isMessagesLoading ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader className="w-6 h-6 animate-spin text-chat-muted" />
                 </div>
               ) : !activeCategory ? (
-                // 4 Thư mục
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                  <button onClick={() => setActiveCategory("files")} className="bg-chat-sidebar border border-chat-border p-6 rounded-xl hover:border-[#0052cc] hover:bg-[#0052cc]/5 transition-all text-left group relative">
-                    <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                      {docCounts.files}
-                    </div>
-                    <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <Folder className="w-7 h-7 text-blue-500" />
-                    </div>
-                    <h3 className="text-lg font-bold text-chat-text mb-1">Tệp tin (Files)</h3>
-                    <p className="text-sm text-chat-muted">Văn bản, tài liệu Word, Excel, PDF</p>
-                  </button>
-
-                  <button onClick={() => setActiveCategory("images")} className="bg-chat-sidebar border border-chat-border p-6 rounded-xl hover:border-purple-500 hover:bg-purple-500/5 transition-all text-left group relative">
-                    <div className="absolute top-3 right-3 bg-purple-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                      {docCounts.images}
-                    </div>
-                    <div className="w-14 h-14 rounded-full bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <ImageIcon className="w-7 h-7 text-purple-500" />
-                    </div>
-                    <h3 className="text-lg font-bold text-chat-text mb-1">Hình ảnh (Images)</h3>
-                    <p className="text-sm text-chat-muted">Ảnh, hình nền, thiết kế</p>
-                  </button>
-
-                  <button onClick={() => setActiveCategory("links")} className="bg-chat-sidebar border border-chat-border p-6 rounded-xl hover:border-green-500 hover:bg-green-500/5 transition-all text-left group relative">
-                    <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                      {docCounts.links}
-                    </div>
-                    <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <LinkIcon className="w-7 h-7 text-green-500" />
-                    </div>
-                    <h3 className="text-lg font-bold text-chat-text mb-1">Liên kết (Links)</h3>
-                    <p className="text-sm text-chat-muted">URL, Figma, Google Drive, Github</p>
-                  </button>
-
-                  <button onClick={() => setActiveCategory("forms")} className="bg-chat-sidebar border border-chat-border p-6 rounded-xl hover:border-orange-500 hover:bg-orange-500/5 transition-all text-left group relative">
-                    <div className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                      {docCounts.forms}
-                    </div>
-                    <div className="w-14 h-14 rounded-full bg-orange-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <FileText className="w-7 h-7 text-orange-500" />
-                    </div>
-                    <h3 className="text-lg font-bold text-chat-text mb-1">Biểu mẫu (Forms)</h3>
-                    <p className="text-sm text-chat-muted">Đơn từ, hóa đơn, v.v.</p>
-                  </button>
-                </div>
+                <CategoryGrid docCounts={docCounts} onSelectCategory={setActiveCategory} />
               ) : (
-                // Chi tiết danh sách bên trong thư mục
-                <div className="max-w-4xl mx-auto">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-chat-text capitalize flex items-center gap-3">
-                      {activeCategory === "files" && <Folder className="w-6 h-6 text-blue-500" />}
-                      {activeCategory === "images" && <ImageIcon className="w-6 h-6 text-purple-500" />}
-                      {activeCategory === "links" && <LinkIcon className="w-6 h-6 text-green-500" />}
-                      {activeCategory === "forms" && <FileText className="w-6 h-6 text-orange-500" />}
-                      {activeCategory === "files" ? "Tệp tin" : activeCategory === "images" ? "Hình ảnh" : activeCategory === "links" ? "Liên kết" : "Biểu mẫu"}
-                    </h2>
-                  </div>
-
-                  <div className="bg-chat-sidebar border border-chat-border rounded-xl overflow-hidden shadow-sm">
-                    {userDocs.length === 0 ? (
-                      <div className="p-12 text-center text-chat-muted">
-                        Thư mục này hiện đang trống.
-                      </div>
-                    ) : (
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-chat-hover/30 border-b border-chat-border">
-                            <th className="px-4 py-3 text-sm font-semibold text-chat-muted">Tên tài liệu</th>
-                            <th className="px-4 py-3 text-sm font-semibold text-chat-muted w-[150px]">Ngày tạo</th>
-                            <th className="px-4 py-3 text-sm font-semibold text-chat-muted w-[150px]">Kích thước</th>
-                            <th className="px-4 py-3 text-sm font-semibold text-chat-muted w-[80px]"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-chat-border">
-                          {userDocs.map(doc => (
-                            <tr key={doc.id} className="hover:bg-chat-hover/30 transition-colors group">
-                              <td className="px-4 py-4">
-                                <div className="flex items-center gap-3">
-                                  <File className="w-5 h-5 text-chat-muted" />
-                                  <span className="font-medium text-chat-text">{doc.name}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-4 text-sm text-chat-muted">{doc.date}</td>
-                              <td className="px-4 py-4 text-sm">
-                                {activeCategory === "forms" ? (
-                                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${doc.status === "approved" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                                    doc.status === "rejected" ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                                      "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                                    }`}>
-                                    {doc.status === "approved" ? "Đã duyệt" : doc.status === "rejected" ? "Từ chối" : "Đang chờ"}
-                                  </span>
-                                ) : (
-                                  <span className="text-chat-muted">{doc.size || "-"}</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-4 text-right">
-                                {doc.url ? (
-                                  <a href={doc.url} target="_blank" rel="noreferrer" className="inline-flex p-2 text-chat-muted hover:text-[#0052cc] transition-colors rounded">
-                                    <ExternalLink className="w-4 h-4" />
-                                  </a>
-                                ) : (
-                                  <button className="p-2 text-chat-muted hover:text-[#0052cc] transition-colors rounded">
-                                    <Download className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </div>
+                <DocumentList activeCategory={activeCategory} userDocs={userDocs} />
               )}
             </div>
           </>

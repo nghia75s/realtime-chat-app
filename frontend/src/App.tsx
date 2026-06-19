@@ -19,6 +19,7 @@ import GlobalAlerts from "./components/ui/GlobalAlerts"
 import { useThemeStore } from "./store/useThemeStore"
 import { CallOverlay } from "./cchat/chat/call/CallOverlay"
 import { GroupCallOverlay } from "./cchat/chat/call/GroupCallOverlay"
+import { Toaster } from "react-hot-toast"
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
@@ -57,7 +58,7 @@ function App() {
         <Route path="/login" element={authUser ? <Navigate to="/chat" /> : <LoginPage />} />
         <Route path="/signup" element={authUser ? <Navigate to="/chat" /> : <SignupPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        
+
         <Route path="/chat" element={authUser ? (authUser.permissions?.viewChat !== false ? <ChatPage /> : <Navigate to="/login" />) : <Navigate to="/login" />} />
         <Route path="/contacts" element={authUser ? (authUser.permissions?.viewContacts ? <ContactsPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
         <Route path="/todo" element={authUser ? (authUser.permissions?.viewTasks ? <TasksPage /> : <Navigate to="/chat" />) : <Navigate to="/login" />} />
@@ -69,6 +70,7 @@ function App() {
       {authUser && <GlobalAlerts />}
       {authUser && <CallOverlay />}
       {authUser && <GroupCallOverlay />}
+      <Toaster position="top-center" />
     </BrowserRouter>
   )
 }

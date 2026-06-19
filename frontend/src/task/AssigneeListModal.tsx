@@ -44,14 +44,22 @@ export function AssigneeListModal({ task, isCreatorOrAdmin, onClose }: AssigneeL
                 />
                 <div className="flex flex-col flex-1 min-w-0">
                   <span className="text-[14px] text-[#e1e1e1] font-medium truncate">{a.user?.fullname || "Unknown"}</span>
-                  <span className="text-[12px] text-[#a1a1a1]">
-                    {a.status === 'done'
-                      ? 'Hoàn thành'
+                  <span className={`text-[12px] font-medium ${
+                    new Date() > new Date(task.deadline) && (a.status === 'pending' || a.status === 'rejected') ? 'text-red-500' :
+                    a.status === 'done' ? 'text-green-500' :
+                    a.status === 'submitted' ? 'text-[#0052cc]' :
+                    a.status === 'rejected' ? 'text-red-500' :
+                    'text-amber-500'
+                  }`}>
+                    {new Date() > new Date(task.deadline) && (a.status === 'pending' || a.status === 'rejected')
+                      ? 'Quá hạn'
+                      : a.status === 'done'
+                      ? 'Đã làm xong'
                       : a.status === 'submitted'
                       ? 'Đã nộp bài'
                       : a.status === 'rejected'
                       ? 'Cần làm lại'
-                      : 'Đang chờ'}
+                      : 'Đang làm'}
                   </span>
                 </div>
               </div>

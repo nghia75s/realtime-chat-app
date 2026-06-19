@@ -3,7 +3,8 @@
 export interface TemplateField {
   id: string;
   label: string;
-  type: "text" | "date" | "number" | "textarea";
+  type: "text" | "date" | "number" | "textarea" | "table";
+  columns?: { id: string; label: string; type?: "text" | "number" | "date" }[];
 }
 
 export interface DocumentTemplate {

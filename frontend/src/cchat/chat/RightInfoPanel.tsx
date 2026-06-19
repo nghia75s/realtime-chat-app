@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
-import { Bell, BellOff, ShieldAlert, ChevronRight, FileText, Pin, Users, LogOut, PenBox, Settings, AlertTriangle, Trash2, Search } from "lucide-react"
+import { Bell, BellOff, ShieldAlert, ChevronRight, FileText, Pin, Users, LogOut, PenBox, Settings, Search } from "lucide-react"
 import { ArchivePanel } from "./ArchivePanel"
 import { GroupManagementPanel } from "./GroupManagementPanel"
 import { MembersPanel } from "./MembersPanel"
-import { AdminsPanel } from "./AdminsPanel"
 import { GroupBoardPanel } from "../chat/GroupBoardPanel"
 import { AddGroupMemberModal } from "./modals/AddGroupMemberModal"
 import { EditGroupModal } from "./modals/EditGroupModal"
@@ -16,8 +15,8 @@ import {
 import { useAuthStore } from "@/store/useAuthStore"
 import { useChatStore } from "@/store/useChatStore"
 
-export function RightInfoPanel({ chat }: { chat: any }) {
-  const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board" | "admins" | "pending_members">("info")
+export function RightInfoPanel({ chat, onRequestOpenImage }: { chat: any; onRequestOpenImage?: (messageId: string) => void }) {
+  const [view, setView] = useState<"info" | "archive" | "management" | "members" | "board" | "admins" | "pending_members" | "search">("info")
   const [archiveTab, setArchiveTab] = useState<"media" | "file" | "link">("media")
   const [isBoardOpen, setIsBoardOpen] = useState(false)
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false)
@@ -110,7 +109,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
   }
 
   if (view === "archive") {
-    return <ArchivePanel initialTab={archiveTab} onBack={() => setView("info")} onMediaClick={onRequestOpenImage} />
+    return <ArchivePanel initialTab={archiveTab} onBack={() => setView("info")} onMediaClick={onRequestOpenImage} onMessageClick={handleScrollToMessage} isGroup={isGroup} />
   }
 
   if (view === "management") {
@@ -222,7 +221,7 @@ export function RightInfoPanel({ chat }: { chat: any }) {
                 <span className="text-[12px] text-chat-text text-center leading-tight">{isMuted ? "Mở thông báo" : "Tắt thông báo"}</span>
               </div>
 
-              <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-14" onClick={() => setView("search") }>
+              <div className="flex flex-col items-center gap-1.5 cursor-pointer group w-14" onClick={() => setView("search")}>
                 <div className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-chat-hover text-chat-text transition-colors group-hover:bg-chat-active/20 group-hover:text-[#7c3aed]">
                   <Search className="h-[18px] w-[18px]" />
                 </div>

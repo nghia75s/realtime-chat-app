@@ -24,6 +24,7 @@ export function EditGroupModal({ isOpen, onClose, chat }: EditGroupModalProps) {
 
     if (file.size > 2 * 1024 * 1024) { // 2MB
       toast.error("Vui lòng chọn ảnh có dung lượng nhỏ hơn 2MB")
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return
     }
 

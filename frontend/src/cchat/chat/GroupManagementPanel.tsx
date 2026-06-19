@@ -50,7 +50,7 @@ export function GroupManagementPanel({ chat, onBack, onViewAdmins }: GroupManage
     setSettings(newSettings)
     setIsUpdating(true)
     try {
-      await updateGroupSettings(chat._id, newSettings)
+      await updateGroupSettings(chat._id, { settings: newSettings })
     } catch (error) {
       // Revert if error
       setSettings(currentSettings)

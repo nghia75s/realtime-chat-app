@@ -76,7 +76,7 @@ export const sendResetEmail = async (email, resetLink) => {
         <p>Chào bạn,</p>
         <p>Bạn nhận được email này vì có yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
         <p>Nhấn vào nút bên dưới để đặt lại mật khẩu. Liên kết sẽ hết hạn sau 15 phút.</p>
-        <p style="text-align:center; margin: 20px 0;"><a href="${resetLink}" style="background:#1a73e8;color:white;padding:10px 18px;border-radius:6px;text-decoration:none;">Đặt lại mật khẩu</a></p>
+        <p style="text-align:center; margin: 20px 0;"><a href="${resetLink}" target="_self" style="background:#1a73e8;color:white;padding:10px 18px;border-radius:6px;text-decoration:none;">Đặt lại mật khẩu</a></p>
         <p>Nếu bạn không yêu cầu điều này, bạn có thể bỏ qua email này.</p>
         <hr />
         <p style="font-size: 14px; color: #666;">Nếu bạn gặp sự cố, vui lòng liên hệ bộ phận hỗ trợ của chúng tôi.</p>
