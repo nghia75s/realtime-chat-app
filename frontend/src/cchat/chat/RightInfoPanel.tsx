@@ -116,13 +116,14 @@ export function RightInfoPanel({ chat, onRequestOpenImage }: { chat: any; onRequ
     return <GroupManagementPanel chat={chat} onBack={() => setView("info")} onViewAdmins={() => setView("admins")} />
   }
 
-  if (view === "members") {
+  if (view === "members" || view === "pending_members") {
     return (
       <>
         <MembersPanel
           chat={chat}
           onBack={() => setView("info")}
           onAddMember={() => setIsAddMemberOpen(true)}
+          initialTab={view === "pending_members" ? "pending" : "members"}
         />
         <AddGroupMemberModal
           isOpen={isAddMemberOpen}
