@@ -15,6 +15,7 @@ export function CloudSidebar({ selectedUserId, onSelectUser, searchQuery, setSea
   const { allContacts, isContactsLoading } = useChatStore();
 
   const [expandedSections, setExpandedSections] = useState({
+    admins: true,
     managers: true,
     sameDept: true,
     otherDept: true
@@ -31,25 +32,28 @@ export function CloudSidebar({ selectedUserId, onSelectUser, searchQuery, setSea
     );
   }, [allContacts, searchQuery]);
 
-  const { visibleManagers, sameDeptEmployees, otherDeptEmployees } = useMemo(() => {
-    if (!authUser) return { visibleManagers: [], sameDeptEmployees: [], otherDeptEmployees: [] };
+  const { visibleAdmins, visibleManagers, sameDeptEmployees, otherDeptEmployees } = useMemo(() => {
+    if (!authUser) return { visibleAdmins: [], visibleManagers: [], sameDeptEmployees: [], otherDeptEmployees: [] };
 
-    const managers = filteredContacts.filter(c => c.role !== 'user');
+    const admins = filteredContacts.filter(c => c.role === 'admin');
+    const managers = filteredContacts.filter(c => c.role === 'manager');
     const employees = filteredContacts.filter(c => c.role === 'user');
 
+    let visibleAdmins = admins;
     let visibleManagers = [];
+    
     if (authUser.role === 'user') {
       // Employee sees only their department managers
       visibleManagers = managers.filter(m => m.department === authUser.department);
     } else {
-      // Manager sees all managers
+      // Manager/Admin sees all managers
       visibleManagers = managers;
     }
 
     const sameDeptEmployees = employees.filter(e => e.department === authUser.department);
     const otherDeptEmployees = employees.filter(e => e.department !== authUser.department);
 
-    return { visibleManagers, sameDeptEmployees, otherDeptEmployees };
+    return { visibleAdmins, visibleManagers, sameDeptEmployees, otherDeptEmployees };
   }, [filteredContacts, authUser]);
 
   const renderContactItem = (contact: any) => (
@@ -99,13 +103,33 @@ export function CloudSidebar({ selectedUserId, onSelectUser, searchQuery, setSea
           </div>
         ) : (
           <>
+            {/* Section: Admins */}
+            <div>
+              <button 
+                onClick={() => toggleSection('admins')}
+                className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-chat-muted hover:text-chat-text uppercase tracking-wider mb-1"
+              >
+                <span>Quản trị viên (Admin)</span>
+                {expandedSections.admins !== false ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+              </button>
+              {expandedSections.admins !== false && (
+                <div className="space-y-1 pl-2">
+                  {visibleAdmins.length === 0 ? (
+                    <div className="px-2 py-2 text-xs text-chat-muted">Trống</div>
+                  ) : (
+                    visibleAdmins.map(renderContactItem)
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Section: Managers */}
             <div>
               <button 
                 onClick={() => toggleSection('managers')}
                 className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-chat-muted hover:text-chat-text uppercase tracking-wider mb-1"
               >
-                <span>Quản lý</span>
+                <span>Quản lý phòng ban</span>
                 {expandedSections.managers ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               </button>
               {expandedSections.managers && (
