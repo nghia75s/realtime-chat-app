@@ -2,11 +2,23 @@ import React, { useEffect, useRef, useState } from "react";
 import { Phone, PhoneOff, Video, Mic, MicOff, VideoOff, GripHorizontal, SwitchCamera } from "lucide-react";
 import { useCallStore } from "@/store/useCallStore";
 
+// Helper function to format duration
+const formatDuration = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 export function CallOverlay() {
     const { 
         isCalling, isReceivingCall, callerInfo, callType, callStatus,
         localStream, remoteStream, acceptCall, rejectCall, endCall, isGroupCall,
-        availableCameras, selectedCameraId, switchCamera
+        availableCameras, selectedCameraId, switchCamera, callDuration
     } = useCallStore();
 
     const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -138,6 +150,11 @@ export function CallOverlay() {
                         {isGroupCall ? callerInfo?.name : callerInfo?.fullname}
                     </span>
                 </div>
+                {callStatus === "connected" && (
+                    <span className="text-white text-sm font-semibold mr-2">
+                        {formatDuration(callDuration)}
+                    </span>
+                )}
                 <GripHorizontal className="w-5 h-5 text-gray-400 mr-2" />
             </div>
 
@@ -175,8 +192,8 @@ export function CallOverlay() {
                                 <div key={i} className={`w-1.5 bg-green-500 rounded-full ${callStatus === 'connected' ? 'animate-pulse' : ''}`} style={{ height: callStatus === 'connected' ? Math.random() * 24 + 8 + 'px' : '4px', animationDelay: `${i*0.1}s`}}></div>
                             ))}
                         </div>
-                        <span className="text-gray-400 text-sm">
-                            {callStatus === "ringing" ? "Đang đổ chuông..." : "00:00"}
+                        <span className="text-gray-400 text-sm font-semibold">
+                            {callStatus === "ringing" ? "Đang đổ chuông..." : formatDuration(callDuration)}
                         </span>
                         
                         <audio ref={remoteVideoRef} autoPlay className="hidden" />

@@ -365,11 +365,18 @@ export const useGroupCallStore = create<GroupCallState>((set, get) => ({
 
     subscribeToGroupCalls: () => {
         const socket = useAuthStore.getState().socket;
-        if (!socket) return;
+        if (!socket) {
+            console.warn("Socket not available in subscribeToGroupCalls, retrying in 500ms...");
+            setTimeout(() => {
+                get().subscribeToGroupCalls();
+            }, 500);
+            return;
+        }
 
         // Tránh bị đăng ký nhiều lần do React Strict Mode
         if (get().isSubscribed) return;
         set({ isSubscribed: true });
+        console.log("Setting up group call listeners on socket:", socket.id);
 
         socket.on("incoming-call", (data: any) => {
             if (!data.isGroup) return; 

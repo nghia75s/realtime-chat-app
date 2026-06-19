@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useAuthStore } from "./useAuthStore";
+import { chatService } from "@/services/chatService";
 import { toast } from "react-hot-toast";
 
 const ICE_SERVERS = {
@@ -21,6 +22,9 @@ interface CallStore {
   peerConnection: RTCPeerConnection | null;
   pendingIceCandidates: RTCIceCandidateInit[];
   isGroupCall: boolean;
+  callDuration: number; // in seconds
+  callStartTime: number | null; // timestamp
+  callTimerInterval: NodeJS.Timeout | null;
 
   availableCameras: MediaDeviceInfo[];
   selectedCameraId: string | null;
@@ -40,6 +44,18 @@ interface CallStore {
   unsubscribeFromCalls: () => void;
 }
 
+// Helper function to format duration
+const formatDuration = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 export const useCallStore = create<CallStore>((set, get) => ({
   isCalling: false,
   isReceivingCall: false,
@@ -52,6 +68,9 @@ export const useCallStore = create<CallStore>((set, get) => ({
   peerConnection: null,
   pendingIceCandidates: [],
   isGroupCall: false,
+  callDuration: 0,
+  callStartTime: null,
+  callTimerInterval: null,
 
   availableCameras: [],
   selectedCameraId: null,
@@ -74,6 +93,8 @@ export const useCallStore = create<CallStore>((set, get) => ({
         localStream: stream,
         receiverId: receiver._id,
         isGroupCall: false,
+        callStartTime: Date.now(),
+        callDuration: 0,
       });
 
       // Lấy danh sách camera sau khi đã được cấp quyền
@@ -84,11 +105,19 @@ export const useCallStore = create<CallStore>((set, get) => ({
         set({ selectedCameraId: videoDevices[0].deviceId });
       }
 
+      // Start call timer for caller
+      const interval = setInterval(() => {
+        set(state => ({
+          callDuration: Math.floor((Date.now() - (state.callStartTime || Date.now())) / 1000)
+        }));
+      }, 1000);
+      set({ callTimerInterval: interval });
+
       const socket = useAuthStore.getState().socket;
       if (socket) {
-        socket.emit("call-user", {
+        socket.emit("call-request", {
           receiverId: receiver._id,
-          callType: type,
+          type: type,
           isGroup: false,
         });
       }
@@ -119,6 +148,8 @@ export const useCallStore = create<CallStore>((set, get) => ({
         isCalling: true,
         callStatus: "connected",
         localStream: stream,
+        callStartTime: Date.now(),
+        callDuration: 0,
       });
 
       // Lấy danh sách camera sau khi đã được cấp quyền
@@ -128,6 +159,14 @@ export const useCallStore = create<CallStore>((set, get) => ({
       if (videoDevices.length > 0) {
         set({ selectedCameraId: videoDevices[0].deviceId });
       }
+
+      // Start call timer
+      const interval = setInterval(() => {
+        set(state => ({
+          callDuration: Math.floor((Date.now() - (state.callStartTime || Date.now())) / 1000)
+        }));
+      }, 1000);
+      set({ callTimerInterval: interval });
 
       const socket = useAuthStore.getState().socket;
       if (socket) {
@@ -157,18 +196,48 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
   endCall: () => {
     const socket = useAuthStore.getState().socket;
-    const { receiverId } = get();
-    if (socket) {
+    const { receiverId, callerInfo, callDuration, callTimerInterval } = get();
+    const authUser = useAuthStore.getState().authUser;
+
+    const targetId = receiverId || (callerInfo ? callerInfo._id : null);
+
+    // Stop timer
+    if (callTimerInterval) {
+      clearInterval(callTimerInterval);
+    }
+
+    // Send call ended event
+    if (socket && targetId) {
       socket.emit("call-ended", {
-        receiverId,
+        receiverId: targetId,
         isGroup: false
       });
     }
+
+    // Save call log to chat
+    if (targetId && authUser && callDuration > 0) {
+      const durationStr = formatDuration(callDuration);
+      const callLogMessage = `📞 Cuộc gọi đã kết thúc (${durationStr})`;
+      
+      chatService.sendMessage(targetId, {
+        text: callLogMessage,
+        type: "text",
+      }).catch(error => {
+        console.error("Error saving call log:", error);
+      });
+    }
+
     get().clearCall();
   },
 
   clearCall: () => {
-    const { localStream, remoteStream, peerConnection } = get();
+    const { localStream, remoteStream, peerConnection, callTimerInterval } = get();
+    
+    // Stop the timer
+    if (callTimerInterval) {
+      clearInterval(callTimerInterval);
+    }
+    
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
     }
@@ -190,7 +259,10 @@ export const useCallStore = create<CallStore>((set, get) => ({
       peerConnection: null,
       pendingIceCandidates: [],
       availableCameras: [],
-      selectedCameraId: null
+      selectedCameraId: null,
+      callDuration: 0,
+      callStartTime: null,
+      callTimerInterval: null,
     });
   },
 
@@ -238,20 +310,30 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
   subscribeToCalls: () => {
     const socket = useAuthStore.getState().socket;
-    if (!socket) return;
+    if (!socket) {
+      console.warn("Socket not available in subscribeToCalls, retrying in 500ms...");
+      setTimeout(() => {
+        get().subscribeToCalls();
+      }, 500);
+      return;
+    }
 
+    console.log("Setting up call listeners on socket:", socket.id);
     socket.off("incoming-call");
     socket.on("incoming-call", (data: any) => {
+      console.log("📞 Incoming call received:", data);
       if (data.isGroup) return; // Không xử lý gọi nhóm ở store này
 
       // Block multiple calls
       if (get().isCalling || get().isReceivingCall) {
+        console.log("⚠️ Already in a call, rejecting incoming call");
         socket.emit("call-rejected", {
           callerId: data.callerInfo._id,
           isGroup: false
         });
         return;
       }
+      console.log("✅ Accepting incoming call from:", data.callerInfo.fullname);
       get().receiveCall(data.callerInfo, data.type);
     });
 
@@ -281,12 +363,25 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
       pc.ontrack = (event) => {
         const currentStream = get().remoteStream;
-        let stream = currentStream;
-        if (!stream) {
-          stream = new MediaStream();
+        let newStream = new MediaStream();
+        
+        if (currentStream) {
+          currentStream.getTracks().forEach(track => newStream.addTrack(track));
         }
-        stream.addTrack(event.track);
-        set({ remoteStream: stream });
+
+        if (event.streams && event.streams[0]) {
+          event.streams[0].getTracks().forEach(track => {
+            if (!newStream.getTracks().find(t => t.id === track.id)) {
+              newStream.addTrack(track);
+            }
+          });
+        } else {
+          if (!newStream.getTracks().find(t => t.id === event.track.id)) {
+            newStream.addTrack(event.track);
+          }
+        }
+        
+        set({ remoteStream: newStream });
       };
 
       if (localStream) {
@@ -344,12 +439,25 @@ export const useCallStore = create<CallStore>((set, get) => ({
 
       pc.ontrack = (event) => {
         const currentStream = get().remoteStream;
-        let stream = currentStream;
-        if (!stream) {
-          stream = new MediaStream();
+        let newStream = new MediaStream();
+        
+        if (currentStream) {
+          currentStream.getTracks().forEach(track => newStream.addTrack(track));
         }
-        stream.addTrack(event.track);
-        set({ remoteStream: stream });
+
+        if (event.streams && event.streams[0]) {
+          event.streams[0].getTracks().forEach(track => {
+            if (!newStream.getTracks().find(t => t.id === track.id)) {
+              newStream.addTrack(track);
+            }
+          });
+        } else {
+          if (!newStream.getTracks().find(t => t.id === event.track.id)) {
+            newStream.addTrack(event.track);
+          }
+        }
+        
+        set({ remoteStream: newStream });
       };
 
       if (localStream) {

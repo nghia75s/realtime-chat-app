@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { io, Socket } from "socket.io-client";
 import { axiosInstance } from "@/lib/axios";
 
-const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
+const BASE_URL = import.meta.env.MODE === "development" ? "/" : "/";
 
 export interface AuthUser {
   _id: string;
@@ -216,19 +216,38 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   connectSocket: () => {
     const { authUser, socket } = get();
-    if (!authUser || socket?.connected) return;
+    if (!authUser) return;
+    if (socket?.connected) return;
+    if (socket) {
+      socket.disconnect();
+    }
 
+    // Token sẽ được gửi tự động qua cookie với withCredentials: true
     const newSocket = io(BASE_URL, {
-      query: {
-        userId: authUser._id,
-      },
       withCredentials: true,
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
     });
 
-    newSocket.connect();
     set({ socket: newSocket });
 
+    newSocket.on("connect", () => {
+      console.log("Socket connected:", newSocket.id);
+    });
+
+    newSocket.on("connect_error", (error: any) => {
+      console.error("Socket connect_error:", error.message);
+    });
+
+    newSocket.on("disconnect", (reason: any) => {
+      console.log("Socket disconnected:", reason);
+    });
+
     newSocket.on("getOnlineUsers", (userIds: string[]) => {
+      console.log("Online users:", userIds);
       set({ onlineUsers: userIds });
     });
 
